@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "servicedeskng.client", "servicedeskng.client\servicedeskng.client.esproj", "{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ServiceDeskNg.Server", "ServiceDeskNg.Server\ServiceDeskNg.Server.csproj", "{5E934A45-1F18-40BB-AC94-3C73B78AD09C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D2918C3-9D8C-9B75-ABDF-64EA63CAB66C}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{5E934A45-1F18-40BB-AC94-3C73B78AD09C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E934A45-1F18-40BB-AC94-3C73B78AD09C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E934A45-1F18-40BB-AC94-3C73B78AD09C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E934A45-1F18-40BB-AC94-3C73B78AD09C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {99A3BA23-B0EB-4893-AFFE-9572A164EBC5}
+	EndGlobalSection
+EndGlobal

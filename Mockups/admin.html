@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceDesk TI - Panel Administrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            box-sizing: border-box;
+        }
+        .sidebar-item:hover { background-color: #f3f4f6; }
+        .sidebar-item.active { background-color: #dbeafe; border-right: 3px solid #3b82f6; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .slide-in { animation: slideIn 0.4s ease-out; }
+        .stat-card:hover { transform: translateY(-2px); transition: all 0.3s ease; }
+        .notification-dot { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .chart-container { position: relative; height: 300px; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
+        <div class="h-full px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">AD</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
+                </div>
+                <span class="text-gray-400">|</span>
+                <span class="text-sm text-gray-600">Panel Administrador</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-4 text-sm">
+                    <div class="relative">
+                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
+                            🔔
+                        </button>
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
+                    </div>
+                    <div class="flex items-center space-x-2 text-gray-600">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <span>👨‍💼</span>
+                        </div>
+                        <span>Admin Sistema</span>
+                    </div>
+                </div>
+                <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="logout()">
+                    🚪
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <nav class="flex-1 p-4 space-y-2">
+                <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📊</span>
+                        <span class="font-medium">Dashboard</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('users')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">👥</span>
+                        <span class="font-medium">Gestión de Usuarios</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">🎫</span>
+                        <span class="font-medium">Gestión de Tickets</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📈</span>
+                        <span class="font-medium">Reportes y Analytics</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('integrations')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">🔗</span>
+                        <span class="font-medium">Integraciones</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('settings')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">⚙️</span>
+                        <span class="font-medium">Configuración</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('audit')">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">🔍</span>
+                        <span class="font-medium">Auditoría</span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Contenido Principal -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="p-6">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Ejecutivo</h2>
+                    <p class="text-gray-600">Resumen general del sistema ServiceDesk TI</p>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Total Tickets</p>
+                                <p class="text-3xl font-bold text-gray-900">1,247</p>
+                                <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🎫</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
+                                <p class="text-3xl font-bold text-gray-900">342</p>
+                                <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">👥</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                                <p class="text-3xl font-bold text-gray-900">2.4h</p>
+                                <p class="text-sm text-red-600">↗ +5% vs mes anterior</p>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">⏱️</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Satisfacción</p>
+                                <p class="text-3xl font-bold text-gray-900">94%</p>
+                                <p class="text-sm text-green-600">↗ +2% vs mes anterior</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">⭐</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets por Estado</h3>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Mensual</h3>
+                        <div class="chart-container">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente del Sistema</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <span class="text-2xl">🆕</span>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">Nuevo usuario registrado</p>
+                                <p class="text-sm text-gray-600">María Rodríguez se unió al departamento de Ventas</p>
+                            </div>
+                            <span class="text-sm text-gray-500">Hace 5 min</span>
+                        </div>
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <span class="text-2xl">⚠️</span>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">Ticket urgente asignado</p>
+                                <p class="text-sm text-gray-600">TK-1248 - Servidor principal sin respuesta</p>
+                            </div>
+                            <span class="text-sm text-gray-500">Hace 12 min</span>
+                        </div>
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <span class="text-2xl">✅</span>
+                            <div class="flex-1">
+                                <p class="font-medium text-gray-900">Integración completada</p>
+                                <p class="text-sm text-gray-600">Conexión con Microsoft Teams establecida</p>
+                            </div>
+                            <span class="text-sm text-gray-500">Hace 1 hora</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="users-section" class="p-6 hidden">
+                <div class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
+                        <p class="text-gray-600">Administra usuarios, roles y permisos del sistema</p>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" onclick="showCreateUserModal()">
+                        ➕ Nuevo Usuario
+                    </button>
+                </div>
+
+                <!-- User Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span>👤</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Clientes</p>
+                                <p class="text-xl font-bold">287</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span>👨‍💻</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Agentes</p>
+                                <p class="text-xl font-bold">24</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <span>👨‍💼</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Supervisores</p>
+                                <p class="text-xl font-bold">8</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span>👨‍💼</span>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-600">Administradores</p>
+                                <p class="text-xl font-bold">3</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Lista de Usuarios</h3>
+                            <div class="flex space-x-3">
+                                <input type="text" placeholder="Buscar usuarios..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Todos los roles</option>
+                                    <option value="cliente">Clientes</option>
+                                    <option value="agente">Agentes</option>
+                                    <option value="supervisor">Supervisores</option>
+                                    <option value="admin">Administradores</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último acceso</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tickets Section -->
+            <div id="tickets-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Tickets</h2>
+                    <p class="text-gray-600">Supervisa y administra todos los tickets del sistema</p>
+                </div>
+
+                <!-- Ticket Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-blue-600">45</p>
+                            <p class="text-sm text-gray-600">Abiertos</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-yellow-600">32</p>
+                            <p class="text-sm text-gray-600">En Progreso</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-purple-600">18</p>
+                            <p class="text-sm text-gray-600">Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-green-600">156</p>
+                            <p class="text-sm text-gray-600">Resueltos</p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <div class="text-center">
+                            <p class="text-2xl font-bold text-red-600">8</p>
+                            <p class="text-sm text-gray-600">Urgentes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tickets Management -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Tickets Recientes</h3>
+                            <div class="flex space-x-3">
+                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>Todos los estados</option>
+                                    <option>Abiertos</option>
+                                    <option>En progreso</option>
+                                    <option>Urgentes</option>
+                                </select>
+                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>Todas las categorías</option>
+                                    <option>Hardware</option>
+                                    <option>Software</option>
+                                    <option>Red</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="ticketsList">
+                            <!-- Tickets will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Reportes y Analytics</h2>
+                    <p class="text-gray-600">Análisis detallado del rendimiento del sistema</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Rendimiento por Agente</h3>
+                        <div class="chart-container">
+                            <canvas id="agentPerformanceChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets por Categoría</h3>
+                        <div class="chart-container">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Configuración del Sistema</h2>
+                    <p class="text-gray-600">Administra la configuración general del ServiceDesk</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuración General</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Sistema</label>
+                                <input type="text" value="ServiceDesk TI" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email de Notificaciones</label>
+                                <input type="email" value="admin@empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tiempo de Sesión (minutos)</label>
+                                <input type="number" value="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Estados y Categorías</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Estados de Tickets</label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span>Abierto</span>
+                                        <button class="text-red-600 hover:text-red-800">🗑️</button>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span>En Progreso</span>
+                                        <button class="text-red-600 hover:text-red-800">🗑️</button>
+                                    </div>
+                                </div>
+                                <button class="mt-2 text-blue-600 hover:text-blue-800 text-sm">+ Agregar Estado</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integrations Section -->
+            <div id="integrations-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Integraciones</h2>
+                    <p class="text-gray-600">Gestiona las integraciones con sistemas externos</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">📧</span>
+                                <h3 class="font-semibold">Email</h3>
+                            </div>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Activo</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">Recepción automática de tickets por email</p>
+                        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Configurar
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">💬</span>
+                                <h3 class="font-semibold">Microsoft Teams</h3>
+                            </div>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Activo</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">Notificaciones y gestión desde Teams</p>
+                        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Configurar
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-2xl">🤖</span>
+                                <h3 class="font-semibold">Chatbot</h3>
+                            </div>
+                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Inactivo</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">Asistente automático para usuarios</p>
+                        <button class="w-full bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                            Activar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Section -->
+            <div id="audit-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Auditoría del Sistema</h2>
+                    <p class="text-gray-600">Registro de todas las actividades del sistema</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Registro de Auditoría</h3>
+                            <div class="flex space-x-3">
+                                <input type="date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option>Todas las acciones</option>
+                                    <option>Login/Logout</option>
+                                    <option>Creación de tickets</option>
+                                    <option>Modificaciones</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="auditLog">
+                            <!-- Audit entries will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data based on database structure
+        const sampleUsers = [
+            { id: 1, nombre: 'Carlos Mendoza', correo: 'carlos.mendoza@empresa.com', rol: 'Cliente', departamento: 'Ventas', estado: 'activo', ultimo_acceso: '2024-01-15 10:30' },
+            { id: 2, nombre: 'Ana López', correo: 'ana.lopez@empresa.com', rol: 'Agente', departamento: 'TI', estado: 'activo', ultimo_acceso: '2024-01-15 11:45' },
+            { id: 3, nombre: 'María González', correo: 'maria.gonzalez@empresa.com', rol: 'Cliente', departamento: 'Contabilidad', estado: 'activo', ultimo_acceso: '2024-01-15 09:15' },
+            { id: 4, nombre: 'Roberto Silva', correo: 'roberto.silva@empresa.com', rol: 'Supervisor', departamento: 'TI', estado: 'activo', ultimo_acceso: '2024-01-15 08:30' }
+        ];
+
+        const sampleTickets = [
+            { id: 'TK-1248', titulo: 'Computadora no enciende', usuario: 'Carlos Mendoza', categoria: 'Hardware', estado: 'abierto', prioridad: 'alta', fecha: '2024-01-15 09:30' },
+            { id: 'TK-1247', titulo: 'Error en aplicación contable', usuario: 'María González', categoria: 'Software', estado: 'en-progreso', prioridad: 'media', fecha: '2024-01-15 08:45' },
+            { id: 'TK-1246', titulo: 'Sin acceso a internet', usuario: 'Roberto Silva', categoria: 'Red', estado: 'pendiente', prioridad: 'alta', fecha: '2024-01-14 16:20' }
+        ];
+
+        const sampleAuditLog = [
+            { usuario: 'Admin Sistema', accion: 'Inicio de sesión', detalle: 'Acceso desde IP 192.168.1.100', fecha: '2024-01-15 11:45' },
+            { usuario: 'Ana López', accion: 'Ticket asignado', detalle: 'TK-1248 asignado a Ana López', fecha: '2024-01-15 11:30' },
+            { usuario: 'Carlos Mendoza', accion: 'Ticket creado', detalle: 'TK-1248 - Computadora no enciende', fecha: '2024-01-15 09:30' }
+        ];
+
+        let currentSection = 'dashboard';
+
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('[id$="-section"]').forEach(el => el.classList.add('hidden'));
+            
+            // Show selected section
+            document.getElementById(section + '-section').classList.remove('hidden');
+            
+            // Update sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.sidebar-item').classList.add('active');
+            
+            currentSection = section;
+            
+            // Load section-specific data
+            if (section === 'users') loadUsers();
+            if (section === 'tickets') loadTickets();
+            if (section === 'audit') loadAuditLog();
+            if (section === 'reports') loadReports();
+        }
+
+        function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = sampleUsers.map(user => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-sm">👤</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
+                                <div class="text-sm text-gray-500">${user.correo}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeClass(user.rol)}">
+                            ${user.rol}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.departamento}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${user.estado}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ultimo_acceso}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="editUser(${user.id})">Editar</button>
+                        <button class="text-red-600 hover:text-red-900" onclick="deleteUser(${user.id})">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function loadTickets() {
+            const container = document.getElementById('ticketsList');
+            container.innerHTML = sampleTickets.map(ticket => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-lg">${getCategoryIcon(ticket.categoria)}</span>
+                        <div>
+                            <h4 class="font-medium text-gray-900">${ticket.titulo}</h4>
+                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.usuario}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(ticket.estado)}">
+                            ${ticket.estado}
+                        </span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.prioridad)}">
+                            ${ticket.prioridad}
+                        </span>
+                        <span class="text-sm text-gray-500">${ticket.fecha}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadAuditLog() {
+            const container = document.getElementById('auditLog');
+            container.innerHTML = sampleAuditLog.map(entry => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-lg">📝</span>
+                        <div>
+                            <h4 class="font-medium text-gray-900">${entry.accion}</h4>
+                            <p class="text-sm text-gray-600">${entry.detalle}</p>
+                            <p class="text-xs text-gray-500">Por: ${entry.usuario}</p>
+                        </div>
+                    </div>
+                    <span class="text-sm text-gray-500">${entry.fecha}</span>
+                </div>
+            `).join('');
+        }
+
+        function loadReports() {
+            // Agent Performance Chart
+            const agentCtx = document.getElementById('agentPerformanceChart').getContext('2d');
+            new Chart(agentCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Ana López', 'Juan Pérez', 'Sofía Martínez', 'Carlos Ruiz'],
+                    datasets: [{
+                        label: 'Tickets Resueltos',
+                        data: [45, 38, 42, 35],
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Category Chart
+            const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hardware', 'Software', 'Red', 'Correo', 'Acceso'],
+                    datasets: [{
+                        data: [35, 28, 20, 12, 5],
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function getRoleBadgeClass(rol) {
+            const classes = {
+                'Cliente': 'bg-blue-100 text-blue-800',
+                'Agente': 'bg-green-100 text-green-800',
+                'Supervisor': 'bg-yellow-100 text-yellow-800',
+                'Administrador': 'bg-purple-100 text-purple-800'
+            };
+            return classes[rol] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getStatusBadgeClass(estado) {
+            const classes = {
+                'abierto': 'bg-blue-100 text-blue-800',
+                'en-progreso': 'bg-yellow-100 text-yellow-800',
+                'pendiente': 'bg-purple-100 text-purple-800',
+                'resuelto': 'bg-green-100 text-green-800'
+            };
+            return classes[estado] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getPriorityBadgeClass(prioridad) {
+            const classes = {
+                'baja': 'bg-gray-100 text-gray-800',
+                'media': 'bg-blue-100 text-blue-800',
+                'alta': 'bg-orange-100 text-orange-800',
+                'urgente': 'bg-red-100 text-red-800'
+            };
+            return classes[prioridad] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getCategoryIcon(categoria) {
+            const icons = {
+                'Hardware': '🖥️',
+                'Software': '💾',
+                'Red': '🌐',
+                'Correo': '📧',
+                'Acceso': '🔐'
+            };
+            return icons[categoria] || '❓';
+        }
+
+        function showCreateUserModal() {
+            showNotification('Modal de creación de usuario en desarrollo', 'info');
+        }
+
+        function editUser(id) {
+            showNotification(`Editando usuario ID: ${id}`, 'info');
+        }
+
+        function deleteUser(id) {
+            if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+                showNotification(`Usuario ID: ${id} eliminado`, 'success');
+            }
+        }
+
+        function showNotifications() {
+            showNotification('Panel de notificaciones en desarrollo', 'info');
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                showNotification('Cerrando sesión...', 'info');
+                setTimeout(() => {
+                    console.log('Redirect to login');
+                }, 1500);
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+            const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500', warning: 'bg-yellow-500' };
+            
+            notification.className = `fixed top-4 right-4 flex items-center space-x-2 px-4 py-3 rounded-lg text-white shadow-lg z-50 fade-in ${colors[type]}`;
+            notification.innerHTML = `<span>${icons[type]}</span><span class="text-sm font-medium">${message}</span>`;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 4000);
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Status Chart
+            const statusCtx = document.getElementById('statusChart').getContext('2d');
+            new Chart(statusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Abiertos', 'En Progreso', 'Pendientes', 'Resueltos'],
+                    datasets: [{
+                        data: [45, 32, 18, 156],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Trend Chart
+            const trendCtx = document.getElementById('trendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Tickets Creados',
+                        data: [65, 78, 90, 81, 95, 102],
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Tickets Resueltos',
+                        data: [60, 75, 85, 85, 92, 98],
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9891fead2396f776',t:'MTc1OTU1Mjc2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

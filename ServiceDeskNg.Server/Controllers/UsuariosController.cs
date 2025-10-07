@@ -15,14 +15,17 @@ namespace ServiceDeskNg.Server.Controllers
             _repository = repository;
         }
 
+        // GET: api/Usuarios
         [HttpGet]
-        public ActionResult<IEnumerable<Usuario>> GetUsuarios()
+        public ActionResult<IEnumerable<Usuario>> GetAll()
         {
-            return Ok(_repository.GetAll());
+            var usuarios = _repository.GetAll();
+            return Ok(usuarios);
         }
 
+        // GET: api/Usuarios/5
         [HttpGet("{id}")]
-        public ActionResult<Usuario> GetUsuario(int id)
+        public ActionResult<Usuario> GetById(int id)
         {
             var usuario = _repository.GetById(id);
             if (usuario == null)
@@ -31,28 +34,31 @@ namespace ServiceDeskNg.Server.Controllers
             return Ok(usuario);
         }
 
+        // POST: api/Usuarios
         [HttpPost]
-        public IActionResult PostUsuario([FromBody] Usuario usuario)
+        public IActionResult Create([FromBody] Usuario usuario)
         {
             if (usuario == null)
-                return BadRequest();
+                return BadRequest("El usuario no puede ser nulo.");
 
             _repository.Add(usuario);
-            return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, usuario);
+            return CreatedAtAction(nameof(GetById), new { id = usuario.IdUsuario }, usuario);
         }
 
+        // PUT: api/Usuarios/5
         [HttpPut("{id}")]
-        public IActionResult PutUsuario(int id, [FromBody] Usuario usuario)
+        public IActionResult Update(int id, [FromBody] Usuario usuario)
         {
             if (usuario == null || id != usuario.IdUsuario)
-                return BadRequest();
+                return BadRequest("Datos inválidos.");
 
             _repository.Update(usuario);
             return NoContent();
         }
 
+        // DELETE: api/Usuarios/5
         [HttpDelete("{id}")]
-        public IActionResult DeleteUsuario(int id)
+        public IActionResult Delete(int id)
         {
             var usuario = _repository.GetById(id);
             if (usuario == null)

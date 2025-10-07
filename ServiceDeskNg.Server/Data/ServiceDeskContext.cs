@@ -17,21 +17,21 @@ public partial class ServiceDeskContext : DbContext
     {
     }
 
-    public virtual DbSet<Administradore> Administradores { get; set; }
+    public virtual DbSet<Administrador> Administradores { get; set; }
 
     public virtual DbSet<Agente> Agentes { get; set; }
 
-    public virtual DbSet<Auditorium> Auditoria { get; set; }
+    public virtual DbSet<Auditoria> Auditoria { get; set; }
 
     public virtual DbSet<Cliente> Clientes { get; set; }
 
-    public virtual DbSet<Integracione> Integraciones { get; set; }
+    public virtual DbSet<Integracion> Integraciones { get; set; }
 
     public virtual DbSet<NivelesAcceso> NivelesAccesos { get; set; }
 
-    public virtual DbSet<Sesione> Sesiones { get; set; }
+    public virtual DbSet<Sesion> Sesiones { get; set; }
 
-    public virtual DbSet<Supervisore> Supervisores { get; set; }
+    public virtual DbSet<Supervisor> Supervisores { get; set; }
 
     public virtual DbSet<Ticket> Tickets { get; set; }
 
@@ -47,7 +47,7 @@ public partial class ServiceDeskContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;port=3306;database=servicedesk;user=root;password=2852", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.41-mysql"));
+        => optionsBuilder.UseMySql("server=localhost;port=3306;database=servicedesk;user=root;password=12345", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.41-mysql"));
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,7 +55,7 @@ public partial class ServiceDeskContext : DbContext
             .UseCollation("utf8mb4_0900_ai_ci")
             .HasCharSet("utf8mb4");
 
-        modelBuilder.Entity<Administradore>(entity =>
+        modelBuilder.Entity<Administrador>(entity =>
         {
             entity.HasKey(e => e.IdAdmin).HasName("PRIMARY");
 
@@ -112,7 +112,7 @@ public partial class ServiceDeskContext : DbContext
                 .HasConstraintName("agentes_ibfk_1");
         });
 
-        modelBuilder.Entity<Auditorium>(entity =>
+        modelBuilder.Entity<Auditoria>(entity =>
         {
             entity.HasKey(e => e.IdAuditoria).HasName("PRIMARY");
 
@@ -162,7 +162,7 @@ public partial class ServiceDeskContext : DbContext
                 .HasConstraintName("clientes_ibfk_1");
         });
 
-        modelBuilder.Entity<Integracione>(entity =>
+        modelBuilder.Entity<Integracion>(entity =>
         {
             entity.HasKey(e => e.IdIntegracion).HasName("PRIMARY");
 
@@ -205,7 +205,7 @@ public partial class ServiceDeskContext : DbContext
                 .HasColumnName("nombre");
         });
 
-        modelBuilder.Entity<Sesione>(entity =>
+        modelBuilder.Entity<Sesion>(entity =>
         {
             entity.HasKey(e => e.IdSesion).HasName("PRIMARY");
 
@@ -231,7 +231,7 @@ public partial class ServiceDeskContext : DbContext
                 .HasConstraintName("sesiones_ibfk_1");
         });
 
-        modelBuilder.Entity<Supervisore>(entity =>
+        modelBuilder.Entity<Supervisor>(entity =>
         {
             entity.HasKey(e => e.IdSupervisor).HasName("PRIMARY");
 

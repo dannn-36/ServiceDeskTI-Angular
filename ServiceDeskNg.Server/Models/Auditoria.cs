@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ServiceDeskNg.Server.Models;
 
-public partial class Auditorium
+public partial class Auditoria
 {
     public int IdAuditoria { get; set; }
 

@@ -37,7 +37,7 @@ public partial class Ticket
 
     public virtual TicketsEstado IdEstadoTicketNavigation { get; set; } = null!;
 
-    public virtual ICollection<Integracione> Integraciones { get; set; } = new List<Integracione>();
+    public virtual ICollection<Integracion> Integraciones { get; set; } = new List<Integracion>();
 
     public virtual ICollection<TicketArchivo> TicketArchivos { get; set; } = new List<TicketArchivo>();
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ServiceDeskNg.Server.Models;
 
-public partial class Integracione
+public partial class Integracion
 {
     public int IdIntegracion { get; set; }
 

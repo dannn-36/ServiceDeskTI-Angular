@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ServiceDeskNg.Server.Models;
 
-public partial class Sesione
+public partial class Sesion
 {
     public int IdSesion { get; set; }
 

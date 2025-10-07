@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace ServiceDeskNg.Server.Models;
 
-public partial class Administradore
+public partial class Administrador
 {
     public int IdAdmin { get; set; }
 

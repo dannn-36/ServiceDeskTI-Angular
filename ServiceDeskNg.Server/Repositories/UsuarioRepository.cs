@@ -29,6 +29,7 @@ namespace ServiceDeskNg.Server.Repositories
         public void Update(Usuario entity)
         {
             _context.Usuarios.Update(entity);
+            _context.SaveChanges();
         }
         public void Delete(int id)
         {
@@ -39,8 +40,5 @@ namespace ServiceDeskNg.Server.Repositories
                 _context.SaveChanges();
             }
         }
-
-
-
     }
 }

@@ -23,6 +23,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
   </ItemGroup>
 
@@ -36,8 +37,8 @@
     <Folder Include="Data\" />
     <Folder Include="Models\" />
     <Folder Include="hubs\" />
-    <Folder Include="Repositories\" />
     <Folder Include="Services\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 
 </Project>

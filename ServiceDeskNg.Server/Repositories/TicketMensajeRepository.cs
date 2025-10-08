@@ -4,10 +4,10 @@ using ServiceDeskNg.Server.Repositories.Interfaces;
 
 namespace ServiceDeskNg.Server.Repositories
 {
-    public class TickerMensajeRepository : ICrudRepository<TicketMensaje>
+    public class TicketMensajeRepository : ICrudRepository<TicketMensaje>
     {
         private readonly ServiceDeskContext _context;
-        public TickerMensajeRepository(ServiceDeskContext context)
+        public TicketMensajeRepository(ServiceDeskContext context)
         {
             _context = context;
         }

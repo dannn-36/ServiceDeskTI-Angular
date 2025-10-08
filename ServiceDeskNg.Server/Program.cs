@@ -26,6 +26,20 @@ namespace ServiceDeskNg.Server
             // 🔹 INYECTAR REPOSITORIOS 
             // ======================================================
             builder.Services.AddScoped<ICrudRepository<Usuario>, UsuarioRepository>();
+            builder.Services.AddScoped<ICrudRepository<Administrador>, AdministradorRepository>();
+            builder.Services.AddScoped<ICrudRepository<Agente>, AgenteRepository>();
+            builder.Services.AddScoped<ICrudRepository<Integracion>, IntegracionRepository>();
+            builder.Services.AddScoped<ICrudRepository<Cliente>, ClienteRepository>();
+            builder.Services.AddScoped<ICrudRepository<NivelesAcceso>, NivelesAccesoRepository>();
+            builder.Services.AddScoped<ICrudRepository<Auditoria>, AuditoriaRepository>();
+            builder.Services.AddScoped<ICrudRepository<Ticket>, TicketRepository>();
+            builder.Services.AddScoped<ICrudRepository<TicketArchivo>, TicketArchivoRepository>();
+            builder.Services.AddScoped<ICrudRepository<TicketsCategoria>, TicketsCategoriaRepository>();
+            builder.Services.AddScoped<ICrudRepository<TicketMensaje>, TicketMensajeRepository>();
+            builder.Services.AddScoped<ICrudRepository<TicketsEstado>, TicketsEstadoRepository>();
+            builder.Services.AddScoped<ICrudRepository<Supervisor>, SupervisorRepository>();
+            builder.Services.AddScoped<ICrudRepository<Sesion>, SesionRepository>();
+
 
 
             // ======================================================

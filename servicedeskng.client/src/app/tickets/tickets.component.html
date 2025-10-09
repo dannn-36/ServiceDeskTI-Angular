@@ -1,15 +1,76 @@
-<h2>Ticket</h2>
-<ul>
-  <li><strong>ID Ticket:</strong> {{ ticket.idTicket }}</li>
-  <li><strong>ID Cliente:</strong> {{ ticket.idCliente }}</li>
-  <li><strong>ID Agente Asignado:</strong> {{ ticket.idAgenteAsignado }}</li>
-  <li><strong>ID Estado Ticket:</strong> {{ ticket.idEstadoTicket }}</li>
-  <li><strong>ID Categoría Ticket:</strong> {{ ticket.idCategoriaTicket }}</li>
-  <li><strong>Título:</strong> {{ ticket.tituloTicket }}</li>
-  <li><strong>Descripción:</strong> {{ ticket.descripcionTicket }}</li>
-  <li><strong>Prioridad:</strong> {{ ticket.prioridadTicket }}</li>
-  <li><strong>Ubicación:</strong> {{ ticket.ubicacionTicket }}</li>
-  <li><strong>Departamento:</strong> {{ ticket.departamentoTicket }}</li>
-  <li><strong>Fecha de Creación:</strong> {{ ticket.fechaHoraCreacionTicket }}</li>
-  <li><strong>Fecha de Actualización:</strong> {{ ticket.fechaHoraActualizacionTicket }}</li>
-</ul>
+<h2>Tickets</h2>
+
+<div *ngIf="loading">Cargando tickets...</div>
+<div *ngIf="error" class="text-red-600">{{ error }}</div>
+
+<!-- Lista de tickets -->
+<table *ngIf="tickets.length" class="min-w-full border mb-4">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Título</th>
+      <th>Cliente</th>
+      <th>Estado</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let t of tickets">
+      <td>{{ t.idTicket }}</td>
+      <td>{{ t.tituloTicket }}</td>
+      <td>{{ t.idCliente }}</td>
+      <td>{{ t.idEstadoTicket }}</td>
+      <td>
+        <button (click)="selectTicket(t)">Ver</button>
+        <button (click)="startEdit(t)">Editar</button>
+        <button (click)="deleteTicket(t)">Eliminar</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- Crear nuevo ticket -->
+<div class="mb-4">
+  <h3>Crear nuevo ticket</h3>
+  <form (ngSubmit)="createTicket()" #ticketForm="ngForm">
+    <input [(ngModel)]="newTicket.tituloTicket" name="titulo" placeholder="Título" required />
+    <input [(ngModel)]="newTicket.descripcionTicket" name="descripcion" placeholder="Descripción" required />
+    <input [(ngModel)]="newTicket.idCliente" name="idCliente" placeholder="ID Cliente" type="number" required />
+    <input [(ngModel)]="newTicket.idEstadoTicket" name="idEstadoTicket" placeholder="ID Estado" type="number" required />
+    <input [(ngModel)]="newTicket.idCategoriaTicket" name="idCategoriaTicket" placeholder="ID Categoría" type="number" required />
+    <button type="submit">Crear</button>
+  </form>
+</div>
+
+<!-- Ver/Editar ticket -->
+<div *ngIf="selectedTicket">
+  <h3>Detalle del ticket</h3>
+  <div *ngIf="!editMode">
+    <ul>
+      <li><strong>ID Ticket:</strong> {{ selectedTicket.idTicket }}</li>
+      <li><strong>Título:</strong> {{ selectedTicket.tituloTicket }}</li>
+      <li><strong>Descripción:</strong> {{ selectedTicket.descripcionTicket }}</li>
+      <li><strong>ID Cliente:</strong> {{ selectedTicket.idCliente }}</li>
+      <li><strong>ID Estado:</strong> {{ selectedTicket.idEstadoTicket }}</li>
+      <li><strong>ID Categoría:</strong> {{ selectedTicket.idCategoriaTicket }}</li>
+      <li><strong>Prioridad:</strong> {{ selectedTicket.prioridadTicket }}</li>
+      <li><strong>Ubicación:</strong> {{ selectedTicket.ubicacionTicket }}</li>
+      <li><strong>Departamento:</strong> {{ selectedTicket.departamentoTicket }}</li>
+      <li><strong>Fecha de Creación:</strong> {{ selectedTicket.fechaHoraCreacionTicket }}</li>
+      <li><strong>Fecha de Actualización:</strong> {{ selectedTicket.fechaHoraActualizacionTicket }}</li>
+    </ul>
+    <button (click)="startEdit(selectedTicket)">Editar</button>
+    <button (click)="cancelEdit()">Cerrar</button>
+  </div>
+  <div *ngIf="editMode">
+    <form (ngSubmit)="saveEdit()">
+      <input [(ngModel)]="selectedTicket.tituloTicket" name="editTitulo" required />
+      <input [(ngModel)]="selectedTicket.descripcionTicket" name="editDescripcion" required />
+      <input [(ngModel)]="selectedTicket.idCliente" name="editIdCliente" type="number" required />
+      <input [(ngModel)]="selectedTicket.idEstadoTicket" name="editIdEstado" type="number" required />
+      <input [(ngModel)]="selectedTicket.idCategoriaTicket" name="editIdCategoria" type="number" required />
+      <button type="submit">Guardar</button>
+      <button type="button" (click)="cancelEdit()">Cancelar</button>
+    </form>
+  </div>
+</div>

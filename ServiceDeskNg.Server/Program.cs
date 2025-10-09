@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ServiceDeskNg.Server.Data;
 using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Repositories; // <-- agrega esto
-using ServiceDeskNg.Server.Repositories.Interfaces; // <-- y esto si usas interfaces
+using ServiceDeskNg.Server.Repositories;
+using ServiceDeskNg.Server.Repositories.Interfaces;
+using ServiceDeskNg.Server.Hubs;
 
 namespace ServiceDeskNg.Server
 {
@@ -23,7 +24,7 @@ namespace ServiceDeskNg.Server
             );
 
             // ======================================================
-            // 🔹 INYECTAR REPOSITORIOS 
+            // 🔹 INYECTAR REPOSITORIOS
             // ======================================================
             builder.Services.AddScoped<ICrudRepository<Usuario>, UsuarioRepository>();
             builder.Services.AddScoped<ICrudRepository<Administrador>, AdministradorRepository>();
@@ -40,24 +41,17 @@ namespace ServiceDeskNg.Server
             builder.Services.AddScoped<ICrudRepository<Supervisor>, SupervisorRepository>();
             builder.Services.AddScoped<ICrudRepository<Sesion>, SesionRepository>();
 
-
-
             // ======================================================
-            // 🔹 CONFIGURAR CONTROLADORES Y VISTAS
+            // 🔹 CONTROLADORES, VISTAS Y SIGNALR
             // ======================================================
             builder.Services.AddControllersWithViews();
-            builder.Services.AddRazorPages();
-            builder.Services.AddControllers();
-
-            // ======================================================
-            // 🔹 OPENAPI (Swagger)
-            // ======================================================
+            builder.Services.AddSignalR();
             builder.Services.AddOpenApi();
 
             var app = builder.Build();
 
             // ======================================================
-            // 🔹 ARCHIVOS ESTÁTICOS Y RUTAS BASE
+            // 🔹 ARCHIVOS ESTÁTICOS
             // ======================================================
             app.UseDefaultFiles();
             app.MapStaticAssets();
@@ -83,7 +77,7 @@ namespace ServiceDeskNg.Server
             }
 
             // ======================================================
-            // 🔹 PIPELINE DE MIDDLEWARE
+            // 🔹 PIPELINE
             // ======================================================
             if (app.Environment.IsDevelopment())
             {
@@ -91,8 +85,14 @@ namespace ServiceDeskNg.Server
             }
 
             app.UseHttpsRedirection();
+            app.UseRouting();
             app.UseAuthorization();
+
+            // ======================================================
+            // 🔹 ENDPOINTS DE CONTROLADORES Y SIGNALR
+            // ======================================================
             app.MapControllers();
+            app.MapHub<ChatHub>("/chathub"); // ✅ aquí conectas SignalR
             app.MapFallbackToFile("/index.html");
 
             app.Run();

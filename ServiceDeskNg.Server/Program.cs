@@ -58,7 +58,7 @@ namespace ServiceDeskNg.Server
             // ======================================================
             // 🔹 CONFIGURAR CORS
             // ======================================================
-            var angularOrigin = "http://localhost:59435"; // Cambia al puerto de tu Angular si es necesario
+            var angularOrigin = "https://127.0.0.1:59435"; // Cambia al puerto de tu Angular si es necesario
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAngular",

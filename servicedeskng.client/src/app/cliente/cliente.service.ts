@@ -7,7 +7,7 @@ export interface Cliente {
   idUsuario: number;
   idNivel: number;
 }
-
+// hola que tal
 @Injectable({ providedIn: 'root' })
 export class ClienteService {
   private apiUrl = '/api/clientes';

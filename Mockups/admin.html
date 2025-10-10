@@ -284,7 +284,7 @@
                                 <span>👤</span>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">Clientes</p>
+                                <p class="text-sm text-gray-600">EndUsers</p>
                                 <p class="text-xl font-bold">287</p>
                             </div>
                         </div>
@@ -337,7 +337,7 @@
                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
             <select id="roleFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                 <option value="">Todos los roles</option>
-                <option value="cliente">Clientes</option>
+                <option value="enduser">EndUser</option>
                 <option value="agente">Agentes</option>
                 <option value="supervisor">Supervisores</option>
                 <option value="admin">Administradores</option>
@@ -613,7 +613,7 @@
       <div class="mb-3">
         <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
         <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-          <option value="Cliente">Cliente</option>
+          <option value="EndUser">EndUser</option>
           <option value="Agente">Agente</option>
           <option value="Supervisor">Supervisor</option>
           <option value="Administrador">Administrador</option>
@@ -654,7 +654,7 @@
 
       <label for="userRoleEdit" class="block text-sm font-medium text-gray-700 mt-2">Rol</label>
       <select id="userRoleEdit" class="w-full border border-gray-300 rounded-md p-2">
-        <option value="Cliente">Cliente</option>
+        <option value="EndUser">EndUser/option>
         <option value="Agente">Agente</option>
         <option value="Supervisor">Supervisor</option>
         <option value="Administrador">Administrador</option>
@@ -710,9 +710,9 @@
     <script>
         // Sample data based on database structure
         const sampleUsers = [
-            { id: 1, nombre: 'Carlos Mendoza', correo: 'carlos.mendoza@empresa.com', rol: 'Cliente', departamento: 'Ventas', estado: 'activo', ultimo_acceso: '2024-01-15 10:30' },
+            { id: 1, nombre: 'Carlos Mendoza', correo: 'carlos.mendoza@empresa.com', rol: 'EndUser', departamento: 'Ventas', estado: 'activo', ultimo_acceso: '2024-01-15 10:30' },
             { id: 2, nombre: 'Ana López', correo: 'ana.lopez@empresa.com', rol: 'Agente', departamento: 'TI', estado: 'activo', ultimo_acceso: '2024-01-15 11:45' },
-            { id: 3, nombre: 'María González', correo: 'maria.gonzalez@empresa.com', rol: 'Cliente', departamento: 'Contabilidad', estado: 'activo', ultimo_acceso: '2024-01-15 09:15' },
+            { id: 3, nombre: 'María González', correo: 'maria.gonzalez@empresa.com', rol: 'EndUser', departamento: 'Contabilidad', estado: 'activo', ultimo_acceso: '2024-01-15 09:15' },
             { id: 4, nombre: 'Roberto Silva', correo: 'roberto.silva@empresa.com', rol: 'Supervisor', departamento: 'TI', estado: 'activo', ultimo_acceso: '2024-01-15 08:30' }
         ];
 
@@ -854,7 +854,7 @@ function showSection(section, element) {
 
         function getRoleBadgeClass(rol) {
             const classes = {
-                'Cliente': 'bg-blue-100 text-blue-800',
+                'EndUser': 'bg-blue-100 text-blue-800',
                 'Agente': 'bg-green-100 text-green-800',
                 'Supervisor': 'bg-yellow-100 text-yellow-800',
                 'Administrador': 'bg-purple-100 text-purple-800'
@@ -1191,7 +1191,7 @@ function saveCategoryTimes() {
 // Devuelve color según rol
 function getRoleColor(role) {
     switch (role.toLowerCase()) {
-        case 'cliente': return 'bg-blue-100 text-blue-800';
+        case 'enduser': return 'bg-blue-100 text-blue-800';
         case 'agente': return 'bg-green-100 text-green-800';
         case 'supervisor': return 'bg-yellow-100 text-yellow-800';
         case 'administrador': return 'bg-purple-100 text-purple-800';
@@ -1218,7 +1218,7 @@ function restoreSystem() {
 
 function getRoleBadgeClass(rol) {
     switch(rol.toLowerCase()) {
-        case 'cliente': return 'bg-blue-100 text-blue-800';
+        case 'enduser': return 'bg-blue-100 text-blue-800';
         case 'agente': return 'bg-yellow-100 text-yellow-800';
         case 'supervisor': return 'bg-purple-100 text-purple-800';
         case 'admin': return 'bg-red-100 text-red-800';
@@ -1569,7 +1569,7 @@ const fechaHora = `${year}-${month}-${day} ${hours}:${minutes}`;
   closeCreateUserModal();
   document.getElementById('userName').value = '';
   document.getElementById('userEmail').value = '';
-  document.getElementById('userRole').value = 'Cliente';
+  document.getElementById('userRole').value = 'EndUser';
   document.getElementById('userDept').value = 'Soporte';
 
   // Actualizar estadísticas

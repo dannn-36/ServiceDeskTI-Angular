@@ -15,5 +15,6 @@ public partial class Cliente
 
     public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 
+
     public virtual ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
 }

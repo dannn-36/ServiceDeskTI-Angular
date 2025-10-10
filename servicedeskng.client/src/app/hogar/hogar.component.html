@@ -1,1 +1,352 @@
 <!-- Hogar limpio -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiceDesk TI - Iniciar Sesión</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@@300;400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .slide-in {
+      animation: slideIn 0.4s ease-out;
+    }
+
+    .floating {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .input-focus:focus {
+      transform: translateY(-2px);
+      transition: all 0.3s ease;
+    }
+
+    .btn-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+  <!-- Elementos decorativos de fondo -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-20 left-20 w-32 h-32 bg-white opacity-10 rounded-full floating"></div>
+    <div class="absolute top-40 right-32 w-20 h-20 bg-white opacity-5 rounded-full floating" style="animation-delay: -2s;"></div>
+    <div class="absolute bottom-32 left-1/4 w-24 h-24 bg-white opacity-10 rounded-full floating" style="animation-delay: -4s;"></div>
+    <div class="absolute bottom-20 right-20 w-16 h-16 bg-white opacity-5 rounded-full floating" style="animation-delay: -1s;"></div>
+  </div>
+
+  <div class="w-full max-w-md">
+    <!-- Logo y título -->
+    <div class="text-center mb-8 fade-in">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
+        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-lg">IT</span>
+        </div>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">ServiceDesk TI</h1>
+      <p class="text-blue-100">Sistema de Gestión de Soporte Técnico</p>
+    </div>
+
+    <!-- Formulario de login -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8 fade-in" style="animation-delay: 0.2s;">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2 text-center">Iniciar Sesión</h2>
+      </div>
+
+      <form id="loginForm" class="space-y-6" onsubmit="handleLogin(event)">
+        <!-- Email -->
+        <div class="slide-in" style="animation-delay: 0.4s;">
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+            Correo electrónico
+          </label>
+          <div class="relative">
+            <input type="email" id="email" name="email" required
+                   class="input-focus w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                   placeholder="carlos.mendoza@gmail.com">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="text-gray-400">📧</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contraseña -->
+        <div class="slide-in" style="animation-delay: 0.5s;">
+          <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+            Contraseña
+          </label>
+          <div class="relative">
+            <input type="password" id="password" name="password" required
+                   class="input-focus w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                   placeholder="••••••••">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span class="text-gray-400">🔒</span>
+            </div>
+            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center" onclick="togglePassword()">
+              <span class="text-gray-400 hover:text-gray-600 transition-colors" id="passwordToggle">👁️</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Recordar sesión eliminado, solo dejar el enlace de "¿Olvidaste tu contraseña?" alineado a la derecha -->
+        <div class="slide-in flex justify-end" style="animation-delay: 0.6s;">
+          <a href="#" class="text-sm text-blue-600 hover:text-blue-800 transition-colors" onclick="showForgotPassword()">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+
+        <!-- Botón de login -->
+        <button type="submit" class="btn-hover w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all slide-in" style="animation-delay: 0.7s;">
+          <span class="flex items-center justify-center space-x-2">
+            <span>🚀</span>
+            <span>Iniciar Sesión</span>
+          </span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <div class="text-center mt-8 text-blue-100 text-sm fade-in" style="animation-delay: 1s;">
+      <p>© 2025 ServiceDesk TI. Desarrollado por HIVE. Todos los derechos reservados.</p>
+      <p class="mt-1">Versión 2.1.0 | <a href="#" class="hover:text-white transition-colors">Soporte Técnico</a></p>
+    </div>
+  </div>
+
+  <!-- Modal de recuperación de contraseña -->
+  <div id="forgotPasswordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full fade-in">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Recuperar Contraseña</h3>
+            <button onclick="closeForgotPassword()" class="text-gray-400 hover:text-gray-600 transition-colors">
+              ✕
+            </button>
+          </div>
+          <p class="text-gray-600 mb-4">Ingresa tu correo electrónico y te enviaremos instrucciones para restablecer tu contraseña.</p>
+          <form onsubmit="handleForgotPassword(event)">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Correo electrónico</label>
+              <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="tu.email@gmail.com">
+            </div>
+            <div class="flex space-x-3">
+              <button type="button" onclick="closeForgotPassword()" class="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Cancelar
+              </button>
+              <button type="submit" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Enviar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notificaciones -->
+  <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+  <script>
+        // Usuarios de ejemplo
+        const users = [
+            { email: 'carlos.mendoza@gmail.com', password: '123456', name: 'Carlos Mendoza', department: 'Ventas' },
+            { email: 'maria.gonzalez@gmail.com', password: '123456', name: 'María González', department: 'Contabilidad' },
+            { email: 'roberto.silva@gmail.com', password: '123456', name: 'Roberto Silva', department: 'Marketing' },
+            { email: 'ana.lopez@gmail.com', password: 'admin123', name: 'Ana López', role: 'Agente TI Senior' },
+            { email: 'juan.perez@gmail.com', password: 'admin123', name: 'Juan Pérez', role: 'Agente TI' },
+            { email: 'sofia.martinez@gmail.com', password: 'admin123', name: 'Sofía Martínez', role: 'Supervisora TI' }
+        ];
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const passwordToggle = document.getElementById('passwordToggle');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.textContent = '🙈';
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.textContent = '👁️';
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const email = formData.get('email');
+            const password = formData.get('password');
+
+            // Validar credenciales
+            const user = users.find(u => u.email === email && u.password === password);
+
+            if (user) {
+                showNotification('¡Inicio de sesión exitoso! Redirigiendo...', 'success');
+                setTimeout(() => {
+                    showNotification('Redirigiendo...', 'info');
+                    // Aquí redirigiría según el tipo de usuario si lo deseas
+                    console.log('Redirigir a la vista correspondiente');
+                }, 1500);
+            } else {
+                showNotification('Credenciales incorrectas. Verifica tu email y contraseña.', 'error');
+                // Efecto de shake en el formulario
+                const form = document.getElementById('loginForm');
+                form.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    form.style.animation = '';
+                }, 500);
+            }
+        }
+
+        function showForgotPassword() {
+            document.getElementById('forgotPasswordModal').classList.remove('hidden');
+        }
+
+        function closeForgotPassword() {
+            document.getElementById('forgotPasswordModal').classList.add('hidden');
+        }
+
+        function handleForgotPassword(event) {
+            event.preventDefault();
+            const email = event.target.querySelector('input[type="email"]').value;
+
+            showNotification(`Se han enviado las instrucciones de recuperación a ${email}`, 'success');
+            closeForgotPassword();
+            event.target.reset();
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            const icons = {
+                success: '✅',
+                error: '❌',
+                info: 'ℹ️',
+                warning: '⚠️'
+            };
+
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500',
+                warning: 'bg-yellow-500'
+            };
+
+            notification.className = `flex items-center space-x-2 px-4 py-3 rounded-lg text-white shadow-lg fade-in ${colors[type]}`;
+            notification.innerHTML = `
+                <span>${icons[type]}</span>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+
+            document.getElementById('notifications').appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 4000);
+        }
+
+        // Agregar animación de shake
+        const shakeKeyframes = `
+            @@keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+            @@keyframes fadeOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-10px); }
+            }
+        `;
+
+        const style = document.createElement('style');
+        style.textContent = shakeKeyframes;
+        document.head.appendChild(style);
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            // updateUserType(); // ELIMINADA
+
+            // Auto-completar credenciales al hacer clic en los ejemplos
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.bg-gray-50')) {
+                    const emailInput = document.getElementById('email');
+                    const passwordInput = document.getElementById('password');
+                    // Por defecto cargar el primer usuario de ejemplo
+                    emailInput.value = 'carlos.mendoza@gmail.com';
+                    passwordInput.value = '123456';
+                    showNotification('Credenciales cargadas. ¡Haz clic en "Iniciar Sesión"!', 'info');
+                }
+            });
+        });
+
+        // Cerrar modal al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            if (event.target.id === 'forgotPasswordModal') {
+                closeForgotPassword();
+            }
+        });
+
+        // Atajos de teclado
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeForgotPassword();
+            }
+        });
+  </script>
+  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c35d78e43c02f1',t:'MTc1NzM4NjA5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>

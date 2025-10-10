@@ -1,32 +1,35 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface Cliente {
+export interface cliente {
   idCliente: number;
-  idUsuario: number;
-  idNivel: number;
+  idUsuario?: number;
+  IdNivel?: number;
+ 
 }
-// hola que tal
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
+
 export class ClienteService {
-  private apiUrl = '/api/clientes';
 
-  constructor(private http: HttpClient) {}
+  private apiUrl = 'http://localhost:5076/api/clientes'; // URL de tu backend
 
-  getAll(): Observable<Cliente[]> {
-    return this.http.get<Cliente[]>(this.apiUrl);
+  constructor(private http: HttpClient) { }
+
+  getAll(): Observable<any[]> {
+    return this.http.get<any[]>(this.apiUrl);
   }
 
-  getById(id: number): Observable<Cliente> {
-    return this.http.get<Cliente>(`${this.apiUrl}/${id}`);
+  getById(id: number): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/${id}`);
   }
 
-  create(cliente: Cliente): Observable<Cliente> {
-    return this.http.post<Cliente>(this.apiUrl, cliente);
+  create(cliente: any): Observable<any> {
+    return this.http.post<any>(this.apiUrl, cliente);
   }
 
-  update(id: number, cliente: Cliente): Observable<void> {
+  update(id: number, cliente: any): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, cliente);
   }
 

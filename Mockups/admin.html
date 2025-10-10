@@ -642,6 +642,42 @@
 
 </div>
 
+<div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl w-96 p-6">
+    <h2 class="text-xl font-semibold mb-4 text-gray-800">Editar Usuario</h2>
+    <form id="editUserForm">
+      <label for="userNameEdit" class="block text-sm font-medium text-gray-700 mt-2">Nombre completo</label>
+      <input type="text" id="userNameEdit" class="w-full border border-gray-300 rounded-md p-2" required />
+
+      <label for="userEmailEdit" class="block text-sm font-medium text-gray-700 mt-2">Correo electrónico</label>
+      <input type="email" id="userEmailEdit" class="w-full border border-gray-300 rounded-md p-2" required />
+
+      <label for="userRoleEdit" class="block text-sm font-medium text-gray-700 mt-2">Rol</label>
+      <select id="userRoleEdit" class="w-full border border-gray-300 rounded-md p-2">
+        <option value="Cliente">Cliente</option>
+        <option value="Agente">Agente</option>
+        <option value="Supervisor">Supervisor</option>
+        <option value="Administrador">Administrador</option>
+      </select>
+
+      <label for="userDeptEdit" class="block text-sm font-medium text-gray-700 mt-2">Departamento</label>
+      <select id="userDeptEdit" class="w-full border border-gray-300 rounded-md p-2">
+        <option value="Ventas">Ventas</option>
+        <option value="TI">TI</option>
+        <option value="Contabilidad">Contabilidad</option>
+        <option value="Soporte">Soporte</option>
+      </select>
+
+      <div class="flex justify-end space-x-2 mt-5">
+        <button type="button" onclick="closeEditUserModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
  <!-- Modal de edición de perfil  (PONER AL FINAL PARA QUE SIRVA EN TODA LA VISTA) -->
 
 <div id="profileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
@@ -761,7 +797,8 @@ function showSection(section, element) {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ultimo_acceso}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="editUser(${user.id})">Editar</button>
+                       <button onclick="editUser(${user.id})">Editar</button>
+
                         <button class="text-red-600 hover:text-red-900" onclick="deleteUser(${user.id})">Eliminar</button>
                     </td>
                 </tr>
@@ -862,9 +899,37 @@ function showSection(section, element) {
             showNotification('Modal de creación de usuario en desarrollo', 'info');
         }
 
-        function editUser(id) {
-            showNotification(`Editando usuario ID: ${id}`, 'info');
-        }
+      let currentEditUserId = null;
+
+function editUser(id) {
+  const user = sampleUsers.find(u => u.id === id);
+  if (!user) return alert("Usuario no encontrado.");
+  currentEditUserId = id;
+  document.getElementById("userNameEdit").value = user.nombre;
+  document.getElementById("userEmailEdit").value = user.correo;
+  document.getElementById("userRoleEdit").value = user.rol;
+  document.getElementById("userDeptEdit").value = user.departamento;
+  document.getElementById("editUserModal").classList.remove("hidden");
+}
+
+function closeEditUserModal() {
+  document.getElementById("editUserModal").classList.add("hidden");
+  currentEditUserId = null;
+}
+
+document.getElementById("editUserForm").addEventListener("submit", function(event) {
+  event.preventDefault();
+  if (currentEditUserId === null) return alert("No hay usuario seleccionado para editar.");
+  const user = sampleUsers.find(u => u.id === currentEditUserId);
+  if (!user) return alert("Usuario no encontrado.");
+  user.nombre = document.getElementById("userNameEdit").value.trim();
+  user.correo = document.getElementById("userEmailEdit").value.trim();
+  user.rol = document.getElementById("userRoleEdit").value;
+  user.departamento = document.getElementById("userDeptEdit").value;
+  renderUsers();
+  closeEditUserModal();
+  alert("¡Datos actualizados correctamente!");
+});
 
         function deleteUser(id) {
             if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
@@ -1092,7 +1157,8 @@ function renderUsers() {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ultimo_acceso}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-4">
-                <button class="text-blue-600 hover:text-blue-900 font-medium" title="Editar">Editar</button>
+             <button onclick="editUser(${user.id})">Editar</button>
+
                 <button class="text-red-600 hover:text-red-900 font-medium" title="Eliminar" onclick="deleteUser(${user.id})">Eliminar</button>
             </td>
         `;
@@ -1217,7 +1283,7 @@ document.getElementById('roleFilter').addEventListener('change', filterUsers);
 loadUsers();
 
 // Placeholder para funciones de acción
-function editUser(id) { alert('Editar usuario ID: ' + id); }
+
 function deleteUser(id) { alert('Eliminar usuario ID: ' + id); }
 
  // Guardar tiempos definidos
@@ -1254,7 +1320,7 @@ document.getElementById('roleFilter').addEventListener('change', filterUsers);
 loadUsers();
 
 // Placeholder para funciones de acción
-function editUser(id) { alert('Editar usuario ID: ' + id); }
+
 function deleteUser(id) { alert('Eliminar usuario ID: ' + id); }
 
 function getCategoryIcon(categoria) {

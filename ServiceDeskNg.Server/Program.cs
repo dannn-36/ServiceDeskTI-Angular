@@ -58,13 +58,20 @@ namespace ServiceDeskNg.Server
             // ======================================================
             // 🔹 CONFIGURAR CORS
             // ======================================================
-            var angularOrigin = "https://127.0.0.1:59435"; // Cambia al puerto de tu Angular si es necesario
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAngular",
-                    policy => policy.WithOrigins(angularOrigin)
-                                    .AllowAnyHeader()
-                                    .AllowAnyMethod());
+                options.AddPolicy("AllowAngular", policy =>
+                {
+                    policy.WithOrigins(
+                        "https://127.0.0.1:59435",
+                        "http://127.0.0.1:59435",
+                        "https://localhost:59435",
+                        "http://localhost:59435"
+                    )
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+                 
+                });
             });
 
             var app = builder.Build();
@@ -96,7 +103,7 @@ namespace ServiceDeskNg.Server
             }
 
             // ======================================================
-            // 🔹 PIPELINE
+            // 🔹 PIPELINE DE EJECUCIÓN
             // ======================================================
             if (app.Environment.IsDevelopment())
             {
@@ -106,7 +113,7 @@ namespace ServiceDeskNg.Server
             app.UseHttpsRedirection();
             app.UseRouting();
 
-            // Aplica la política de CORS aquí
+            // 🔹 APLICAR POLÍTICA DE CORS
             app.UseCors("AllowAngular");
 
             app.UseAuthorization();
@@ -115,7 +122,7 @@ namespace ServiceDeskNg.Server
             // 🔹 ENDPOINTS DE CONTROLADORES Y SIGNALR
             // ======================================================
             app.MapControllers();
-            app.MapHub<ChatHub>("/chathub"); // ✅ aquí conectas SignalR
+            app.MapHub<ChatHub>("/chathub");
             app.MapFallbackToFile("/index.html");
 
             app.Run();

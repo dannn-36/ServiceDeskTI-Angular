@@ -18,31 +18,52 @@
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-3">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <span class="text-white font-bold text-sm">IT</span>
-                        </div>
-                        <h1 class="text-xl font-bold text-gray-900">Portal de Soporte TI</h1>
+<header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">IT</span>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" onclick="showProfileModal()">
-                        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span>👤</span>
-                        </div>
-                        <span id="profileName">Carlos Mendoza</span>
-                    </div>
-                    <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="showProfileModal()">
-                        ⚙️
-                    </button>
+                    <h1 class="text-xl font-bold text-gray-900">Portal de Soporte TI</h1>
                 </div>
             </div>
+
+            <!-- Lado derecho -->
+            <div class="flex items-center space-x-4">
+                <!-- Perfil -->
+                <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" onclick="showProfileModal()">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span>👤</span>
+                    </div>
+                    <span id="profileName">Carlos Mendoza</span>
+                </div>
+
+                <!-- Ajustes -->
+                <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="showProfileModal()" aria-label="Ajustes">
+                    ⚙️
+                </button>
+
+                <!-- Botón de cerrar sesión (puerta) -->
+                <button id="logoutBtn"
+                    class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                    onclick="confirmLogout()"
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5" fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+                    </svg>
+                    <span class="text-sm font-medium">Salir</span>
+                </button>
+            </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -913,6 +934,14 @@
                 closeTicketDetailModal();
             }
         });
+
+function confirmLogout() {
+    const confirmExit = confirm("¿Deseas cerrar sesión?");
+    if (confirmExit) {
+        window.location.href = "/logout"; // cambia la ruta según tu backend
+    }
+};
+
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c312a1043902f1',t:'MTc1NzM4MzAyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

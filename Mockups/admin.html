@@ -25,89 +25,125 @@
     </style>
 </head>
 <body class="bg-gray-50 h-screen overflow-hidden">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
-        <div class="h-full px-6 flex justify-between items-center">
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                        <span class="text-white font-bold text-sm">AD</span>
-                    </div>
-                    <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
+
+<!-- Header -->
+<header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
+    <div class="h-full px-6 flex justify-between items-center">
+        <!-- Lado izquierdo -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">AD</span>
                 </div>
-                <span class="text-gray-400">|</span>
-                <span class="text-sm text-gray-600">Panel Administrador</span>
+                <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
             </div>
-            <div class="flex items-center space-x-4">
-                <div class="flex items-center space-x-4 text-sm">
-                    <div class="relative">
-                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
-                            🔔
-                        </button>
-                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
-                    </div>
-                    <div class="flex items-center space-x-2 text-gray-600">
-                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                            <span>👨‍💼</span>
-                        </div>
-                        <span>Admin Sistema</span>
-                    </div>
-                </div>
-                <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="logout()">
-                    🚪
-                </button>
-            </div>
+            <span class="text-gray-400">|</span>
+            <span class="text-sm text-gray-600">Panel Administrador</span>
         </div>
-    </header>
+
+        <!-- Lado derecho -->
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-4 text-sm">
+                <!-- Notificaciones -->
+                <div class="relative">
+                    <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
+                        🔔
+                    </button>
+                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
+                </div>
+
+                <!-- Perfil admin -->
+                <div class="flex items-center space-x-2 text-gray-600 cursor-pointer" onclick="showProfileModal()">
+                    <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span>👨‍💼</span>
+                    </div>
+                    <span id="profileName">Admin Sistema</span>
+                </div>
+            </div>
+
+            <!-- Botón de ajustes -->
+            <button class="text-gray-400 hover:text-gray-600 transition-colors"
+                    onclick="showProfileModal()" aria-label="Ajustes" title="Editar perfil">
+                ⚙️
+            </button>
+
+            <!-- Botón de cerrar sesión (puerta SVG) -->
+            <button id="logoutBtn"
+                class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                onclick="confirmLogout()"
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-5 w-5" fill="none"
+                     viewBox="0 0 24 24"
+                     stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+                </svg>
+                <span class="text-sm font-medium">Salir</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+
+
+
 
     <div class="flex h-full">
-        <!-- Sidebar -->
-        <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
-            <nav class="flex-1 p-4 space-y-2">
-                <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">📊</span>
-                        <span class="font-medium">Dashboard</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('users')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">👥</span>
-                        <span class="font-medium">Gestión de Usuarios</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">🎫</span>
-                        <span class="font-medium">Gestión de Tickets</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">📈</span>
-                        <span class="font-medium">Reportes y Analytics</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('integrations')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">🔗</span>
-                        <span class="font-medium">Integraciones</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('settings')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">⚙️</span>
-                        <span class="font-medium">Configuración</span>
-                    </div>
-                </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('audit')">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">🔍</span>
-                        <span class="font-medium">Auditoría</span>
-                    </div>
-                </div>
-            </nav>
+
+       <!-- Sidebar -->
+<div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <nav class="flex-1 p-4 space-y-2">
+        <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard', this)">
+    <div class="flex items-center space-x-3">
+        <span class="text-lg">📊</span>
+        <span class="font-medium">Dashboard</span>
+    </div>
+</div>
+<div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('users', this)">
+    <div class="flex items-center space-x-3">
+        <span class="text-lg">👥</span>
+        <span class="font-medium">Gestión de Usuarios</span>
+    </div>
+</div>
+
+        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+             onclick="showSection('tickets', this)">
+            <div class="flex items-center space-x-3 w-full">
+                <span class="text-lg">🎫</span>
+                <span class="font-medium">Gestión de Tickets</span>
+            </div>
         </div>
+
+        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+             onclick="showSection('reports', this)">
+            <div class="flex items-center space-x-3 w-full">
+                <span class="text-lg">📈</span>
+                <span class="font-medium">Reportes y Analytics</span>
+            </div>
+        </div>
+
+       
+
+        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+             onclick="showSection('settings', this)">
+            <div class="flex items-center space-x-3 w-full">
+                <span class="text-lg">⚙️</span>
+                <span class="font-medium">Configuración</span>
+            </div>
+        </div>
+
+        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+             onclick="showSection('audit', this)">
+            <div class="flex items-center space-x-3 w-full">
+                <span class="text-lg">🔍</span>
+                <span class="font-medium">Auditoría</span>
+            </div>
+        </div>
+    </nav>
+</div>
+
 
         <!-- Contenido Principal -->
         <div class="flex-1 overflow-y-auto">
@@ -189,6 +225,12 @@
                         </div>
                     </div>
                 </div>
+
+
+
+                
+    
+
 
                 <!-- Recent Activity -->
                 <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
@@ -283,40 +325,45 @@
                 </div>
 
                 <!-- Users Table -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Lista de Usuarios</h3>
-                            <div class="flex space-x-3">
-                                <input type="text" placeholder="Buscar usuarios..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Todos los roles</option>
-                                    <option value="cliente">Clientes</option>
-                                    <option value="agente">Agentes</option>
-                                    <option value="supervisor">Supervisores</option>
-                                    <option value="admin">Administradores</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último acceso</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="usersTableBody">
-                                <!-- Users will be loaded here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+<!-- Users Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <!-- Header: Título + Buscador + Filtro de Roles -->
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Lista de Usuarios</h3>
+        <div class="flex space-x-3">
+            <input type="text" 
+                   id="userSearch"
+                   placeholder="Buscar usuarios..." 
+                   class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+            <select id="roleFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                <option value="">Todos los roles</option>
+                <option value="cliente">Clientes</option>
+                <option value="agente">Agentes</option>
+                <option value="supervisor">Supervisores</option>
+                <option value="admin">Administradores</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Tabla de usuarios -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                <!-- Aquí se cargarán los usuarios desde JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
             </div>
 
             <!-- Tickets Section -->
@@ -360,33 +407,39 @@
                     </div>
                 </div>
 
-                <!-- Tickets Management -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Tickets Recientes</h3>
-                            <div class="flex space-x-3">
-                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                    <option>Todos los estados</option>
-                                    <option>Abiertos</option>
-                                    <option>En progreso</option>
-                                    <option>Urgentes</option>
-                                </select>
-                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                    <option>Todas las categorías</option>
-                                    <option>Hardware</option>
-                                    <option>Software</option>
-                                    <option>Red</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4" id="ticketsList">
-                            <!-- Tickets will be loaded here -->
-                        </div>
-                    </div>
-                </div>
+ <!-- Tickets Management -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Tickets Recientes</h3>
+            <div class="flex space-x-3">
+                <input type="text" 
+                       id="ticketSearch"
+                       placeholder="Buscar tickets..." 
+                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64">
+                
+                <select id="ticketStatusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">Todos los estados</option>
+                    <option value="abierto">Abiertos</option>
+                    <option value="en-progreso">En progreso</option>
+                    <option value="pendiente">Pendientes</option>
+                </select>
+
+                <select id="ticketCategoryFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">Todas las categorías</option>
+                    <option value="hardware">Hardware</option>
+                    <option value="software">Software</option>
+                    <option value="red">Red</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="p-6">
+        <div class="space-y-4" id="ticketsList">
+            <!-- Tickets se cargarán desde JS -->
+        </div>
+    </div>
+</div>
             </div>
 
             <!-- Reports Section -->
@@ -413,137 +466,210 @@
                 </div>
             </div>
 
-            <!-- Settings Section -->
-            <div id="settings-section" class="p-6 hidden">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Configuración del Sistema</h2>
-                    <p class="text-gray-600">Administra la configuración general del ServiceDesk</p>
-                </div>
+    <!-- Configuración Section -->
+<div id="settings-section" class="p-6 hidden">
+    <!-- Título de sección -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Configuración del Sistema</h2>
+        <p class="text-gray-600">Administra la configuración general del ServiceDesk</p>
+    </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuración General</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Sistema</label>
-                                <input type="text" value="ServiceDesk TI" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Email de Notificaciones</label>
-                                <input type="email" value="admin@empresa.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Tiempo de Sesión (minutos)</label>
-                                <input type="number" value="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                            </div>
-                        </div>
+    <!-- Grid de configuración -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tiempo esperado por categoría -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Tiempo Esperado por Categoría</h3>
+                <p class="text-gray-600 mb-4">Define el tiempo esperado de respuesta según la categoría del ticket (en horas):</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🖥️ Hardware</label>
+                        <input type="number" id="time-hardware" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Estados y Categorías</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Estados de Tickets</label>
-                                <div class="space-y-2">
-                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                        <span>Abierto</span>
-                                        <button class="text-red-600 hover:text-red-800">🗑️</button>
-                                    </div>
-                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                        <span>En Progreso</span>
-                                        <button class="text-red-600 hover:text-red-800">🗑️</button>
-                                    </div>
-                                </div>
-                                <button class="mt-2 text-blue-600 hover:text-blue-800 text-sm">+ Agregar Estado</button>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">💾 Software</label>
+                        <input type="number" id="time-software" value="48" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     </div>
-                </div>
-            </div>
-
-            <!-- Integrations Section -->
-            <div id="integrations-section" class="p-6 hidden">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Integraciones</h2>
-                    <p class="text-gray-600">Gestiona las integraciones con sistemas externos</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <span class="text-2xl">📧</span>
-                                <h3 class="font-semibold">Email</h3>
-                            </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Activo</span>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-4">Recepción automática de tickets por email</p>
-                        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            Configurar
-                        </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🌐 Red</label>
+                        <input type="number" id="time-network" value="36" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <span class="text-2xl">💬</span>
-                                <h3 class="font-semibold">Microsoft Teams</h3>
-                            </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Activo</span>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-4">Notificaciones y gestión desde Teams</p>
-                        <button class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            Configurar
-                        </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📧 Correo</label>
+                        <input type="number" id="time-email" value="12" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     </div>
-
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <span class="text-2xl">🤖</span>
-                                <h3 class="font-semibold">Chatbot</h3>
-                            </div>
-                            <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Inactivo</span>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-4">Asistente automático para usuarios</p>
-                        <button class="w-full bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors">
-                            Activar
-                        </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📞 Teléfono</label>
+                        <input type="number" id="time-phone" value="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">🔐 Accesos</label>
+                        <input type="number" id="time-access" value="6" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📝 Otro</label>
+                        <input type="number" id="time-other" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                     </div>
                 </div>
             </div>
 
-            <!-- Audit Section -->
-            <div id="audit-section" class="p-6 hidden">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Auditoría del Sistema</h2>
-                    <p class="text-gray-600">Registro de todas las actividades del sistema</p>
+            <!-- Botón Guardar -->
+            <button onclick="saveCategoryTimes()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-4 self-start">
+                💾 Guardar
+            </button>
+        </div>
+
+        <!-- Respaldo y restauración -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Respaldo y Restauración</h3>
+            <p class="text-sm text-gray-600 mb-6">
+                Desde aquí puedes crear copias de seguridad del sistema o restaurar datos desde un respaldo existente.
+            </p>
+
+            <div class="space-y-6">
+                <div class="flex items-center justify-between p-0 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">Copia de seguridad manual</p>
+                        <p class="text-xs text-gray-500">Genera una copia de todos los datos del sistema.</p>
+                    </div>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-1" onclick="backupSystem()">
+                        💾 Crear respaldo
+                    </button>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Registro de Auditoría</h3>
-                            <div class="flex space-x-3">
-                                <input type="date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                                    <option>Todas las acciones</option>
-                                    <option>Login/Logout</option>
-                                    <option>Creación de tickets</option>
-                                    <option>Modificaciones</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="p-6">
-                        <div class="space-y-4" id="auditLog">
-                            <!-- Audit entries will be loaded here -->
-                        </div>
+                <div class="p-0 rounded-lg border-t border-gray-200 pt-6">
+                    <p class="text-sm font-medium text-gray-900">Restaurar desde respaldo</p>
+                    <p class="text-xs text-gray-500 mb-3">Restaura los datos desde un archivo de respaldo.</p>
+                    
+                    <div class="flex items-center space-x-2"> 
+                        <input type="file" id="restoreFile" class="hidden"> 
+                        
+                        <label for="restoreFile" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 text-sm transition-colors cursor-pointer rounded-lg border border-gray-300 whitespace-nowrap">
+                            Seleccionar archivo
+                        </label>
+                        
+                        <span id="fileName" class="text-sm text-gray-500 flex-1 whitespace-nowrap">Sin archivos seleccionados</span>
+
+                        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center space-x-1 ml-auto" onclick="restoreSystem()">
+                            ♻️ Restaurar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+            <!-- Audit Section -->
+<div id="audit-section" class="p-6 hidden">
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Auditoría del Sistema</h2>
+        <p class="text-gray-600">Registro de todas las actividades del sistema</p>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Registro de Auditoría</h3>
+                <div class="flex space-x-3">
+                    <input type="text" 
+                           id="auditSearch"
+                           placeholder="Buscar en registro..." 
+                           class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64">
+                    
+                    <input type="date" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option>Todas las acciones</option>
+                        <option>Login/Logout</option>
+                        <option>Creación de tickets</option>
+                        <option>Modificaciones</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4" id="auditLog">
+                </div>
+        </div>
+    </div>
+</div>
+        </div>
+    </div>
+
+<!-- Modal de creación de usuario -->
+<div id="createUserModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl w-96 p-6">
+    <h2 class="text-xl font-semibold mb-4 text-gray-800">Nuevo Usuario</h2>
+    <form onsubmit="createUser(event)">
+      <div class="mb-3">
+        <label for="userName" class="block text-sm font-medium text-gray-700">Nombre completo</label>
+        <input type="text" id="userName" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
+      </div>
+      <div class="mb-3">
+        <label for="userEmail" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
+        <input type="email" id="userEmail" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
+      </div>
+      <div class="mb-3">
+        <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
+        <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="Cliente">Cliente</option>
+          <option value="Agente">Agente</option>
+          <option value="Supervisor">Supervisor</option>
+          <option value="Administrador">Administrador</option>
+        </select>
+      </div>
+      <div class="mb-4">
+  <label for="userDept" class="block text-sm font-medium text-gray-700">Departamento</label>
+  <select id="userDept" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
+    <option>Ventas</option>
+    <option>TI</option>
+    <option>Contabilidad</option>
+    <option>Soporte</option>
+  </select>
+</div>
+
+      <div class="flex justify-end space-x-2 mt-5">
+        <button type="button" onclick="closeCreateUserModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Guardar</button>
+      </div>
+    </form>
+  </div>
+  
+
+  
+
+
+</div>
+
+ <!-- Modal de edición de perfil  (PONER AL FINAL PARA QUE SIRVA EN TODA LA VISTA) -->
+
+<div id="profileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+                    <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="updateProfile(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                        <input type="text" id="profileInputName" required class="w-full border border-gray-300 rounded-lg px-3 py-2" value="Carlos Mendoza">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+                        <input type="email" id="profileInputEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2" value="carlos.mendoza@empresa.com">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeProfileModal()">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
 
     <script>
         // Sample data based on database structure
@@ -568,25 +694,44 @@
 
         let currentSection = 'dashboard';
 
-        function showSection(section) {
-            // Hide all sections
-            document.querySelectorAll('[id$="-section"]').forEach(el => el.classList.add('hidden'));
-            
-            // Show selected section
-            document.getElementById(section + '-section').classList.remove('hidden');
-            
-            // Update sidebar
-            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.sidebar-item').classList.add('active');
-            
-            currentSection = section;
-            
-            // Load section-specific data
-            if (section === 'users') loadUsers();
-            if (section === 'tickets') loadTickets();
-            if (section === 'audit') loadAuditLog();
-            if (section === 'reports') loadReports();
-        }
+function showSection(section, element) {
+    // Ocultar todas las secciones
+    document.querySelectorAll('[id$="-section"]').forEach(el => el.classList.add('hidden'));
+
+    // Mostrar la sección seleccionada
+    const sectionEl = document.getElementById(section + '-section');
+    if (sectionEl) sectionEl.classList.remove('hidden');
+    else console.warn(`⚠️ No se encontró la sección: ${section}-section`);
+
+    // Quitar estado activo de todos los botones de la barra lateral
+    document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+
+    // Marcar el botón actual como activo
+    if (element) element.classList.add('active');
+
+    // Guardar la sección actual
+    currentSection = section;
+
+    // Cargar contenido según la sección
+  switch (section) {
+    case 'users':
+        renderUsers();
+        break;
+    case 'tickets':
+        loadTickets();
+        break;
+    case 'audit':
+        loadAuditLog();
+        break;
+    case 'reports':
+        loadReports();
+        break;
+    default:
+        break;
+}
+
+}
+
 
         function loadUsers() {
             const tbody = document.getElementById('usersTableBody');
@@ -594,7 +739,7 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
-                            <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                            <div class="w-8 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
                                 <span class="text-sm">👤</span>
                             </div>
                             <div>
@@ -623,46 +768,9 @@
             `).join('');
         }
 
-        function loadTickets() {
-            const container = document.getElementById('ticketsList');
-            container.innerHTML = sampleTickets.map(ticket => `
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-lg">${getCategoryIcon(ticket.categoria)}</span>
-                        <div>
-                            <h4 class="font-medium text-gray-900">${ticket.titulo}</h4>
-                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.usuario}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(ticket.estado)}">
-                            ${ticket.estado}
-                        </span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.prioridad)}">
-                            ${ticket.prioridad}
-                        </span>
-                        <span class="text-sm text-gray-500">${ticket.fecha}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
 
-        function loadAuditLog() {
-            const container = document.getElementById('auditLog');
-            container.innerHTML = sampleAuditLog.map(entry => `
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-lg">📝</span>
-                        <div>
-                            <h4 class="font-medium text-gray-900">${entry.accion}</h4>
-                            <p class="text-sm text-gray-600">${entry.detalle}</p>
-                            <p class="text-xs text-gray-500">Por: ${entry.usuario}</p>
-                        </div>
-                    </div>
-                    <span class="text-sm text-gray-500">${entry.fecha}</span>
-                </div>
-            `).join('');
-        }
+
+
 
         function loadReports() {
             // Agent Performance Chart
@@ -743,7 +851,9 @@
                 'Software': '💾',
                 'Red': '🌐',
                 'Correo': '📧',
-                'Acceso': '🔐'
+                'Acceso': '🔐',
+                'Teléfono' : '📞',
+                'Otro': '❓'
             };
             return icons[categoria] || '❓';
         }
@@ -811,6 +921,9 @@
                 }
             });
 
+
+            
+
             // Trend Chart
             const trendCtx = document.getElementById('trendChart').getContext('2d');
             new Chart(trendCtx, {
@@ -837,6 +950,575 @@
                 }
             });
         });
+
+
+//Scripts por Confirmar
+function confirmLogout() {
+    const confirmExit = confirm("¿Deseas cerrar sesión?");
+    if (confirmExit) {
+        window.location.href = "/logout"; // o la ruta que uses en tu backend
+    }
+}
+
+// ✅ Ahora van fuera del logout, como funciones globales
+function showProfileModal() {
+    document.getElementById('profileInputName').value = currentUser.name;
+    document.getElementById('profileInputEmail').value = currentUser.email;
+    document.getElementById('profileModal').classList.remove('hidden');
+}
+
+function closeProfileModal() {
+    document.getElementById('profileModal').classList.add('hidden');
+}
+
+function updateProfile(event) {
+    event.preventDefault();
+    currentUser.name = document.getElementById('profileInputName').value;
+    currentUser.email = document.getElementById('profileInputEmail').value;
+    document.getElementById('profileName').textContent = currentUser.name;
+    closeProfileModal();
+    showNotification('Perfil actualizado.', 'success');
+}
+
+
+// --- Asegurar que currentUser exista ---
+if (typeof window.currentUser === 'undefined' || !window.currentUser) {
+    window.currentUser = {
+        name: document.getElementById('profileName')?.textContent?.trim() || 'Admin Sistema',
+        email: 'admin@empresa.com'
+    };
+}
+
+// --- Funciones robustas para el modal de perfil ---
+function showProfileModal() {
+    try {
+        // Si currentUser no está definido por alguna razón, lo definimos con un fallback
+        if (typeof window.currentUser === 'undefined' || !window.currentUser) {
+            window.currentUser = {
+                name: document.getElementById('profileName')?.textContent?.trim() || 'Admin Sistema',
+                email: 'admin@empresa.com'
+            };
+        }
+
+        const nameInput = document.getElementById('profileInputName');
+        const emailInput = document.getElementById('profileInputEmail');
+        const modal = document.getElementById('profileModal');
+
+        // Si faltan elementos del modal, mostramos un fallback informativo
+        if (!modal || !nameInput || !emailInput) {
+            console.warn('Elementos del modal no encontrados:', {
+                modal: !!modal, nameInput: !!nameInput, emailInput: !!emailInput
+            });
+            // Fallback: alerta sencilla con la info del usuario
+            alert(`Perfil:\nNombre: ${window.currentUser.name}\nEmail: ${window.currentUser.email}\n\n(Nota: falta el modal en el DOM)`);
+            return;
+        }
+
+        // Rellenar inputs del modal y mostrarlo
+        nameInput.value = window.currentUser.name || '';
+        emailInput.value = window.currentUser.email || '';
+        modal.classList.remove('hidden');
+    } catch (err) {
+        console.error('Error en showProfileModal:', err);
+        alert('Error al abrir el perfil. Revisa la consola del navegador (F12).');
+    }
+}
+
+function closeProfileModal() {
+    const modal = document.getElementById('profileModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function updateProfile(event) {
+    event.preventDefault();
+    try {
+        const nameInput = document.getElementById('profileInputName');
+        const emailInput = document.getElementById('profileInputEmail');
+        if (nameInput) window.currentUser.name = nameInput.value;
+        if (emailInput) window.currentUser.email = emailInput.value;
+
+        const profileNameSpan = document.getElementById('profileName');
+        if (profileNameSpan) profileNameSpan.textContent = window.currentUser.name;
+
+        closeProfileModal();
+        if (typeof showNotification === 'function') showNotification('Perfil actualizado.', 'success');
+        else alert('Perfil actualizado.');
+    } catch (err) {
+        console.error('Error en updateProfile:', err);
+        alert('No se pudo actualizar el perfil. Ver consola.');
+    }
+}
+
+function showCreateUserModal() {
+  document.getElementById('createUserModal').classList.remove('hidden');
+}
+
+function closeCreateUserModal() {
+  document.getElementById('createUserModal').classList.add('hidden');
+}
+
+// Renderiza todos los usuarios en la tabla
+function renderUsers() {
+    const tableBody = document.getElementById("usersTableBody");
+    tableBody.innerHTML = '';
+
+    sampleUsers.forEach(user => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50';
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10">
+                        <div class="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-bold">
+                            <span>👤</span>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
+                        <div class="text-sm text-gray-500">${user.correo}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(user.rol)}">
+                    ${user.rol}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${user.departamento}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                    ${user.estado}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ultimo_acceso}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-4">
+                <button class="text-blue-600 hover:text-blue-900 font-medium" title="Editar">Editar</button>
+                <button class="text-red-600 hover:text-red-900 font-medium" title="Eliminar" onclick="deleteUser(${user.id})">Eliminar</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+function saveCategoryTimes() {
+    const categoryTimes = {
+        hardware: document.getElementById('time-hardware').value,
+        software: document.getElementById('time-software').value,
+        network: document.getElementById('time-network').value,
+        email: document.getElementById('time-email').value,
+        phone: document.getElementById('time-phone').value,
+        access: document.getElementById('time-access').value,
+        other: document.getElementById('time-other').value
+    };
+
+    console.log("Tiempos de respuesta guardados:", categoryTimes);
+
+    // Aquí puedes agregar tu llamada a backend, por ejemplo con fetch o axios
+    // fetch('/api/saveCategoryTimes', { method: 'POST', body: JSON.stringify(categoryTimes), headers: { 'Content-Type': 'application/json' }})
+    //     .then(res => res.json())
+    //     .then(data => alert('Tiempos guardados correctamente'))
+    //     .catch(err => alert('Error al guardar'));
+    
+    alert('Tiempos de respuesta guardados correctamente');
+}
+
+// Devuelve color según rol
+function getRoleColor(role) {
+    switch (role.toLowerCase()) {
+        case 'cliente': return 'bg-blue-100 text-blue-800';
+        case 'agente': return 'bg-green-100 text-green-800';
+        case 'supervisor': return 'bg-yellow-100 text-yellow-800';
+        case 'administrador': return 'bg-purple-100 text-purple-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+// Funciones simuladas para respaldo y restauración
+function backupSystem() {
+    showNotification("Copia de seguridad creada correctamente.", "success");
+}
+
+function restoreSystem() {
+    const fileInput = document.getElementById("restoreFile");
+    if (!fileInput.files.length) {
+        showNotification("Selecciona un archivo de respaldo primero.", "warning");
+        return;
+    }
+    showNotification("Restaurando datos desde respaldo...", "info");
+    setTimeout(() => {
+        showNotification("Datos restaurados correctamente.", "success");
+    }, 2000);
+}
+
+function getRoleBadgeClass(rol) {
+    switch(rol.toLowerCase()) {
+        case 'cliente': return 'bg-blue-100 text-blue-800';
+        case 'agente': return 'bg-yellow-100 text-yellow-800';
+        case 'supervisor': return 'bg-purple-100 text-purple-800';
+        case 'admin': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function loadUsers(users = sampleUsers) {
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = users.map(user => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-sm">👤</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${user.nombre}</div>
+                        <div class="text-sm text-gray-500">${user.correo}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeClass(user.rol)}">
+                    ${user.rol}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.departamento}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${user.estado}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.ultimo_acceso}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="editUser(${user.id})">Editar</button>
+                <button class="text-red-600 hover:text-red-900" onclick="deleteUser(${user.id})">Eliminar</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Función de búsqueda
+function filterUsers() {
+    const searchText = document.getElementById('userSearch').value.toLowerCase();
+    const selectedRole = document.getElementById('roleFilter').value.toLowerCase();
+
+    const filtered = sampleUsers.filter(user => {
+        const matchesSearch = user.nombre.toLowerCase().includes(searchText) || user.correo.toLowerCase().includes(searchText);
+        const matchesRole = selectedRole === "" || user.rol.toLowerCase() === selectedRole;
+        return matchesSearch && matchesRole;
+    });
+
+    loadUsers(filtered);
+}
+
+// Eventos
+document.getElementById('userSearch').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
+
+// Inicializar tabla
+loadUsers();
+
+// Placeholder para funciones de acción
+function editUser(id) { alert('Editar usuario ID: ' + id); }
+function deleteUser(id) { alert('Eliminar usuario ID: ' + id); }
+
+ // Guardar tiempos definidos
+  function saveResponseTimes() {
+    const tiempos = {
+      abierto: document.getElementById('timeOpen').value,
+      enProgreso: document.getElementById('timeInProgress').value,
+      pendiente: document.getElementById('timePending').value,
+      resuelto: document.getElementById('timeResolved').value
+    };
+
+    localStorage.setItem('tiemposRespuesta', JSON.stringify(tiempos));
+    showNotification('Tiempos de respuesta actualizados correctamente.', 'success');
+  }
+
+  // Cargar tiempos guardados al abrir configuración
+  document.addEventListener('DOMContentLoaded', () => {
+    const guardados = JSON.parse(localStorage.getItem('tiemposRespuesta'));
+    if (guardados) {
+      document.getElementById('timeOpen').value = guardados.abierto || 4;
+      document.getElementById('timeInProgress').value = guardados.enProgreso || 8;
+      document.getElementById('timePending').value = guardados.pendiente || 12;
+      document.getElementById('timeResolved').value = guardados.resuelto || 1;
+    }
+  });
+
+
+
+// Eventos
+document.getElementById('userSearch').addEventListener('input', filterUsers);
+document.getElementById('roleFilter').addEventListener('change', filterUsers);
+
+// Inicializar tabla
+loadUsers();
+
+// Placeholder para funciones de acción
+function editUser(id) { alert('Editar usuario ID: ' + id); }
+function deleteUser(id) { alert('Eliminar usuario ID: ' + id); }
+
+function getCategoryIcon(categoria) {
+    switch(categoria.toLowerCase()) {
+        case 'hardware': return '🖥️';
+        case 'software': return '💻';
+        case 'red': return '🌐';
+        default: return '❓';
+    }
+}
+
+function getStatusBadgeClass(estado) {
+    switch(estado.toLowerCase()) {
+        case 'abierto': return 'bg-green-100 text-green-800';
+        case 'en-progreso': return 'bg-yellow-100 text-yellow-800';
+        case 'pendiente': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getPriorityBadgeClass(prioridad) {
+    switch(prioridad.toLowerCase()) {
+        case 'alta': return 'bg-red-100 text-red-800';
+        case 'media': return 'bg-yellow-100 text-yellow-800';
+        case 'baja': return 'bg-green-100 text-green-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function loadTickets(tickets = sampleTickets) {
+    const container = document.getElementById('ticketsList');
+    container.innerHTML = tickets.map(ticket => `
+        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <div class="flex items-center space-x-4">
+                <span class="text-xl">${getCategoryIcon(ticket.categoria)}</span>
+
+                <div>
+                    <h4 class="font-medium text-gray-900">${ticket.titulo}</h4>
+                    <p class="text-sm text-gray-600">${ticket.id} • ${ticket.usuario}</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(ticket.estado)}">
+                    ${ticket.estado}
+                </span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.prioridad)}">
+                    ${ticket.prioridad}
+                </span>
+                <span class="text-sm text-gray-500">${ticket.fecha}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Función para asignar emoji según categoría
+function getCategoryIcon(categoria) {
+    const icons = {
+        'Hardware': '🖥️',
+        'Software': '💾',
+        'Red': '🌐',
+        'Correo': '📧',
+        'Acceso': '🔐',
+        'Teléfono': '📞',
+        'Otro': '❓'
+    };
+    return icons[categoria] || '🎫'; // Emoji por defecto si no encuentra categoría
+}
+
+
+// Función de búsqueda y filtro
+function filterTickets() {
+    const searchText = document.getElementById('ticketSearch').value.toLowerCase();
+    const selectedStatus = document.getElementById('ticketStatusFilter').value.toLowerCase();
+    const selectedCategory = document.getElementById('ticketCategoryFilter').value.toLowerCase();
+
+    const filtered = sampleTickets.filter(ticket => {
+        const matchesSearch = ticket.titulo.toLowerCase().includes(searchText) ||
+                              ticket.usuario.toLowerCase().includes(searchText) ||
+                              ticket.id.toLowerCase().includes(searchText);
+
+        const matchesStatus = selectedStatus === "" || ticket.estado.toLowerCase() === selectedStatus;
+        const matchesCategory = selectedCategory === "" || ticket.categoria.toLowerCase() === selectedCategory;
+
+        return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    loadTickets(filtered);
+}
+
+// Eventos
+document.getElementById('ticketSearch').addEventListener('input', filterTickets);
+document.getElementById('ticketStatusFilter').addEventListener('change', filterTickets);
+document.getElementById('ticketCategoryFilter').addEventListener('change', filterTickets);
+
+// Inicializar tickets
+loadTickets();
+
+//BUSQUEDA DE TICKETS
+
+function getStatusBadgeClass(estado) {
+    switch(estado.toLowerCase()) {
+        case 'abierto': return 'bg-green-100 text-green-800';
+        case 'en-progreso': return 'bg-yellow-100 text-yellow-800';
+        case 'pendiente': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getPriorityBadgeClass(prioridad) {
+    switch(prioridad.toLowerCase()) {
+        case 'alta': return 'bg-red-100 text-red-800';
+        case 'media': return 'bg-yellow-100 text-yellow-800';
+        case 'baja': return 'bg-green-100 text-green-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+
+
+
+
+// Función de búsqueda y filtro
+function filterTickets() {
+    const searchText = document.getElementById('ticketSearch').value.toLowerCase();
+    const selectedStatus = document.getElementById('ticketStatusFilter').value.toLowerCase();
+    const selectedCategory = document.getElementById('ticketCategoryFilter').value.toLowerCase();
+
+    const filtered = sampleTickets.filter(ticket => {
+        const matchesSearch = ticket.titulo.toLowerCase().includes(searchText) ||
+                              ticket.usuario.toLowerCase().includes(searchText) ||
+                              ticket.id.toLowerCase().includes(searchText);
+
+        const matchesStatus = selectedStatus === "" || ticket.estado.toLowerCase() === selectedStatus;
+        const matchesCategory = selectedCategory === "" || ticket.categoria.toLowerCase() === selectedCategory;
+
+        return matchesSearch && matchesStatus && matchesCategory;
+    });
+
+    loadTickets(filtered);
+}
+
+// Eventos
+document.getElementById('ticketSearch').addEventListener('input', filterTickets);
+document.getElementById('ticketStatusFilter').addEventListener('change', filterTickets);
+document.getElementById('ticketCategoryFilter').addEventListener('change', filterTickets);
+
+// Inicializar tickets
+loadTickets();
+
+
+// Función para asignar un emoji según el tipo de acción
+function getAuditIcon(accion) {
+    const icons = {
+        'Inicio de sesión': '🔐',
+        'Logout': '🔓',
+        'Ticket creado': '🎫',
+        'Ticket asignado': '📌',
+        'Modificaciones': '✏️'
+    };
+    return icons[accion] || '📝'; // Emoji por defecto si no está definido
+}
+
+// Cargar registros de auditoría con emojis
+function loadAuditLog(logs = sampleAuditLog) {
+    const container = document.getElementById('auditLog');
+    container.innerHTML = logs.map(entry => `
+        <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <div class="flex items-center space-x-4">
+                <span class="text-lg">${getAuditIcon(entry.accion)}</span>
+                <div>
+                    <h4 class="font-medium text-gray-900">${entry.accion}</h4>
+                    <p class="text-sm text-gray-600">${entry.detalle}</p>
+                    <p class="text-xs text-gray-500">Por: ${entry.usuario}</p>
+                </div>
+            </div>
+            <span class="text-sm text-gray-500">${entry.fecha}</span>
+        </div>
+    `).join('');
+}
+            
+
+
+// Función de búsqueda
+function filterAuditLog() {
+    const searchText = document.getElementById('auditSearch').value.toLowerCase();
+
+    const filtered = sampleAuditLog.filter(entry => {
+        return entry.usuario.toLowerCase().includes(searchText) ||
+               entry.accion.toLowerCase().includes(searchText) ||
+               entry.detalle.toLowerCase().includes(searchText) ||
+               entry.fecha.toLowerCase().includes(searchText);
+    });
+
+    loadAuditLog(filtered);
+}
+
+// Evento de búsqueda
+document.getElementById('auditSearch').addEventListener('input', filterAuditLog);
+
+// Inicializar auditoría
+loadAuditLog();
+
+
+// Crear usuario nuevo desde modal
+function createUser(event) {
+  event.preventDefault();
+
+  const name = document.getElementById('userName').value.trim();
+  const email = document.getElementById('userEmail').value.trim();
+  const role = document.getElementById('userRole').value;
+  const dept = document.getElementById('userDept').value; // 🔹 Departamento seleccionado
+
+  // 🔹 Fecha + hora actual formateada
+// 🔹 Generar fecha y hora con formato: YYYY-MM-DD HH:mm
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const day = String(now.getDate()).padStart(2, '0');
+const hours = String(now.getHours()).padStart(2, '0');
+const minutes = String(now.getMinutes()).padStart(2, '0');
+const fechaHora = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+
+  if (!name || !email) {
+    alert("Por favor completa todos los campos.");
+    return;
+  }
+
+  const newUser = {
+    id: sampleUsers.length + 1,
+    nombre: name,
+    correo: email,
+    rol: role,
+    departamento: dept,
+    estado: 'activo',
+    ultimo_acceso: fechaHora // 🔹 Incluye hora
+  };
+
+  // Agregar usuario al arreglo
+  sampleUsers.push(newUser);
+
+  // Volver a renderizar la tabla
+  renderUsers();
+
+  // Cerrar modal y limpiar campos
+  closeCreateUserModal();
+  document.getElementById('userName').value = '';
+  document.getElementById('userEmail').value = '';
+  document.getElementById('userRole').value = 'Cliente';
+  document.getElementById('userDept').value = 'Soporte';
+
+  // Actualizar estadísticas
+  updateUserStats(role, +1);
+
+  showNotification(`Usuario "${name}" agregado correctamente.`, 'success');
+}
+
+renderUsers();
+
+
+
+
+
+        
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9891fead2396f776',t:'MTc1OTU1Mjc2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>

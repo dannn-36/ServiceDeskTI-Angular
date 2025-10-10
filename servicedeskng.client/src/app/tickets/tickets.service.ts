@@ -19,7 +19,7 @@ export interface Ticket {
 
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
-  private apiUrl = '/api/tickets';
+  private apiUrl = 'http://localhost:5076/api/tickets';
 
   constructor(private http: HttpClient) {}
 

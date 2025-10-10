@@ -55,6 +55,18 @@ namespace ServiceDeskNg.Server
             builder.Services.AddSignalR();
             builder.Services.AddOpenApi();
 
+            // ======================================================
+            // 🔹 CONFIGURAR CORS
+            // ======================================================
+            var angularOrigin = "http://localhost:59435"; // Cambia al puerto de tu Angular si es necesario
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAngular",
+                    policy => policy.WithOrigins(angularOrigin)
+                                    .AllowAnyHeader()
+                                    .AllowAnyMethod());
+            });
+
             var app = builder.Build();
 
             // ======================================================
@@ -93,6 +105,10 @@ namespace ServiceDeskNg.Server
 
             app.UseHttpsRedirection();
             app.UseRouting();
+
+            // Aplica la política de CORS aquí
+            app.UseCors("AllowAngular");
+
             app.UseAuthorization();
 
             // ======================================================

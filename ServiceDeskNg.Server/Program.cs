@@ -4,6 +4,7 @@ using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Repositories;
 using ServiceDeskNg.Server.Repositories.Interfaces;
 using ServiceDeskNg.Server.Hubs;
+using System.Text.Json.Serialization;
 
 namespace ServiceDeskNg.Server
 {
@@ -44,7 +45,13 @@ namespace ServiceDeskNg.Server
             // ======================================================
             // 🔹 CONTROLADORES, VISTAS Y SIGNALR
             // ======================================================
-            builder.Services.AddControllersWithViews();
+            builder.Services.AddControllersWithViews()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                    options.JsonSerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+                });
             builder.Services.AddSignalR();
             builder.Services.AddOpenApi();
 

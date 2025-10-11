@@ -152,7 +152,7 @@ public partial class ServiceDeskContext : DbContext
             entity.Property(e => e.IdNivel).HasColumnName("id_nivel");
             entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
 
-            entity.HasOne(d => d.IdNivelNavigation).WithMany(p => p.Clientes)
+            entity.HasOne(d => d.IdNivelNavigation).WithMany(p => p.EndUsers)
                 .HasForeignKey(d => d.IdNivel)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("clientes_ibfk_2");

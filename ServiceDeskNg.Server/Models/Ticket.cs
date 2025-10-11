@@ -33,7 +33,7 @@ public partial class Ticket
 
     public virtual TicketsCategoria IdCategoriaTicketNavigation { get; set; } = null!;
 
-    public virtual Cliente IdClienteNavigation { get; set; } = null!;
+    public virtual EndUser IdClienteNavigation { get; set; } = null!;
 
     public virtual TicketsEstado IdEstadoTicketNavigation { get; set; } = null!;
 

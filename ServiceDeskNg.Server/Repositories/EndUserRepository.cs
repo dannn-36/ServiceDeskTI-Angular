@@ -4,27 +4,27 @@ using ServiceDeskNg.Server.Repositories.Interfaces;
 
 namespace ServiceDeskNg.Server.Repositories
 {
-    public class ClienteRepository : ICrudRepository<Cliente>
+    public class EndUserRepository : ICrudRepository<EndUser>
     {
         private readonly ServiceDeskContext _context;
-        public ClienteRepository(ServiceDeskContext context)
+        public EndUserRepository(ServiceDeskContext context)
         {
             _context = context;
         }
-        public IEnumerable<Cliente> GetAll()
+        public IEnumerable<EndUser> GetAll()
         {
             return _context.Clientes.ToList();
         }
-        public Cliente GetById(int id)
+        public EndUser GetById(int id)
         {
             return _context.Clientes.Find(id);
         }
-        public void Add(Cliente cliente)
+        public void Add(EndUser cliente)
         {
             _context.Clientes.Add(cliente);
             _context.SaveChanges();
         }
-        public void Update(Cliente cliente)
+        public void Update(EndUser cliente)
         {
             _context.Clientes.Update(cliente);
             _context.SaveChanges();

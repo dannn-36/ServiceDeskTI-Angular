@@ -8,22 +8,22 @@ namespace ServiceDeskNg.Server.Controllers
     [ApiController]
     public class ClientesController : ControllerBase
     {
-        private readonly ICrudRepository<Cliente> _repository;
+        private readonly ICrudRepository<EndUser> _repository;
 
-        public ClientesController(ICrudRepository<Cliente> repository)
+        public ClientesController(ICrudRepository<EndUser> repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Cliente>> GetAll()
+        public ActionResult<IEnumerable<EndUser>> GetAll()
         {
             var items = _repository.GetAll();
             return Ok(items);
         }
 
         [HttpGet("{id}")]
-        public ActionResult<Cliente> GetById(int id)
+        public ActionResult<EndUser> GetById(int id)
         {
             var item = _repository.GetById(id);
             if (item == null)
@@ -32,7 +32,7 @@ namespace ServiceDeskNg.Server.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] Cliente entity)
+        public IActionResult Create([FromBody] EndUser entity)
         {
             if (entity == null)
                 return BadRequest("El cliente no puede ser nulo.");
@@ -41,7 +41,7 @@ namespace ServiceDeskNg.Server.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Cliente entity)
+        public IActionResult Update(int id, [FromBody] EndUser entity)
         {
             if (entity == null || id != entity.IdCliente)
                 return BadRequest("Datos inválidos.");

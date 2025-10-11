@@ -23,7 +23,7 @@ public partial class ServiceDeskContext : DbContext
 
     public virtual DbSet<Auditoria> Auditoria { get; set; }
 
-    public virtual DbSet<Cliente> Clientes { get; set; }
+    public virtual DbSet<EndUser> Clientes { get; set; }
 
     public virtual DbSet<Integracion> Integraciones { get; set; }
 
@@ -138,7 +138,7 @@ public partial class ServiceDeskContext : DbContext
                 .HasConstraintName("auditoria_ibfk_1");
         });
 
-        modelBuilder.Entity<Cliente>(entity =>
+        modelBuilder.Entity<EndUser>(entity =>
         {
             entity.HasKey(e => e.IdCliente).HasName("PRIMARY");
 

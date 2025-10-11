@@ -27,7 +27,7 @@ public partial class Usuario
 
     public virtual ICollection<Auditoria> Auditoria { get; set; } = new List<Auditoria>();
 
-    public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
+    public virtual ICollection<EndUser> Clientes { get; set; } = new List<EndUser>();
 
     public virtual ICollection<Sesion> Sesiones { get; set; } = new List<Sesion>();
 

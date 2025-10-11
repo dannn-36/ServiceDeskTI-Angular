@@ -15,7 +15,7 @@ public partial class NivelesAcceso
 
     public virtual ICollection<Agente> Agentes { get; set; } = new List<Agente>();
 
-    public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
+    public virtual ICollection<EndUser> EndUsers { get; set; } = new List<EndUser>();
 
     public virtual ICollection<Supervisor> Supervisores { get; set; } = new List<Supervisor>();
 }

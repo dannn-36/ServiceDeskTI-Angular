@@ -44,7 +44,6 @@
   <ItemGroup>
     <Folder Include="Data\" />
     <Folder Include="hubs\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

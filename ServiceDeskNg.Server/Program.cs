@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using ServiceDeskNg.Server.Data;
+using ServiceDeskNg.Server.Hubs;
 using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Repositories;
 using ServiceDeskNg.Server.Repositories.Interfaces;
-using ServiceDeskNg.Server.Hubs;
-using System.Text.Json.Serialization;
+using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server
 {
@@ -31,7 +32,7 @@ namespace ServiceDeskNg.Server
             builder.Services.AddScoped<ICrudRepository<Administrador>, AdministradorRepository>();
             builder.Services.AddScoped<ICrudRepository<Agente>, AgenteRepository>();
             builder.Services.AddScoped<ICrudRepository<Integracion>, IntegracionRepository>();
-            builder.Services.AddScoped<ICrudRepository<Cliente>, ClienteRepository>();
+            builder.Services.AddScoped<ICrudRepository<EndUser>, EndUserRepository>();
             builder.Services.AddScoped<ICrudRepository<NivelesAcceso>, NivelesAccesoRepository>();
             builder.Services.AddScoped<ICrudRepository<Auditoria>, AuditoriaRepository>();
             builder.Services.AddScoped<ICrudRepository<Ticket>, TicketRepository>();
@@ -41,6 +42,26 @@ namespace ServiceDeskNg.Server
             builder.Services.AddScoped<ICrudRepository<TicketsEstado>, TicketsEstadoRepository>();
             builder.Services.AddScoped<ICrudRepository<Supervisor>, SupervisorRepository>();
             builder.Services.AddScoped<ICrudRepository<Sesion>, SesionRepository>();
+
+            // ======================================================
+            // 🔹 INYECTAR REPOSITORIOS
+            // ======================================================
+
+            builder.Services.AddScoped<UsuarioService>();
+            builder.Services.AddScoped<AdministradorService>();
+            builder.Services.AddScoped<AgenteService>();
+            builder.Services.AddScoped<EndUserService>();
+            builder.Services.AddScoped<TicketService>();
+            builder.Services.AddScoped<TicketMensajeService>();
+            builder.Services.AddScoped<IntegracionService>();
+            builder.Services.AddScoped<SesionService>();
+            builder.Services.AddScoped<TicketsEstadoService>();
+            builder.Services.AddScoped<TicketsCategoriaService>();
+            builder.Services.AddScoped<NivelesAccesoService>();
+            builder.Services.AddScoped<AuditoriaService>();
+            builder.Services.AddScoped<SupervisorService>();
+            builder.Services.AddScoped<TicketArchivoService>();
+
 
             // ======================================================
             // 🔹 CONTROLADORES, VISTAS Y SIGNALR

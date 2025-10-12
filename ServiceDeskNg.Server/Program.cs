@@ -43,10 +43,25 @@ namespace ServiceDeskNg.Server
             builder.Services.AddScoped<ICrudRepository<Supervisor>, SupervisorRepository>();
             builder.Services.AddScoped<ICrudRepository<Sesion>, SesionRepository>();
 
-            // ======================================================
-            // 🔹 INYECTAR REPOSITORIOS
-            // ======================================================
 
+            builder.Services.AddScoped<UsuarioRepository>();
+            builder.Services.AddScoped<AdministradorRepository>();
+            builder.Services.AddScoped<AgenteRepository>();
+            builder.Services.AddScoped<IntegracionRepository>();
+            builder.Services.AddScoped<EndUserRepository>();
+            builder.Services.AddScoped<NivelesAccesoRepository>();
+            builder.Services.AddScoped<AuditoriaRepository>();
+            builder.Services.AddScoped<TicketRepository>();
+            builder.Services.AddScoped<TicketArchivoRepository>();
+            builder.Services.AddScoped<TicketsCategoriaRepository>();
+            builder.Services.AddScoped<TicketMensajeRepository>();
+            builder.Services.AddScoped<TicketsEstadoRepository>();
+            builder.Services.AddScoped<SupervisorRepository>();
+            builder.Services.AddScoped<SesionRepository>();
+
+            // ======================================================
+            // 🔹 INYECTAR SERVICIOS
+            // ======================================================
             builder.Services.AddScoped<UsuarioService>();
             builder.Services.AddScoped<AdministradorService>();
             builder.Services.AddScoped<AgenteService>();

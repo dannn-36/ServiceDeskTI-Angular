@@ -75,7 +75,7 @@ namespace ServiceDeskNg.Server.Services
             entity.FechaHoraCreacionUsuario = DateTime.UtcNow;
 
             // Si quisieras hash de contraseñas, aquí podrías integrarlo:
-            // entity.ContrasenaUsuario = BCrypt.Net.BCrypt.HashPassword(entity.ContrasenaUsuario);
+            entity.ContrasenaUsuario = BCrypt.Net.BCrypt.HashPassword(entity.ContrasenaUsuario);
 
             _usuarioRepo.Add(entity);
         }
@@ -130,10 +130,8 @@ namespace ServiceDeskNg.Server.Services
             if (usuario == null)
                 throw new UnauthorizedAccessException("Usuario no encontrado.");
 
-            // Si activas hash de contraseña, cambiar a:
-            // if (!BCrypt.Net.BCrypt.Verify(contrasena, usuario.ContrasenaUsuario))
-            if (usuario.ContrasenaUsuario != contrasena)
-                throw new UnauthorizedAccessException("Contraseña incorrecta.");
+            if (!BCrypt.Net.BCrypt.Verify(contrasena, usuario.ContrasenaUsuario))
+                            throw new UnauthorizedAccessException("Contraseña incorrecta.");
 
             if (usuario.EstadoUsuario?.ToLower() != "activo")
                 throw new UnauthorizedAccessException("La cuenta del usuario está inactiva.");

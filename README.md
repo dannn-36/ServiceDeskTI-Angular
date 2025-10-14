@@ -23,6 +23,7 @@ El objetivo es ofrecer una plataforma moderna, modular y escalable para la gesti
 ### 📁 Backend (`ServiceDeskNg.Server`)
 
 ServiceDeskNg.Server/
+
 │
 
 ├── Controllers/ # Controladores API (Usuarios, Tickets, etc.)

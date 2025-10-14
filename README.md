@@ -24,29 +24,49 @@ El objetivo es ofrecer una plataforma moderna, modular y escalable para la gesti
 
 ServiceDeskNg.Server/
 │
+
 ├── Controllers/ # Controladores API (Usuarios, Tickets, etc.)
+
 ├── Data/ # DbContext y configuración de la base de datos
+
 ├── Services/ #Metodos y funciones que hacen uso de repository
+
 ├── Models/ # Entidades de la base de datos
+
 ├── Repositories/ # Implementaciones concretas (ej: UsuarioRepository)
+
 ├── Repositories/Interfaces/ # Interfaces genéricas (ej: ICrudRepository)
+
 ├── Program.cs # Configuración principal del servidor
+
 └── appsettings.json # Configuración de la conexión a la base de datos
 
 ### 📁 Frontend (`ServiceDeskNg.Client`)
 
 ServiceDeskNg.Client/
+
 │
+
 ├── src/
+
 │ ├── app/
+
 │ │ ├── components/ # Componentes (views)
+
 │ │ ├── services/ # Servicios para consumir APIs
+
 │ │ ├── models/ # Interfaces de datos compartidas
+
 │ │ └── app.module.ts
+
 │ ├── assets/
+
 │ └── environments/
+
 │ ├── environment.ts
+
 │ └── environment.prod.ts
+
 
 ---
 

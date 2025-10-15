@@ -21,7 +21,7 @@
         .stat-card:hover { transform: translateY(-2px); transition: all 0.3s ease; }
         .notification-dot { animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .chart-container { position: relative; height: 300px; }
+        .chart-container { position: relative; height: 400px; }
         .priority-urgent { border-left: 4px solid #ef4444; }
         .priority-high { border-left: 4px solid #f97316; }
         .priority-medium { border-left: 4px solid #eab308; }
@@ -68,43 +68,49 @@
         <!-- Sidebar -->
         <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
             <nav class="flex-1 p-4 space-y-2">
-                <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard')">
+                <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">📊</span>
                         <span class="font-medium">Dashboard</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('team')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('team', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">👥</span>
                         <span class="font-medium">Mi Equipo</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">🎫</span>
-                        <span class="font-medium">Supervisión Tickets</span>
+                        <span class="font-medium">Tickets Activos</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('workload')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('inactive-tickets', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📂</span>
+                        <span class="font-medium">Tickets Inactivos</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('workload', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">⚖️</span>
                         <span class="font-medium">Carga de Trabajo</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('performance')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('performance', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">📈</span>
                         <span class="font-medium">Rendimiento</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('escalations')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('escalations', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">🚨</span>
                         <span class="font-medium">Escalaciones</span>
                     </div>
                 </div>
-                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports')">
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports', this)">
                     <div class="flex items-center space-x-3">
                         <span class="text-lg">📋</span>
                         <span class="font-medium">Reportes</span>
@@ -116,7 +122,7 @@
         <!-- Contenido Principal -->
         <div class="flex-1 overflow-y-auto">
             <!-- Dashboard Section -->
-            <div id="dashboard-section" class="p-6">
+            <div id="dashboard-section" class="p-6 overflow-y-auto">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Supervisor</h2>
                     <p class="text-gray-600">Resumen del rendimiento de tu equipo y tickets asignados</p>
@@ -180,25 +186,17 @@
                 <!-- Charts and Priority Tickets -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución de Tickets</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución por Nivel de Criticidad</h3>
                         <div class="chart-container">
                             <canvas id="ticketDistributionChart"></canvas>
                         </div>
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets Prioritarios</h3>
-                        <div class="space-y-3" id="priorityTickets">
-                            <!-- Priority tickets will be loaded here -->
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Reporte de Tickets por Área</h3>
+                        <div class="chart-container">
+                            <canvas id="ticketsByAreaChart"></canvas>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Team Performance Overview -->
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Rendimiento del Equipo - Hoy</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="teamPerformance">
-                        <!-- Team performance will be loaded here -->
                     </div>
                 </div>
             </div>
@@ -279,7 +277,15 @@
                 <!-- Team Members -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">Agentes del Equipo</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Agentes del Equipo</h3>
+                            <input
+                                type="text"
+                                id="teamMemberSearch"
+                                placeholder="Buscar agentes..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
                     </div>
                     <div class="p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teamMembers">
@@ -292,48 +298,77 @@
             <!-- Tickets Section -->
             <div id="tickets-section" class="p-6 hidden">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Supervisión de Tickets</h2>
-                    <p class="text-gray-600">Monitorea y gestiona todos los tickets de tu equipo</p>
-                </div>
-
-                <!-- Ticket Filters -->
-                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                            <option>Todos los estados</option>
-                            <option>Abiertos</option>
-                            <option>En progreso</option>
-                            <option>Pendientes</option>
-                            <option>Resueltos</option>
-                        </select>
-                        <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                            <option>Todas las prioridades</option>
-                            <option>Urgente</option>
-                            <option>Alta</option>
-                            <option>Media</option>
-                            <option>Baja</option>
-                        </select>
-                        <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                            <option>Todos los agentes</option>
-                            <option>Ana López</option>
-                            <option>Juan Pérez</option>
-                            <option>Sofía Martínez</option>
-                        </select>
-                        <input type="text" placeholder="Buscar tickets..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            🔍 Filtrar
-                        </button>
-                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Tickets Activos</h2>
+                    <p class="text-gray-600">Monitorea y gestiona todos los tickets activos de tu equipo</p>
                 </div>
 
                 <!-- Tickets List -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">Tickets Activos</h3>
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Tickets Activos</h3>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <select id="supervisorTicketStatusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todos los estados</option>
+                                    <option value="abierto">Abiertos</option>
+                                    <option value="en-progreso">En progreso</option>
+                                    <option value="pendiente">Pendientes</option>
+                                    <option value="resuelto">Resueltos</option>
+                                </select>
+                                <select id="supervisorTicketPriorityFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todas las prioridades</option>
+                                    <option value="urgent">Urgente</option>
+                                    <option value="high">Alta</option>
+                                    <option value="medium">Media</option>
+                                    <option value="low">Baja</option>
+                                </select>
+                                <select id="supervisorTicketAgentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todos los agentes</option>
+                                    <option value="Ana López">Ana López</option>
+                                    <option value="Juan Pérez">Juan Pérez</option>
+                                    <option value="Sofía Martínez">Sofía Martínez</option>
+                                    <option value="Carlos Ruiz">Carlos Ruiz</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    id="supervisorTicketSearch"
+                                    placeholder="Buscar tickets..."
+                                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                                >
+                            </div>
+                        </div>
                     </div>
                     <div class="p-6">
                         <div class="space-y-4" id="supervisorTicketsList">
                             <!-- Tickets will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nueva sección para Tickets Inactivos -->
+            <div id="inactive-tickets-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Tickets Inactivos</h2>
+                    <p class="text-gray-600">Gestiona tickets cerrados y permite reaperturas en caso de no conformidad</p>
+                </div>
+
+                <!-- Tickets Inactivos List -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Tickets Cerrados</h3>
+                            <input
+                                type="text"
+                                id="inactiveTicketSearch"
+                                placeholder="Buscar tickets cerrados..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="inactiveTicketsList">
+                            <!-- Tickets inactivos se cargarán aquí -->
                         </div>
                     </div>
                 </div>
@@ -353,7 +388,7 @@
                             <canvas id="workloadChart"></canvas>
                         </div>
                     </div>
-
+                    
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
                         <div class="space-y-4">
@@ -455,7 +490,16 @@
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200">
                     <div class="p-6 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">Escalaciones Activas</h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Escalaciones Activas</h3>
+                            <!-- Barra de búsqueda para escalaciones -->
+                            <input
+                                type="text"
+                                id="escalationSearch"
+                                placeholder="Buscar escalaciones..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
                     </div>
                     <div class="p-6">
                         <div class="space-y-4" id="escalationsList">
@@ -472,74 +516,78 @@
                     <p class="text-gray-600">Genera reportes detallados para la gerencia</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Reporte Semanal -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center space-x-3 mb-4">
-                            <span class="text-2xl">📊</span>
-                            <h3 class="font-semibold text-gray-900">Reporte Semanal</h3>
+                <!-- Nuevo contenedor para limitar el ancho -->
+                <div class="max-w-5xl mx-auto">
+                    <!-- Cambiar a 1-2 columnas para evitar vista muy ancha -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Reporte Semanal (FIX de markup y select) -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">📅</span>
+                                <h3 class="font-semibold text-gray-900">Reporte semanal</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Resumen de la última semana.</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="weeklyReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('semanal')">
+                                Generar Reporte
+                            </button>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Resumen de actividades y métricas de la semana</p>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                            <select id="weeklyReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                <option value="pdf">PDF</option>
-                                <option value="excel">Excel</option>
-                            </select>
-                        </div>
-                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-                            onclick="generateReport('semanal')">
-                            Generar Reporte
-                        </button>
-                    </div>
 
-                    <!-- Rendimiento individual -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center space-x-3 mb-4">
-                            <span class="text-2xl">👥</span>
-                            <h3 class="font-semibold text-gray-900">Rendimiento individual</h3>
+                        <!-- Rendimiento individual -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">👥</span>
+                                <h3 class="font-semibold text-gray-900">Rendimiento individual</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Agente:</label>
+                                <select id="individualAgentSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Ana López">Ana López</option>
+                                    <option value="Juan Pérez">Juan Pérez</option>
+                                    <option value="Sofía Martínez">Sofía Martínez</option>
+                                    <option value="Carlos Ruiz">Carlos Ruiz</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="individualReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('individual')">
+                                Generar Reporte
+                            </button>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Agente:</label>
-                            <select id="individualAgentSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                <option value="Ana López">Ana López</option>
-                                <option value="Juan Pérez">Juan Pérez</option>
-                                <option value="Sofía Martínez">Sofía Martínez</option>
-                                <option value="Carlos Ruiz">Carlos Ruiz</option>
-                            </select>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                            <select id="individualReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                <option value="pdf">PDF</option>
-                                <option value="excel">Excel</option>
-                            </select>
-                        </div>
-                        <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
-                            onclick="generateReport('individual')">
-                            Generar Reporte
-                        </button>
-                    </div>
 
-                    <!-- SLA Compliance -->
-                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center space-x-3 mb-4">
-                            <span class="text-2xl">🎯</span>
-                            <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
+                        <!-- SLA Compliance -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">🎯</span>
+                                <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="slaReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('sla')">
+                                Generar Reporte
+                            </button>
                         </div>
-                        <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                            <select id="slaReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                                <option value="pdf">PDF</option>
-                                <option value="excel">Excel</option>
-                            </select>
-                        </div>
-                        <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
-                            onclick="generateReport('sla')">
-                            Generar Reporte
-                        </button>
                     </div>
                 </div>
             </div>
@@ -548,37 +596,59 @@
 
     <!-- Modal único de supervisión de ticket -->
     <div id="superviseModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
-        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
             <h3 class="text-lg font-semibold mb-4">Supervisar Ticket</h3>
             <p class="mb-2 text-gray-700" id="superviseTicketTitle"></p>
-            <!-- Reasignar -->
-            <div class="mb-4">
-                <label class="block mb-2 text-sm font-medium text-gray-700">Reasignar a otro agente:</label>
-                <select id="superviseAgentSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
-                    <!-- Opciones generadas por JS -->
-                </select>
-                <button onclick="confirmReassignSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Reasignar</button>
+            <div class="flex">
+                <!-- Área de chat -->
+                <div class="w-2/3 pr-4">
+                    <div class="border border-gray-200 rounded-lg h-96 flex flex-col">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="superviseChatMessages">
+                            <!-- Mensajes se cargarán aquí -->
+                        </div>
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Chat bloqueado - Haz clic en 'Intervenir' para escribir..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="superviseChatInput" disabled onkeypress="handleSuperviseChatKeyPress(event)">
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" id="superviseSendBtn" disabled onclick="sendSuperviseMessage()">
+                                    📤
+                                </button>
+                            </div>
+                            <div class="mt-2 flex justify-end">
+                                <button onclick="interveneChat()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                    Intervenir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Opciones de supervisión -->
+                <div class="w-1/3 pl-4 space-y-4">
+                    <!-- Reasignar -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Reasignar a otro agente:</label>
+                        <select id="superviseAgentSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <!-- Opciones generadas por JS -->
+                        </select>
+                        <button onclick="confirmReassignSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Reasignar</button>
+                    </div>
+                    <!-- Escalar -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Escalar a categoría:</label>
+                        <select id="superviseEscalateSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <option value="">Selecciona una categoría</option>
+                            <option value="hardware">🖥️ Hardware (Computadora, impresora, etc.)</option>
+                            <option value="software">💾 Software (Programas, aplicaciones)</option>
+                            <option value="network">🌐 Red (Internet, WiFi, acceso)</option>
+                            <option value="email">📧 Email (Outlook, correo)</option>
+                            <option value="phone">📞 Teléfono (Extensiones, llamadas)</option>
+                            <option value="access">🔐 Accesos (Permisos, cuentas)</option>
+                            <option value="other">❓ Otro</option>
+                        </select>
+                        <button onclick="confirmEscalateSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white">Escalar Ticket</button>
+                    </div>
+                </div>
             </div>
-            <!-- Escalar -->
-            <div class="mb-4">
-                <label class="block mb-2 text-sm font-medium text-gray-700">Escalar a categoría:</label>
-                <select id="superviseEscalateSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
-                    <option value="">Selecciona una categoría</option>
-                    <option value="hardware">🖥️ Hardware (Computadora, impresora, etc.)</option>
-                    <option value="software">💾 Software (Programas, aplicaciones)</option>
-                    <option value="network">🌐 Red (Internet, WiFi, acceso)</option>
-                    <option value="email">📧 Email (Outlook, correo)</option>
-                    <option value="phone">📞 Teléfono (Extensiones, llamadas)</option>
-                    <option value="access">🔐 Accesos (Permisos, cuentas)</option>
-                    <option value="other">❓ Otro</option>
-                </select>
-                <button onclick="confirmEscalateSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white">Escalar Ticket</button>
-            </div>
-            <!-- Resolver -->
-            <div class="mb-2">
-                <button onclick="confirmResolveSupervise()" class="w-full px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white">Resolver como Supervisor</button>
-            </div>
-            <div class="flex justify-end">
+            <div class="flex justify-end mt-4">
                 <button onclick="closeSuperviseModal()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Cerrar</button>
             </div>
         </div>
@@ -610,6 +680,45 @@
         </div>
     </div>
 
+    <!-- Modal único de supervisión de ticket inactivo -->
+    <div id="superviseInactiveModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
+            <h3 class="text-lg font-semibold mb-4">Supervisar Ticket Inactivo</h3>
+            <p class="mb-2 text-gray-700" id="superviseInactiveTicketTitle"></p>
+            <div class="flex">
+                <!-- Área de chat -->
+                <div class="w-2/3 pr-4">
+                    <div class="border border-gray-200 rounded-lg h-96 flex flex-col">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="superviseInactiveChatMessages">
+                            <!-- Mensajes se cargarán aquí -->
+                        </div>
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Chat bloqueado - Solo lectura para tickets inactivos..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="superviseInactiveChatInput" disabled readonly>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" id="superviseInactiveSendBtn" disabled>
+                                    📤
+                                </button>
+                            </div>
+                            <!-- Removed intervene button for inactive tickets -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Opciones de supervisión -->
+                <div class="w-1/3 pl-4 space-y-4">
+                    <!-- Reabrir -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Razón para reabrir:</label>
+                        <textarea id="reopenReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2" placeholder="Explica por qué se reabre el ticket..."></textarea>
+                        <button onclick="confirmReopenInactive()" class="w-full mb-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white">Reabrir Ticket</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button onclick="closeSuperviseInactiveModal()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Sample data for supervisor view
         const supervisorData = {
@@ -626,20 +735,128 @@
                 { name: 'Carlos Ruiz', status: 'available', tickets: 7, avgTime: '2.3h', satisfaction: 4.6 }
             ],
             tickets: [
-                { id: 'TK-1250', title: 'Servidor principal caído', user: 'Sistema Automático', agent: 'Ana López', status: 'en-progreso', priority: 'urgent', category: 'Infraestructura', time: '45 min' },
-                { id: 'TK-1249', title: 'Base de datos responde lento', user: 'María González', agent: 'Juan Pérez', status: 'abierto', priority: 'high', category: 'Base de Datos', time: '1.2h' },
-                { id: 'TK-1248', title: 'Error en módulo contable', user: 'Roberto Silva', agent: 'Sofía Martínez', status: 'pendiente', priority: 'medium', category: 'Software', time: '2.1h' }
+                { 
+                    id: 'TK-1250', 
+                    title: 'Servidor principal caído', 
+                    user: 'Sistema Automático', 
+                    agent: 'Ana López', 
+                    status: 'en-progreso', 
+                    priority: 'urgent', 
+                    category: 'Infraestructura', 
+                    time: '45 min',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'Sistema Automático', time: '08:00', content: 'Alerta: Servidor principal caído. Requiere atención inmediata.' },
+                        { type: 'agent', author: 'Ana López', time: '08:15', content: 'Estoy revisando el servidor. Parece un problema de alimentación.' },
+                        { type: 'agent', author: 'Ana López', time: '08:30', content: 'He reiniciado el servidor. Monitoreando estabilidad.' }
+                    ]
+                },
+                { 
+                    id: 'TK-1249', 
+                    title: 'Base de datos responde lento', 
+                    user: 'María González', 
+                    agent: 'Juan Pérez', 
+                    status: 'abierto', 
+                    priority: 'high', 
+                    category: 'Base de Datos', 
+                    time: '1.2h',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'María González', time: '10:00', content: 'La base de datos está muy lenta. Las consultas tardan minutos.' },
+                        { type: 'agent', author: 'Juan Pérez', time: '10:20', content: 'Hola María, voy a revisar los índices de la base de datos.' },
+                        { type: 'user', author: 'María González', time: '10:25', content: 'Afecta a todo el equipo de contabilidad. Urgente.' }
+                    ]
+                },
+                { 
+                    id: 'TK-1248', 
+                    title: 'Error en módulo contable', 
+                    user: 'Roberto Silva', 
+                    agent: 'Sofía Martínez', 
+                    status: 'pendiente', 
+                    priority: 'medium', 
+                    category: 'Software', 
+                    time: '2.1h',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'Roberto Silva', time: '09:00', content: 'Error en el módulo contable: "No se puede guardar factura".' },
+                        { type: 'agent', author: 'Sofía Martínez', time: '09:15', content: 'Roberto, voy a verificar los permisos del módulo.' },
+                        { type: 'agent', author: 'Sofía Martínez', time: '09:45', content: 'He actualizado los permisos. ¿Puedes probar de nuevo?' },
+                        { type: 'user', author: 'Roberto Silva', time: '10:00', content: 'Ahora funciona. Gracias.' }
+                    ]
+                }
             ],
             escalations: [
                 { id: 'TK-1245', title: 'Falla crítica en producción', escalatedTo: 'Gerencia TI', reason: 'Impacto alto', time: '3h 15min', status: 'critical' },
                 { id: 'TK-1243', title: 'Pérdida de datos cliente', escalatedTo: 'Director Técnico', reason: 'Datos sensibles', time: '5h 30min', status: 'critical' },
                 { id: 'TK-1240', title: 'Caída de servicios web', escalatedTo: 'Equipo DevOps', reason: 'SLA vencido', time: '2h 45min', status: 'pending' }
+            ],
+            inactiveTickets: [
+                { 
+                    id: 'TK-1200', 
+                    title: 'Problema de conexión resuelto', 
+                    user: 'Carlos Mendoza', 
+                    agent: 'Ana López', 
+                    status: 'resuelto', 
+                    priority: 'low', 
+                    category: 'Red', 
+                    time: '2 días', 
+                    closedDate: '2024-01-10',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'Carlos Mendoza', time: '08:00', content: 'Hola, no tengo internet en mi computadora.' },
+                        { type: 'agent', author: 'Ana López', time: '08:15', content: 'Hola Carlos, voy a revisar tu conexión. ¿Puedes reiniciar tu router?' },
+                        { type: 'user', author: 'Carlos Mendoza', time: '08:20', content: 'Ya lo hice, pero sigue sin funcionar.' },
+                        { type: 'agent', author: 'Ana López', time: '08:30', content: 'Parece un problema de configuración. He reseteado tu conexión. Prueba ahora.' },
+                        { type: 'user', author: 'Carlos Mendoza', time: '08:35', content: '¡Ya funciona! Gracias.' },
+                        { type: 'agent', author: 'Ana López', time: '08:40', content: 'Perfecto, me alegra haber ayudado. El ticket queda resuelto.' }
+                    ]
+                },
+                { 
+                    id: 'TK-1195', 
+                    title: 'Actualización de software completada', 
+                    user: 'María González', 
+                    agent: 'Juan Pérez', 
+                    status: 'resuelto', 
+                    priority: 'medium', 
+                    category: 'Software', 
+                    time: '1 semana', 
+                    closedDate: '2024-01-08',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'María González', time: '10:00', content: 'Excel se cierra solo cuando abro archivos.' },
+                        { type: 'agent', author: 'Juan Pérez', time: '10:20', content: 'Hola María, voy a reinstalar Office. Dame unos minutos.' },
+                        { type: 'user', author: 'María González', time: '10:25', content: 'Ok, espero.' },
+                        { type: 'agent', author: 'Juan Pérez', time: '11:00', content: 'Listo, Office reinstalado. Prueba abrir Excel ahora.' },
+                        { type: 'user', author: 'María González', time: '11:05', content: '¡Funciona perfecto! Gracias.' },
+                        { type: 'agent', author: 'Juan Pérez', time: '11:10', content: 'Excelente, ticket resuelto.' }
+                    ]
+                },
+                { 
+                    id: 'TK-1180', 
+                    title: 'Configuración de email finalizada', 
+                    user: 'Roberto Silva', 
+                    agent: 'Sofía Martínez', 
+                    status: 'resuelto', 
+                    priority: 'high', 
+                    category: 'Email', 
+                    time: '3 días', 
+                    closedDate: '2024-01-05',
+                    supervisorIntervened: false,
+                    messages: [
+                        { type: 'user', author: 'Roberto Silva', time: '09:00', content: 'No puedo enviar emails desde Outlook.' },
+                        { type: 'agent', author: 'Sofía Martínez', time: '09:15', content: 'Hola Roberto, voy a verificar la configuración de tu cuenta.' },
+                        { type: 'user', author: 'Roberto Silva', time: '09:20', content: 'Ok, gracias.' },
+                        { type: 'agent', author: 'Sofía Martínez', time: '09:45', content: 'He actualizado los servidores SMTP. Prueba enviar un email de prueba.' },
+                        { type: 'user', author: 'Roberto Silva', time: '09:50', content: '¡Ya se envía! Perfecto.' },
+                        { type: 'agent', author: 'Sofía Martínez', time: '09:55', content: 'Genial, ticket cerrado.' }
+                    ]
+                }
             ]
         };
 
         let currentSection = 'dashboard';
 
-        function showSection(section) {
+        function showSection(section, element) {
             // Hide all sections
             document.querySelectorAll('[id$="-section"]').forEach(el => el.classList.add('hidden'));
             
@@ -648,69 +865,75 @@
             
             // Update sidebar
             document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.sidebar-item').classList.add('active');
-            
+            if (element) element.classList.add('active');
+
             currentSection = section;
-            
+
             // Load section-specific data
             if (section === 'dashboard') loadDashboard();
-            if (section === 'team') loadTeam();
-            if (section === 'tickets') loadTickets();
+            if (section === 'team') {
+                const searchEl = document.getElementById('teamMemberSearch');
+                if (searchEl && searchEl.value) filterTeamMembers(); else loadTeam();
+            }
+            if (section === 'tickets') {
+                // Ejecuta el filtrado con los controles nuevos si existen
+                if (document.getElementById('supervisorTicketSearch') ||
+                    document.getElementById('supervisorTicketStatusFilter') ||
+                    document.getElementById('supervisorTicketPriorityFilter') ||
+                    document.getElementById('supervisorTicketAgentFilter')) {
+                    filterSupervisorTickets();
+                } else {
+                    loadTickets();
+                }
+            }
+            if (section === 'inactive-tickets') loadInactiveTickets();
             if (section === 'workload') loadWorkload();
             if (section === 'performance') loadPerformance();
             if (section === 'escalations') loadEscalations();
         }
 
         function loadDashboard() {
-            // Load priority tickets
-            const priorityContainer = document.getElementById('priorityTickets');
-            priorityContainer.innerHTML = supervisorData.priorityTickets.map(ticket => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg priority-${ticket.priority}">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">${getPriorityIcon(ticket.priority)}</span>
-                        <div>
-                            <p class="font-medium text-gray-900">${ticket.title}</p>
-                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.agent}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.priority)}">
-                            ${ticket.priority}
-                        </span>
-                        <p class="text-xs text-gray-500 mt-1">${ticket.time}</p>
-                    </div>
-                </div>
-            `).join('');
-
-            // Load team performance
-            const teamContainer = document.getElementById('teamPerformance');
-            teamContainer.innerHTML = supervisorData.teamMembers.map(member => `
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-medium text-gray-900">${member.name}</h4>
-                        <span class="w-3 h-3 rounded-full ${getStatusColor(member.status)}"></span>
-                    </div>
-                    <div class="space-y-1 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tickets:</span>
-                            <span class="font-medium">${member.tickets}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tiempo:</span>
-                            <span class="font-medium">${member.avgTime}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Rating:</span>
-                            <span class="font-medium text-yellow-600">⭐ ${member.satisfaction}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            // Load priority tickets - removed, replaced with area chart
+            // Load tickets by area chart in the right grid
+            const areaCtx = document.getElementById('ticketsByAreaChart').getContext('2d');
+            const areaChart = new Chart(areaCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['💾 Software', '🌐 Red', '📧 Correo', '📞 Teléfono', '🔐 Accesos', '📝 Otro'],
+                    datasets: [{
+                        data: [0, 0, 0, 0, 0, 0], // Start with zero data
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)', // Blue for Software
+                            'rgba(16, 185, 129, 0.8)', // Green for Red
+                            'rgba(245, 158, 11, 0.8)', // Yellow for Correo
+                            'rgba(139, 92, 246, 0.8)', // Purple for Teléfono
+                            'rgba(239, 68, 68, 0.8)', // Red for Accesos
+                            'rgba(107, 114, 128, 0.8)' // Gray for Otro
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+            // Animate to real data
+            setTimeout(() => {
+                areaChart.data.datasets[0].data = [25, 15, 10, 8, 12, 5];
+                areaChart.update();
+            }, 100);
         }
 
-        function loadTeam() {
+        // Cargar agentes (acepta lista filtrada)
+        function loadTeam(list = supervisorData.teamMembers) {
             const teamContainer = document.getElementById('teamMembers');
-            teamContainer.innerHTML = supervisorData.teamMembers.map(member => `
+            teamContainer.innerHTML = list.map(member => `
                 <div class="bg-gray-50 rounded-lg p-4">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
@@ -753,9 +976,21 @@
             `).join('');
         }
 
-        function loadTickets() {
+        // Filtrado de agentes (insensible a acentos)
+        function filterTeamMembers() {
+            const q = normalize(document.getElementById('teamMemberSearch')?.value || '');
+            const filtered = supervisorData.teamMembers.filter(m => {
+                const fields = [
+                    m.name, m.status, String(m.tickets), m.avgTime, String(m.satisfaction)
+                ].map(normalize);
+                return q === '' || fields.some(f => f.includes(q));
+            });
+            loadTeam(filtered);
+        }
+
+        function loadTickets(list = supervisorData.tickets) {
             const ticketsContainer = document.getElementById('supervisorTicketsList');
-            ticketsContainer.innerHTML = supervisorData.tickets.map(ticket => `
+            ticketsContainer.innerHTML = list.map(ticket => `
                 <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-${ticket.priority}">
                     <div class="flex items-center space-x-4">
                         <span class="text-lg">${getCategoryIcon(ticket.category)}</span>
@@ -781,26 +1016,90 @@
             `).join('');
         }
 
-        function loadEscalations() {
-            const escalationsContainer = document.getElementById('escalationsList');
-            escalationsContainer.innerHTML = supervisorData.escalations.map(escalation => `
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg ${escalation.status === 'critical' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}">
+        // Búsqueda y filtros de tickets (insensible a acentos/mayúsculas)
+        function filterSupervisorTickets() {
+            const q = normalize(document.getElementById('supervisorTicketSearch')?.value || '');
+            const status = (document.getElementById('supervisorTicketStatusFilter')?.value || '').toLowerCase();
+            const priority = (document.getElementById('supervisorTicketPriorityFilter')?.value || '').toLowerCase();
+            const agent = normalize(document.getElementById('supervisorTicketAgentFilter')?.value || '');
+
+            const filtered = supervisorData.tickets.filter(t => {
+                const matchesQuery = q === '' || [t.id, t.title, t.user, t.agent, t.status, t.priority, t.category, t.time]
+                    .map(normalize).some(f => f.includes(q));
+                const matchesStatus = !status || (t.status || '').toLowerCase() === status;
+                const matchesPriority = !priority || (t.priority || '').toLowerCase() === priority;
+                const matchesAgent = !agent || normalize(t.agent) === agent;
+                return matchesQuery && matchesStatus && matchesPriority && matchesAgent;
+            });
+            loadTickets(filtered);
+        }
+
+        // Normaliza texto (minúsculas y sin acentos)
+        function normalize(str = '') {
+            return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        }
+
+        // Filtra escalaciones por texto (id, título, destino, razón, estado, tiempo)
+        function filterEscalations() {
+            const q = normalize(document.getElementById('escalationSearch')?.value || '');
+            const filtered = supervisorData.escalations.filter(e => {
+                const fields = [
+                    e.id, e.title, e.escalatedTo, e.reason, e.status, e.time,
+                    e.status === 'critical' ? 'critico' : 'pendiente' // búsqueda en español
+                ].map(normalize);
+                return q === '' || fields.some(f => f.includes(q));
+            });
+            loadEscalations(filtered);
+        }
+
+        // Cargar tickets inactivos
+        function loadInactiveTickets(list = supervisorData.inactiveTickets) {
+            const container = document.getElementById('inactiveTicketsList');
+            container.innerHTML = list.map(ticket => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                     <div class="flex items-center space-x-4">
-                        <span class="text-lg">${escalation.status === 'critical' ? '🚨' : '⚠️'}</span>
+                        <span class="text-lg">${getCategoryIcon(ticket.category)}</span>
                         <div>
-                            <h4 class="font-medium text-gray-900">${escalation.title}</h4>
-                            <p class="text-sm text-gray-600">${escalation.id} • Escalado a: ${escalation.escalatedTo}</p>
-                            <p class="text-xs text-gray-500">Razón: ${escalation.reason}</p>
+                            <h4 class="font-medium text-gray-900">${ticket.title}</h4>
+                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.user} → ${ticket.agent}</p>
+                            <p class="text-xs text-gray-500">Cerrado: ${ticket.closedDate}</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${escalation.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
-                            ${escalation.status === 'critical' ? 'Crítico' : 'Pendiente'}
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            ${ticket.status}
                         </span>
-                        <p class="text-sm text-gray-500 mt-1">${escalation.time}</p>
+                        <span class="text-sm text-gray-500">${ticket.time}</span>
+                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            onclick="openSuperviseInactiveModal('${ticket.id}')">
+                            Supervisar
+                        </button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Filtrar tickets inactivos
+        function filterInactiveTickets() {
+            const q = normalize(document.getElementById('inactiveTicketSearch')?.value || '');
+            const filtered = supervisorData.inactiveTickets.filter(t => {
+                const fields = [t.id, t.title, t.user, t.agent, t.category, t.time].map(normalize);
+                return q === '' || fields.some(f => f.includes(q));
+            });
+            loadInactiveTickets(filtered);
+        }
+
+        // Reabrir ticket
+        function reopenTicket(ticketId) {
+            const ticket = supervisorData.inactiveTickets.find(t => t.id === ticketId);
+            if (ticket) {
+                ticket.status = 'abierto';
+                supervisorData.tickets.push(ticket);
+                supervisorData.inactiveTickets = supervisorData.inactiveTickets.filter(t => t.id !== ticketId);
+                loadInactiveTickets();
+                if (typeof filterSupervisorTickets === 'function') filterSupervisorTickets(); else loadTickets();
+                showNotification(`Ticket ${ticketId} reabierto y movido a activos.`, 'success');
+            }
         }
 
         function loadWorkload() {
@@ -973,6 +1272,19 @@
                 .join('');
             // Reset selects
             document.getElementById('superviseEscalateSelect').value = "";
+            // Bloquear chat por defecto si no ha intervenido
+            const input = document.getElementById('superviseChatInput');
+            const btn = document.getElementById('superviseSendBtn');
+            if (!ticketToSupervise.supervisorIntervened) {
+                input.disabled = true;
+                btn.disabled = true;
+                input.placeholder = "Chat bloqueado - Haz clic en 'Intervenir' para escribir...";
+            } else {
+                input.disabled = false;
+                btn.disabled = false;
+                input.placeholder = "Escribe un mensaje...";
+            }
+            loadSuperviseChatMessages();
             document.getElementById('superviseModal').classList.remove('hidden');
         }
 
@@ -987,13 +1299,13 @@
             const newAgent = select.value;
             if (ticketToSupervise && newAgent) {
                 ticketToSupervise.agent = newAgent;
-                loadTickets();
+                if (typeof filterSupervisorTickets === 'function') filterSupervisorTickets(); else loadTickets();
                 showNotification('Ticket reasignado a ' + newAgent, 'success');
                 closeSuperviseModal();
             }
         }
 
-        // Escalar desde modal de supervisión (ahora usa categoría)
+        // Escalar desde modal de supervisión
         function confirmEscalateSupervise() {
             const level = document.getElementById('superviseEscalateSelect').value;
             if (ticketToSupervise && level) {
@@ -1006,8 +1318,15 @@
                     time: 'Ahora',
                     status: 'pending'
                 });
-                loadTickets();
-                showNotification('Ticket escalado a la categoría: ' + document.getElementById('superviseEscalateSelect').options[document.getElementById('superviseEscalateSelect').selectedIndex].text, 'warning');
+                if (typeof filterSupervisorTickets === 'function') filterSupervisorTickets(); else loadTickets();
+                if (typeof filterEscalations === 'function') filterEscalations(); else loadEscalations();
+                showNotification(
+                    'Ticket escalado a la categoría: ' +
+                    document.getElementById('superviseEscalateSelect').options[
+                        document.getElementById('superviseEscalateSelect').selectedIndex
+                    ].text,
+                    'warning'
+                );
                 closeSuperviseModal();
             } else {
                 showNotification('Selecciona una categoría para escalar.', 'error');
@@ -1018,7 +1337,7 @@
         function confirmResolveSupervise() {
             if (ticketToSupervise) {
                 ticketToSupervise.status = 'resuelto';
-                loadTickets();
+                if (typeof filterSupervisorTickets === 'function') filterSupervisorTickets(); else loadTickets();
                 showNotification('Ticket resuelto por el supervisor', 'success');
                 closeSuperviseModal();
             }
@@ -1051,27 +1370,63 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadDashboard();
 
-            // Ticket Distribution Chart
+            // Ticket Distribution Chart - Now Criticality Level Chart
             const distributionCtx = document.getElementById('ticketDistributionChart').getContext('2d');
-            new Chart(distributionCtx, {
+            const distributionChart = new Chart(distributionCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Ana López', 'Juan Pérez', 'Sofía Martínez', 'Carlos Ruiz'],
+                    labels: ['Bajo', 'Medio', 'Alto', 'Urgente'],
                     datasets: [{
-                        data: [6, 8, 5, 7],
+                        data: [0, 0, 0, 0], // Start with zero data
                         backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
+                            'rgba(34, 197, 94, 0.8)', // Green for Bajo
+                            'rgba(245, 158, 11, 0.8)', // Yellow for Medio
+                            'rgba(239, 68, 68, 0.8)', // Red for Alto
+                            'rgba(147, 51, 234, 0.8)' // Purple for Urgente
                         ]
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false
+
+                    maintainAspectRatio: false,
+                    animation: {
+                        animateRotate: true,
+                        animateScale: true,
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
                 }
             });
+            // Animate to real data
+            setTimeout(() => {
+                distributionChart.data.datasets[0].data = [10, 20, 15, 5];
+                distributionChart.update();
+            }, 100);
+
+            // Activar búsqueda en “Escalaciones Activas”
+            const escSearch = document.getElementById('escalationSearch');
+            if (escSearch) escSearch.addEventListener('input', filterEscalations);
+
+           
+
+            // Activar búsqueda en "Tickets Activos"
+            const ticketsSearch = document.getElementById('supervisorTicketSearch');
+            const statusSel = document.getElementById('supervisorTicketStatusFilter');
+            const prioritySel = document.getElementById('supervisorTicketPriorityFilter');
+            const agentSel = document.getElementById('supervisorTicketAgentFilter');
+            if (ticketsSearch) ticketsSearch.addEventListener('input', filterSupervisorTickets);
+            if (statusSel) statusSel.addEventListener('change', filterSupervisorTickets);
+            if (prioritySel) prioritySel.addEventListener('change', filterSupervisorTickets);
+            if (agentSel) agentSel.addEventListener('change', filterSupervisorTickets);
+
+            // Activar búsqueda en "Agentes del Equipo"
+            const teamSearch = document.getElementById('teamMemberSearch');
+            if (teamSearch) teamSearch.addEventListener('input', filterTeamMembers);
+
+            // Activar búsqueda en "Tickets Inactivos"
+            const inactiveSearch = document.getElementById('inactiveTicketSearch');
+            if (inactiveSearch) inactiveSearch.addEventListener('input', filterInactiveTickets);
         });
 
         function getSelectedAgentText() {
@@ -1096,6 +1451,158 @@
             setTimeout(() => {
                 showNotification('Reporte descargado.', 'success');
             }, 1500);
+        }
+
+        // Render de escalaciones (restaurado)
+        function loadEscalations(list = supervisorData.escalations) {
+            const escalationsContainer = document.getElementById('escalationsList');
+            if (!escalationsContainer) return;
+            escalationsContainer.innerHTML = list.map(escalation => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg ${escalation.status === 'critical' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-lg">${escalation.status === 'critical' ? '🚨' : '⚠️'}</span>
+                        <div>
+                            <h4 class="font-medium text-gray-900">${escalation.title}</h4>
+                            <p class="text-sm text-gray-600">${escalation.id} • Escalado a: ${escalation.escalatedTo}</p>
+                            <p class="text-xs text-gray-500">Razón: ${escalation.reason}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${escalation.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+                            ${escalation.status === 'critical' ? 'Crítico' : 'Pendiente'}
+                        </span>
+                        <p class="text-sm text-gray-500 mt-1">${escalation.time}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function loadSuperviseChatMessages() {
+            const chatContainer = document.getElementById('superviseChatMessages');
+            if (!ticketToSupervise || !ticketToSupervise.messages) return;
+            
+            chatContainer.innerHTML = ticketToSupervise.messages.map(message => `
+                <div class="chat-message flex ${message.type === 'agent' || message.type === 'supervisor' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-xs lg:max-w-md">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="text-xs text-gray-500">${message.author}</span>
+                            <span class="text-xs text-gray-400">${message.time}</span>
+                        </div>
+                        <div class="px-3 py-2 rounded-lg text-sm ${
+                            message.type === 'agent' || message.type === 'supervisor' 
+                                ? 'bg-blue-600 text-white' 
+                                : 'bg-gray-100 text-gray-900'
+                        }">
+                            ${message.content}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function handleSuperviseChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendSuperviseMessage();
+            }
+        }
+
+        function sendSuperviseMessage() {
+            const input = document.getElementById('superviseChatInput');
+            const message = input.value.trim();
+            
+            if (!message || !ticketToSupervise) return;
+
+            // Agregar mensaje del supervisor
+            ticketToSupervise.messages.push({
+                type: 'supervisor',
+                author: 'Supervisor - ' + supervisorProfile.name,
+                time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+                content: message
+            });
+
+            input.value = '';
+            loadSuperviseChatMessages();
+            showNotification('Mensaje enviado', 'success');
+        }
+
+        function interveneChat() {
+            if (!ticketToSupervise) return;
+            ticketToSupervise.supervisorIntervened = true;
+            const input = document.getElementById('superviseChatInput');
+            const btn = document.getElementById('superviseSendBtn');
+            input.disabled = false;
+            btn.disabled = false;
+            input.placeholder = "Escribe un mensaje...";
+            input.focus();
+            showNotification('Intervención activada - Puedes escribir en el chat', 'info');
+        }
+
+        // Variables para el modal de supervisión inactiva
+        let ticketToSuperviseInactive = null;
+
+        function openSuperviseInactiveModal(ticketId) {
+            ticketToSuperviseInactive = supervisorData.inactiveTickets.find(t => t.id === ticketId);
+            if (!ticketToSuperviseInactive) return;
+            document.getElementById('superviseInactiveTicketTitle').textContent =
+                `${ticketToSuperviseInactive.id} - ${ticketToSuperviseInactive.title}`;
+
+            // Always disable chat for inactive tickets (no intervention allowed)
+            const input = document.getElementById('superviseInactiveChatInput');
+            const btn = document.getElementById('superviseInactiveSendBtn');
+            input.disabled = true;
+            btn.disabled = true;
+            input.placeholder = "Chat bloqueado - Solo lectura para tickets inactivos...";
+            document.getElementById('reopenReason').value = '';
+            loadSuperviseInactiveChatMessages();
+            document.getElementById('superviseInactiveModal').classList.remove('hidden');
+        }
+
+        function closeSuperviseInactiveModal() {
+            document.getElementById('superviseInactiveModal').classList.add('hidden');
+            ticketToSuperviseInactive = null;
+        }
+
+        function loadSuperviseInactiveChatMessages() {
+            const chatContainer = document.getElementById('superviseInactiveChatMessages');
+            if (!ticketToSuperviseInactive || !ticketToSuperviseInactive.messages) return;
+            
+            chatContainer.innerHTML = ticketToSuperviseInactive.messages.map(message => `
+                <div class="chat-message flex ${message.type === 'agent' || message.type === 'supervisor' ? 'justify-end' : 'justify-start'}">
+                    <div class="max-w-xs lg:max-w-md">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <span class="text-xs text-gray-500">${message.author}</span>
+                            <span class="text-xs text-gray-400">${message.time}</span>
+                        </div>
+                        <div class="px-3 py-2 rounded-lg text-sm ${
+                            message.type === 'agent' || message.type === 'supervisor' 
+                                ? 'bg-blue-600 text-white' 
+                                : 'bg-gray-100 text-gray-900'
+                        }">
+                            ${message.content}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function confirmReopenInactive() {
+            const reason = document.getElementById('reopenReason').value.trim();
+            if (!reason) {
+                showNotification('Por favor, ingresa una razón para reabrir el ticket.', 'error');
+                return;
+            }
+            if (ticketToSuperviseInactive) {
+                ticketToSuperviseInactive.reopenReason = reason;
+                ticketToSuperviseInactive.status = 'abierto';
+                supervisorData.tickets.push(ticketToSuperviseInactive);
+                supervisorData.inactiveTickets = supervisorData.inactiveTickets.filter(t => t.id !== ticketToSuperviseInactive.id);
+                loadInactiveTickets();
+                if (typeof filterSupervisorTickets === 'function') filterSupervisorTickets(); else loadTickets();
+                showNotification(`Ticket ${ticketToSuperviseInactive.id} reabierto. Razón: ${reason}`, 'success');
+                closeSuperviseInactiveModal();
+            }
         }
     </script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989206ebc77bf776',t:'MTc1OTU1MzA5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>

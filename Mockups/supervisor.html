@@ -57,8 +57,19 @@
                         <span id="supervisorName">Roberto Silva</span>
                     </div>
                 </div>
-                <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="logout()">
-                    🚪
+                <button id="logoutBtn"
+                    class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                    onclick="confirmLogout()"
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5" fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+                    </svg>
+                    <span class="text-sm font-medium">Salir</span>
                 </button>
             </div>
         </div>
@@ -1240,6 +1251,14 @@
                 setTimeout(() => {
                     console.log('Redirect to login');
                 }, 1500);
+            }
+        }
+
+        // Add confirmLogout function
+        function confirmLogout() {
+            const confirmExit = confirm("¿Deseas cerrar sesión?");
+            if (confirmExit) {
+                window.location.href = "/logout"; // cambia la ruta según tu backend
             }
         }
 

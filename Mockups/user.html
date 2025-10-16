@@ -128,6 +128,10 @@
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-semibold text-gray-900">Mis Tickets</h2>
                     <div class="flex items-center space-x-2">
+                        <input type="text" 
+                               id="ticketSearch"
+                               placeholder="Buscar tickets..." 
+                               class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64">
                         <select class="text-sm border border-gray-300 rounded-lg px-3 py-1.5" id="statusFilter" onchange="filterMyTickets()">
                             <option value="">Todos</option>
                             <option value="abierto">Abiertos</option>
@@ -568,12 +572,16 @@
         }
 
         function filterMyTickets() {
+            const searchText = document.getElementById('ticketSearch').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
             
             const filteredTickets = myTickets.filter(ticket => {
-                return !statusFilter || ticket.status === statusFilter;
+                const matchesSearch = ticket.title.toLowerCase().includes(searchText) ||
+                                      ticket.id.toLowerCase().includes(searchText) ||
+                                      ticket.category.toLowerCase().includes(searchText);
+                const matchesStatus = !statusFilter || ticket.status === statusFilter;
+                return matchesSearch && matchesStatus;
             });
-
             renderMyTickets(filteredTickets);
         }
 
@@ -923,6 +931,8 @@
         // Inicializar aplicación
         document.addEventListener('DOMContentLoaded', function() {
             renderMyTickets();
+            // Add event listener for search input
+            document.getElementById('ticketSearch').addEventListener('input', filterMyTickets);
         });
 
         // Cerrar modales al hacer clic fuera
@@ -935,6 +945,8 @@
             }
         });
 
+
+        //Script por confirmar
 function confirmLogout() {
     const confirmExit = confirm("¿Deseas cerrar sesión?");
     if (confirmExit) {

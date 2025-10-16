@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServiceDesk TI - Panel Supervisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../CSS/supervisor.css">
+</head>
+<body class="bg-gray-50 h-screen overflow-hidden">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
+        <div class="h-full px-6 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">SV</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
+                </div>
+                <span class="text-gray-400">|</span>
+                <span class="text-sm text-gray-600">Panel Supervisor</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-4 text-sm">
+                    <div class="relative">
+                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
+                            🔔
+                        </button>
+                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
+                    </div>
+                    <div class="flex items-center space-x-2 text-gray-600 cursor-pointer" onclick="showSupervisorProfileModal()">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span>👨‍💼</span>
+                        </div>
+                        <span id="supervisorName">Roberto Silva</span>
+                    </div>
+                </div>
+                <button id="logoutBtn"
+                    class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                    onclick="confirmLogout()"
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5" fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+                    </svg>
+                    <span class="text-sm font-medium">Salir</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex h-full">
+        <!-- Sidebar -->
+        <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+            <nav class="flex-1 p-4 space-y-2">
+                <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📊</span>
+                        <span class="font-medium">Dashboard</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('team', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">👥</span>
+                        <span class="font-medium">Mi Equipo</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">🎫</span>
+                        <span class="font-medium">Tickets Activos</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('inactive-tickets', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📂</span>
+                        <span class="font-medium">Tickets Inactivos</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('workload', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">⚖️</span>
+                        <span class="font-medium">Carga de Trabajo</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('performance', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📈</span>
+                        <span class="font-medium">Rendimiento</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('escalations', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">🚨</span>
+                        <span class="font-medium">Escalaciones</span>
+                    </div>
+                </div>
+                <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports', this)">
+                    <div class="flex items-center space-x-3">
+                        <span class="text-lg">📋</span>
+                        <span class="font-medium">Reportes</span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Contenido Principal -->
+        <div class="flex-1 overflow-y-auto">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="p-6 overflow-y-auto">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Supervisor</h2>
+                    <p class="text-gray-600">Resumen del rendimiento de tu equipo y tickets asignados</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Tickets Activos</p>
+                                <p class="text-3xl font-bold text-gray-900">47</p>
+                                <p class="text-sm text-blue-600">↗ +5 desde ayer</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🎫</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Agentes Activos</p>
+                                <p class="text-3xl font-bold text-gray-900">8</p>
+                                <p class="text-sm text-green-600">100% disponibles</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">👨‍💻</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                                <p class="text-3xl font-bold text-gray-900">2.1h</p>
+                                <p class="text-sm text-green-600">↘ -15min vs ayer</p>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">⏱️</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-600">SLA Cumplimiento</p>
+                                <p class="text-3xl font-bold text-gray-900">96%</p>
+                                <p class="text-sm text-green-600">↗ +2% vs semana</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🎯</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and Priority Tickets -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución por Nivel de Criticidad</h3>
+                        <div class="chart-container">
+                            <canvas id="ticketDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Reporte de Tickets por Área</h3>
+                        <div class="chart-container">
+                            <canvas id="ticketsByAreaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Section -->
+            <div id="team-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Mi Equipo</h2>
+                    <p class="text-gray-600">Gestiona y supervisa a los agentes de tu equipo</p>
+                </div>
+
+                <!-- Team Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Estado del Equipo</h3>
+                            <span class="text-2xl">👥</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Disponibles</span>
+                                <span class="text-sm font-medium text-green-600">6 agentes</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Ocupados</span>
+                                <span class="text-sm font-medium text-yellow-600">2 agentes</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Ausentes</span>
+                                <span class="text-sm font-medium text-red-600">0 agentes</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Productividad</h3>
+                            <span class="text-2xl">📊</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Tickets/día promedio</span>
+                                <span class="text-sm font-medium">12.5</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Tiempo resolución</span>
+                                <span class="text-sm font-medium">2.1h</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">Satisfacción cliente</span>
+                                <span class="text-sm font-medium text-green-600">4.7/5</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Alertas</h3>
+                            <span class="text-2xl">🚨</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span class="text-sm text-gray-600">2 tickets vencidos</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                <span class="text-sm text-gray-600">5 próximos a vencer</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span class="text-sm text-gray-600">3 escalaciones pendientes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Members -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Agentes del Equipo</h3>
+                            <input
+                                type="text"
+                                id="teamMemberSearch"
+                                placeholder="Buscar agentes..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teamMembers">
+                            <!-- Team members will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tickets Section -->
+            <div id="tickets-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Tickets Activos</h2>
+                    <p class="text-gray-600">Monitorea y gestiona todos los tickets activos de tu equipo</p>
+                </div>
+
+                <!-- Tickets List -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Tickets Activos</h3>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <select id="supervisorTicketStatusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todos los estados</option>
+                                    <option value="abierto">Abiertos</option>
+                                    <option value="en-progreso">En progreso</option>
+                                    <option value="pendiente">Pendientes</option>
+                                    <option value="resuelto">Resueltos</option>
+                                </select>
+                                <select id="supervisorTicketPriorityFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todas las prioridades</option>
+                                    <option value="urgent">Urgente</option>
+                                    <option value="high">Alta</option>
+                                    <option value="medium">Media</option>
+                                    <option value="low">Baja</option>
+                                </select>
+                                <select id="supervisorTicketAgentFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="">Todos los agentes</option>
+                                    <option value="Ana López">Ana López</option>
+                                    <option value="Juan Pérez">Juan Pérez</option>
+                                    <option value="Sofía Martínez">Sofía Martínez</option>
+                                    <option value="Carlos Ruiz">Carlos Ruiz</option>
+                                </select>
+                                <input
+                                    type="text"
+                                    id="supervisorTicketSearch"
+                                    placeholder="Buscar tickets..."
+                                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="supervisorTicketsList">
+                            <!-- Tickets will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nueva sección para Tickets Inactivos -->
+            <div id="inactive-tickets-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Tickets Inactivos</h2>
+                    <p class="text-gray-600">Gestiona tickets cerrados y permite reaperturas en caso de no conformidad</p>
+                </div>
+
+                <!-- Tickets Inactivos List -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Tickets Cerrados</h3>
+                            <input
+                                type="text"
+                                id="inactiveTicketSearch"
+                                placeholder="Buscar tickets cerrados..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="inactiveTicketsList">
+                            <!-- Tickets inactivos se cargarán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workload Section -->
+            <div id="workload-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Carga de Trabajo</h2>
+                    <p class="text-gray-600">Distribuye y equilibra la carga de trabajo del equipo</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución Actual</h3>
+                        <div class="chart-container">
+                            <canvas id="workloadChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
+                        <div class="space-y-4">
+                            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg transition-colors text-left">
+                                🔄 Redistribuir tickets automáticamente
+                            </button>
+                            <button class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors text-left">
+                                ➕ Asignar tickets sin asignar
+                            </button>
+                            <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-lg transition-colors text-left">
+                                ⚠️ Revisar tickets vencidos
+                            </button>
+                            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg transition-colors text-left">
+                                📊 Generar reporte de carga
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Section -->
+            <div id="performance-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Análisis de Rendimiento</h2>
+                    <p class="text-gray-600">Métricas detalladas del rendimiento del equipo</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Semanal</h3>
+                        <div class="chart-container">
+                            <canvas id="weeklyTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Comparativa Agentes</h3>
+                        <div class="chart-container">
+                            <canvas id="agentComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Métricas Clave</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-blue-600">94.5%</p>
+                            <p class="text-sm text-gray-600">Primera Resolución</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-green-600">1.8h</p>
+                            <p class="text-sm text-gray-600">Tiempo Promedio</p>
+                        </div>
+                        <div class="text-center p-4 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-purple-600">4.8/5</p>
+                            <p class="text-sm text-gray-600">Satisfacción</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Escalations Section -->
+            <div id="escalations-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Escalaciones</h2>
+                    <p class="text-gray-600">Gestiona tickets escalados y situaciones críticas</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <span class="text-2xl">🚨</span>
+                            <h3 class="font-semibold text-red-900">Críticas</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-red-600">3</p>
+                        <p class="text-sm text-red-600">Requieren atención inmediata</p>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <span class="text-2xl">⚠️</span>
+                            <h3 class="font-semibold text-yellow-900">Pendientes</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-yellow-600">7</p>
+                        <p class="text-sm text-yellow-600">En proceso de escalación</p>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                        <div class="flex items-center space-x-3 mb-3">
+                            <span class="text-2xl">📋</span>
+                            <h3 class="font-semibold text-blue-900">Resueltas</h3>
+                        </div>
+                        <p class="text-3xl font-bold text-blue-600">24</p>
+                        <p class="text-sm text-blue-600">Esta semana</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Escalaciones Activas</h3>
+                            <!-- Barra de búsqueda para escalaciones -->
+                            <input
+                                type="text"
+                                id="escalationSearch"
+                                placeholder="Buscar escalaciones..."
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                            >
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="space-y-4" id="escalationsList">
+                            <!-- Escalations will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports Section -->
+            <div id="reports-section" class="p-6 hidden">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Reportes</h2>
+                    <p class="text-gray-600">Genera reportes detallados para la gerencia</p>
+                </div>
+
+                <!-- Nuevo contenedor para limitar el ancho -->
+                <div class="max-w-5xl mx-auto">
+                    <!-- Cambiar a 1-2 columnas para evitar vista muy ancha -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Reporte Semanal (FIX de markup y select) -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">📅</span>
+                                <h3 class="font-semibold text-gray-900">Reporte semanal</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Resumen de la última semana.</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="weeklyReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('semanal')">
+                                Generar Reporte
+                            </button>
+                        </div>
+
+                        <!-- Rendimiento individual -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">👥</span>
+                                <h3 class="font-semibold text-gray-900">Rendimiento individual</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Agente:</label>
+                                <select id="individualAgentSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="Ana López">Ana López</option>
+                                    <option value="Juan Pérez">Juan Pérez</option>
+                                    <option value="Sofía Martínez">Sofía Martínez</option>
+                                    <option value="Carlos Ruiz">Carlos Ruiz</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="individualReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('individual')">
+                                Generar Reporte
+                            </button>
+                        </div>
+
+                        <!-- SLA Compliance -->
+                        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                            <div class="flex items-center space-x-3 mb-4">
+                                <span class="text-2xl">🎯</span>
+                                <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                                <select id="slaReportFormat" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                                    <option value="pdf">PDF</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
+                                onclick="generateReport('sla')">
+                                Generar Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal único de supervisión de ticket -->
+    <div id="superviseModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
+            <h3 class="text-lg font-semibold mb-4">Supervisar Ticket</h3>
+            <p class="mb-2 text-gray-700" id="superviseTicketTitle"></p>
+            <div class="flex">
+                <!-- Área de chat -->
+                <div class="w-2/3 pr-4">
+                    <div class="border border-gray-200 rounded-lg h-96 flex flex-col">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="superviseChatMessages">
+                            <!-- Mensajes se cargarán aquí -->
+                        </div>
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Chat bloqueado - Haz clic en 'Intervenir' para escribir..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="superviseChatInput" disabled onkeypress="handleSuperviseChatKeyPress(event)">
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" id="superviseSendBtn" disabled onclick="sendSuperviseMessage()">
+                                    📤
+                                </button>
+                            </div>
+                            <div class="mt-2 flex justify-end">
+                                <button onclick="interveneChat()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                                    Intervenir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Opciones de supervisión -->
+                <div class="w-1/3 pl-4 space-y-4">
+                    <!-- Reasignar -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Reasignar a otro agente:</label>
+                        <select id="superviseAgentSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <!-- Opciones generadas por JS -->
+                        </select>
+                        <button onclick="confirmReassignSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Reasignar</button>
+                    </div>
+                    <!-- Escalar -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Escalar a categoría:</label>
+                        <select id="superviseEscalateSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2">
+                            <option value="">Selecciona una categoría</option>
+                            <option value="hardware">🖥️ Hardware (Computadora, impresora, etc.)</option>
+                            <option value="software">💾 Software (Programas, aplicaciones)</option>
+                            <option value="network">🌐 Red (Internet, WiFi, acceso)</option>
+                            <option value="email">📧 Email (Outlook, correo)</option>
+                            <option value="phone">📞 Teléfono (Extensiones, llamadas)</option>
+                            <option value="access">🔐 Accesos (Permisos, cuentas)</option>
+                            <option value="other">❓ Otro</option>
+                        </select>
+                        <button onclick="confirmEscalateSupervise()" class="w-full mb-2 px-4 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white">Escalar Ticket</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button onclick="closeSuperviseModal()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de edición de perfil del supervisor -->
+    <div id="supervisorProfileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+                    <button onclick="closeSupervisorProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="updateSupervisorProfile(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                        <input type="text" id="supervisorInputName" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+                        <input type="email" id="supervisorInputEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeSupervisorProfileModal()">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal único de supervisión de ticket inactivo -->
+    <div id="superviseInactiveModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-lg p-6 w-full max-w-4xl">
+            <h3 class="text-lg font-semibold mb-4">Supervisar Ticket Inactivo</h3>
+            <p class="mb-2 text-gray-700" id="superviseInactiveTicketTitle"></p>
+            <div class="flex">
+                <!-- Área de chat -->
+                <div class="w-2/3 pr-4">
+                    <div class="border border-gray-200 rounded-lg h-96 flex flex-col">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="superviseInactiveChatMessages">
+                            <!-- Mensajes se cargarán aquí -->
+                        </div>
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Chat bloqueado - Solo lectura para tickets inactivos..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="superviseInactiveChatInput" disabled readonly>
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" id="superviseInactiveSendBtn" disabled>
+                                    📤
+                                </button>
+                            </div>
+                            <!-- Removed intervene button for inactive tickets -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Opciones de supervisión -->
+                <div class="w-1/3 pl-4 space-y-4">
+                    <!-- Reabrir -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">Razón para reabrir:</label>
+                        <textarea id="reopenReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-2" placeholder="Explica por qué se reabre el ticket..."></textarea>
+                        <button onclick="confirmReopenInactive()" class="w-full mb-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white">Reabrir Ticket</button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end mt-4">
+                <button onclick="closeSuperviseInactiveModal()" class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../JS/supervisor.js"></script>
+</body>
+</html>

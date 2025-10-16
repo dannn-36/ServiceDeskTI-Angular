@@ -1,0 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+body { font-family: 'Inter', sans-serif; }
+.ticket-item:hover { background-color: #f8fafc; }
+.ticket-item.selected { background-color: #eff6ff; border-left: 4px solid #3b82f6; }
+.ticket-item.unread { border-left: 4px solid #f59e0b; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease-out; }
+.chat-message { animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+.typing-indicator { animation: pulse 1.5s infinite; }
+.notification-dot { animation: bounce 1s infinite; }

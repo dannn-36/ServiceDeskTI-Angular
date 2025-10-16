@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Soporte TI - Empleados</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../CSS/user.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+<header class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">IT</span>
+                    </div>
+                    <h1 class="text-xl font-bold text-gray-900">Portal de Soporte TI</h1>
+                </div>
+            </div>
+
+            <!-- Lado derecho -->
+            <div class="flex items-center space-x-4">
+                <!-- Perfil -->
+                <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" onclick="showProfileModal()">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span>👤</span>
+                    </div>
+                    <span id="profileName">Carlos Mendoza</span>
+                </div>
+
+                <!-- Ajustes -->
+                <button class="text-gray-400 hover:text-gray-600 transition-colors" onclick="showProfileModal()" aria-label="Ajustes">
+                    ⚙️
+                </button>
+
+                <!-- Botón de cerrar sesión (puerta) -->
+                <button id="logoutBtn"
+                    class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                    onclick="confirmLogout()"
+                    aria-label="Cerrar sesión"
+                    title="Cerrar sesión">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="h-5 w-5" fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+                    </svg>
+                    <span class="text-sm font-medium">Salir</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Welcome Section -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 mb-8 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold mb-2">¡Hola Carlos! 👋</h2>
+                    <p class="text-blue-100 mb-4">¿Necesitas ayuda con algún problema de tecnología? Estamos aquí para ayudarte.</p>
+                    <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors" onclick="showNewTicketForm()">
+                        🎫 Reportar Problema
+                    </button>
+                </div>
+                <div class="hidden md:block text-6xl opacity-20">
+                    💻
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" onclick="showNewTicketForm('hardware')">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">🖥️</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Problemas de Hardware</h3>
+                        <p class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" onclick="showNewTicketForm('software')">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">💾</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Problemas de Software</h3>
+                        <p class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" onclick="showNewTicketForm('network')">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <span class="text-2xl">🌐</span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Problemas de Red</h3>
+                        <p class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- My Tickets Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">Mis Tickets</h2>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" 
+                               id="ticketSearch"
+                               placeholder="Buscar tickets..." 
+                               class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64">
+                        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1.5" id="statusFilter" onchange="filterMyTickets()">
+                            <option value="">Todos</option>
+                            <option value="abierto">Abiertos</option>
+                            <option value="en-progreso">En Progreso</option>
+                            <option value="resuelto">Resueltos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="myTicketsList">
+                <!-- Tickets serán cargados por JavaScript -->
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Preguntas Frecuentes</h2>
+            </div>
+            <div class="divide-y divide-gray-200">
+                <div class="p-6">
+                    <button class="flex justify-between items-center w-full text-left" onclick="toggleFAQ(1)">
+                        <span class="font-medium text-gray-900">¿Cómo reseteo mi contraseña?</span>
+                        <span class="text-gray-400" id="faq-icon-1">▼</span>
+                    </button>
+                    <div class="hidden mt-3 text-sm text-gray-600" id="faq-content-1">
+                        Puedes resetear tu contraseña desde la página de login haciendo clic en "¿Olvidaste tu contraseña?" o contactando directamente a soporte TI.
+                    </div>
+                </div>
+                <div class="p-6">
+                    <button class="flex justify-between items-center w-full text-left" onclick="toggleFAQ(2)">
+                        <span class="font-medium text-gray-900">¿Cómo instalo software nuevo?</span>
+                        <span class="text-gray-400" id="faq-icon-2">▼</span>
+                    </button>
+                    <div class="hidden mt-3 text-sm text-gray-600" id="faq-content-2">
+                        Por políticas de seguridad, todo software debe ser instalado por el equipo de TI. Crea un ticket especificando qué programa necesitas y para qué lo usarás.
+                    </div>
+                </div>
+                <div class="p-6">
+                    <button class="flex justify-between items-center w-full text-left" onclick="toggleFAQ(3)">
+                        <span class="font-medium text-gray-900">¿Qué hago si mi computadora está lenta?</span>
+                        <span class="text-gray-400" id="faq-icon-3">▼</span>
+                    </button>
+                    <div class="hidden mt-3 text-sm text-gray-600" id="faq-content-3">
+                        Primero intenta reiniciar tu computadora. Si el problema persiste, cierra programas que no estés usando. Si sigue lenta, crea un ticket para que revisemos el rendimiento.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- New Ticket Modal -->
+    <div id="newTicketModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-lg w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Reportar Problema de TI</h3>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="createTicket(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Qué tipo de problema tienes?</label>
+                        <select required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="ticketCategory">
+                            <option value="">Selecciona una categoría</option>
+                            <option value="hardware">🖥️ Hardware (Computadora, impresora, etc.)</option>
+                            <option value="software">💾 Software (Programas, aplicaciones)</option>
+                            <option value="network">🌐 Red (Internet, WiFi, acceso)</option>
+                            <option value="email">📧 Email (Outlook, correo)</option>
+                            <option value="phone">📞 Teléfono (Extensiones, llamadas)</option>
+                            <option value="access">🔐 Accesos (Permisos, cuentas)</option>
+                            <option value="other">❓ Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Describe tu problema</label>
+                        <textarea required rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="ticketDescription" placeholder="Explica qué está pasando, cuándo empezó el problema y qué estabas haciendo cuando ocurrió..."></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Adjuntar archivos (opcional)</label>
+                        <input type="file" id="ticketAttachment" multiple class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors" onclick="closeNewTicketModal()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                            🎫 Crear Ticket
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Perfil Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+                    <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="updateProfile(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                        <input type="text" id="profileInputName" required class="w-full border border-gray-300 rounded-lg px-3 py-2" value="Carlos Mendoza">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+                        <input type="email" id="profileInputEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2" value="carlos.mendoza@empresa.com">
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeProfileModal()">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Detail Modal -->
+    <div id="ticketDetailModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900" id="detailTitle">Detalle del Ticket</h3>
+                    <div>
+                        <button id="btnReopenTicket" class="text-blue-600 hover:underline mr-2 hidden" onclick="reopenTicket()">Reabrir</button>
+                        <button id="btnEditTicket" class="text-yellow-600 hover:underline mr-2 hidden" onclick="showEditTicketModal()">Editar</button>
+                        <button id="btnCancelTicket" class="text-red-600 hover:underline mr-2 hidden" onclick="cancelTicket()">Cancelar</button>
+                        <button onclick="closeTicketDetailModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                    </div>
+                </div>
+                <div class="flex h-96">
+                    <!-- Info del ticket -->
+                    <div class="w-1/3 border-r border-gray-200 p-6">
+                        <div id="ticketInfo" class="space-y-4">
+                            <!-- Info será cargada por JavaScript -->
+                        </div>
+                        <div id="ticketAttachments" class="mt-4"></div>
+                        <div id="btnCloseTicketContainer" class="mt-4"></div>
+                    </div>
+                    <!-- Chat -->
+                    <div class="w-2/3 flex flex-col">
+                        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="ticketChat">
+                            <!-- Chat será cargado por JavaScript -->
+                        </div>
+                        <div class="border-t border-gray-200 p-4">
+                            <div class="flex space-x-2">
+                                <input type="text" placeholder="Escribe un mensaje..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="chatInput" onkeypress="handleChatKeyPress(event)">
+                                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" onclick="sendChatMessage()">
+                                    📤
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Ticket Modal -->
+    <div id="editTicketModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-lg w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Editar Ticket</h3>
+                    <button onclick="closeEditTicketModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="updateTicket(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
+                        <select required class="w-full border border-gray-300 rounded-lg px-3 py-2" id="editTicketCategory">
+                            <option value="hardware">🖥️ Hardware</option>
+                            <option value="software">💾 Software</option>
+                            <option value="network">🌐 Red</option>
+                            <option value="email">📧 Email</option>
+                            <option value="phone">📞 Teléfono</option>
+                            <option value="access">🔐 Accesos</option>
+                            <option value="other">❓ Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
+                        <textarea required rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2" id="editTicketDescription"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeEditTicketModal()">Cancelar</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Close Modal -->
+    <div id="confirmCloseModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Confirmar cierre de ticket</h3>
+                    <button onclick="closeConfirmCloseModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <div class="p-6">
+                    <p>¿Estás seguro de que deseas cerrar este ticket? Una vez cerrado, podrás evaluarlo.</p>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeConfirmCloseModal()">Cancelar</button>
+                        <button type="button" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium" onclick="confirmCloseTicket()">Cerrar Ticket</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Survey Modal -->
+    <div id="surveyModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold text-gray-900">Encuesta de Satisfacción</h3>
+                    <button onclick="closeSurveyModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <form class="p-6 space-y-4" onsubmit="submitSurvey(event)">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">¿Cómo calificarías la atención recibida?</label>
+                        <select required class="w-full border border-gray-300 rounded-lg px-3 py-2" id="surveyRating">
+                            <option value="">Selecciona una opción</option>
+                            <option value="5">Excelente</option>
+                            <option value="4">Buena</option>
+                            <option value="3">Regular</option>
+                            <option value="2">Mala</option>
+                            <option value="1">Muy mala</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Comentarios adicionales</label>
+                        <textarea rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2" id="surveyComments"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" onclick="closeSurveyModal()">Omitir</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Enviar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../JS/user.js"></script>
+</body>
+</html>

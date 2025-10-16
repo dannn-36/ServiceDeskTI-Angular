@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+body { 
+    font-family: 'Inter', sans-serif; 
+    box-sizing: border-box;
+}
+.sidebar-item:hover { background-color: #f3f4f6; }
+.sidebar-item.active { background-color: #dbeafe; border-right: 3px solid #3b82f6; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease-out; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+.slide-in { animation: slideIn 0.4s ease-out; }
+.stat-card:hover { transform: translateY(-2px); transition: all 0.3s ease; }
+.notification-dot { animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.chart-container { position: relative; height: 400px; }
+.priority-urgent { border-left: 4px solid #ef4444; }
+.priority-high { border-left: 4px solid #f97316; }
+.priority-medium { border-left: 4px solid #eab308; }
+.priority-low { border-left: 4px solid #22c55e; }

@@ -40,9 +40,10 @@ namespace ServiceDeskNg.Server.Services
         }
 
         // ✅ Obtener un administrador por ID
-        public Administrador GetById(int id)
+        public Administrador GetById(int id, bool incluedeRelations = false)
         {
             var admin = _adminRepo.GetById(id);
+
             if (admin == null)
                 throw new KeyNotFoundException($"No se encontró el administrador con ID {id}");
 

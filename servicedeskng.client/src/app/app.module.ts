@@ -12,6 +12,7 @@ import { AgenteComponent } from './agente/agente.component';
 import { TicketsComponent } from './tickets/tickets.component';
 import { HogarComponent } from './hogar/hogar.component';
 import { SupervisorComponent } from './supervisor/supervisor.component';
+import { UsuarioComponent } from './usuario/usuario.component';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import { SupervisorComponent } from './supervisor/supervisor.component';
     AgenteComponent,
     TicketsComponent,
     HogarComponent,
-    SupervisorComponent
+    SupervisorComponent,
+    UsuarioComponent
   ],
   imports: [
     BrowserModule,

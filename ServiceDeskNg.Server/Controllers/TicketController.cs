@@ -84,6 +84,30 @@ namespace ServiceDeskNg.Server.Controllers
             }
         }
 
+
+        // ===========================================================
+        // 🔹 OBTENER TICKETS POR AGENTE ASIGNADO
+        // GET: api/tickets/cliente/{idAgente}
+        // ===========================================================
+
+        [HttpGet("agente/{idAgente}")]
+        public IActionResult GetByAgenteId(int idAgente)
+        {
+            try
+            {
+                var tickets = _ticketService.GetByAgenteId(idAgente);
+                return Ok(tickets);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al obtener los tickets del agente", error = ex.Message });
+            }
+        }
+
         // ===========================================================
         // 🔹 CREAR NUEVO TICKET
         // POST: api/tickets

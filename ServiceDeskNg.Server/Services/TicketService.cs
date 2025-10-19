@@ -69,6 +69,16 @@ namespace ServiceDeskNg.Server.Services
                 .ToList();
         }
 
+        // Obtener tickets asignados a un agente
+        public IEnumerable<Ticket> GetByAgenteId(int agenteId)
+        {
+            return _context.Tickets
+                .Where(t => t.IdAgenteAsignado == agenteId)
+                .Include(t => t.IdEstadoTicketNavigation)
+                .Include(t => t.IdCategoriaTicketNavigation)
+                .ToList();
+        }
+
         // ✅ Crear nuevo ticket
         public void Create(Ticket entity)
         {

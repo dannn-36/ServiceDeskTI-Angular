@@ -65,15 +65,6 @@ namespace ServiceDeskNg.Server.Services
         }
 
         //verificar si una sesión de un usuario está activa
-        public bool verify(Sesion entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            var existing = _sesionRepo.GetById(entity.IdSesion);
-            if (existing == null)
-                throw new KeyNotFoundException($"No se encontró la sesión con ID {entity.IdSesion}");
-            return existing.SesionActiva ?? false;
-
-        }
+       
     }
 }

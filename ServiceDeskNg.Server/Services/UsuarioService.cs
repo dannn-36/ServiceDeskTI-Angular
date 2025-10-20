@@ -8,11 +8,13 @@ namespace ServiceDeskNg.Server.Services
     {
         private readonly UsuarioRepository _usuarioRepo;
         private readonly ServiceDeskContext _context;
+        private readonly SesionRepository _sesionRepo;
 
-        public UsuarioService(UsuarioRepository usuarioRepo, ServiceDeskContext context)
+        public UsuarioService(UsuarioRepository usuarioRepo, ServiceDeskContext context, SesionRepository sesionRepo)
         {
             _usuarioRepo = usuarioRepo;
             _context = context;
+            _sesionRepo = sesionRepo;
         }
 
         // ✅ Obtener todos los usuarios
@@ -131,12 +133,35 @@ namespace ServiceDeskNg.Server.Services
                 throw new UnauthorizedAccessException("Usuario no encontrado.");
 
             if (!BCrypt.Net.BCrypt.Verify(contrasena, usuario.ContrasenaUsuario))
-                            throw new UnauthorizedAccessException("Contraseña incorrecta.");
+                throw new UnauthorizedAccessException("Contraseña incorrecta.");
 
             if (usuario.EstadoUsuario?.ToLower() != "activo")
                 throw new UnauthorizedAccessException("La cuenta del usuario está inactiva.");
 
             return usuario;
+        }
+
+
+        public void Logout(Sesion entity)
+        {
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+            var existing = _sesionRepo.GetById(entity.IdSesion);
+            if (existing == null)
+                throw new KeyNotFoundException($"No se encontró la sesión con ID {entity.IdSesion}");
+            existing.FechaHoraFinSesion = DateTime.UtcNow;
+            existing.SesionActiva = false;
+            _sesionRepo.Update(existing);
+
+        }
+
+        public bool IsUserSessionActive(int userId)
+        {
+            return _context.Sesiones.Any(s => s.IdUsuario == userId && s.SesionActiva == true);
+
+
+
+
         }
     }
 }

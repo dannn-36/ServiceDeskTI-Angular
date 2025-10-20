@@ -10,14 +10,14 @@ namespace ServiceDeskNg.Server.Services
         private readonly ServiceDeskContext _context;
 
         // Implementación del servicio de sesión
-        public SesionService(SesionRepository sesionRepo, ServiceDeskContext context) 
+        public SesionService(SesionRepository sesionRepo, ServiceDeskContext context)
         {
             _sesionRepo = sesionRepo;
             _context = context;
         }
 
-        public IEnumerable<Sesion> GetAll( bool includeRelations = false)
-            {
+        public IEnumerable<Sesion> GetAll(bool includeRelations = false)
+        {
             if (includeRelations)
             {
                 return _context.Sesiones
@@ -31,7 +31,7 @@ namespace ServiceDeskNg.Server.Services
                         IdUsuarioNavigation = s.IdUsuarioNavigation
                     })
                     .ToList();
-            } 
+            }
             return _sesionRepo.GetAll();
         }
 
@@ -52,7 +52,28 @@ namespace ServiceDeskNg.Server.Services
             _sesionRepo.Add(entity);
         }
 
+        public void Update(Sesion entity)
+        {
 
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+            var existing = _sesionRepo.GetById(entity.IdSesion);
+            if (existing == null)
+                throw new KeyNotFoundException($"No se encontró la sesión con ID {entity.IdSesion}");
+            _sesionRepo.Update(entity);
 
+        }
+
+        //verificar si una sesión de un usuario está activa
+        public bool verify(Sesion entity)
+        {
+            if (entity == null)
+                throw new ArgumentNullException(nameof(entity));
+            var existing = _sesionRepo.GetById(entity.IdSesion);
+            if (existing == null)
+                throw new KeyNotFoundException($"No se encontró la sesión con ID {entity.IdSesion}");
+            return existing.SesionActiva ?? false;
+
+        }
     }
 }

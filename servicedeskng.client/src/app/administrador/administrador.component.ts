@@ -24,6 +24,12 @@ export class AdministradorComponent implements OnInit {
   profileName = 'Admin Sistema';
   profileEmail = 'admin@empresa.com';
 
+  // Contadores de roles
+  totalClientes = 0;
+  totalAgentes = 0;
+  totalSupervisores = 0;
+  totalAdministradores = 0;
+
   constructor(private usuarioService: UsuarioService) { }
 
   ngOnInit(): void {
@@ -39,9 +45,21 @@ export class AdministradorComponent implements OnInit {
   getUsers() {
     this.loadingUsers = true;
     this.usuarioService.getAll().subscribe({
-      next: (data) => { this.users = data; this.filterUsers(); this.loadingUsers = false; },
+      next: (data) => {
+        this.users = data;
+        this.updateRoleCounts();
+        this.filterUsers();
+        this.loadingUsers = false;
+      },
       error: () => { this.userError = 'Error al cargar usuarios'; this.loadingUsers = false; }
     });
+  }
+
+  updateRoleCounts() {
+    this.totalClientes = this.users.filter(u => u.tipoUsuario === 'Cliente').length;
+    this.totalAgentes = this.users.filter(u => u.tipoUsuario === 'Agente').length;
+    this.totalSupervisores = this.users.filter(u => u.tipoUsuario === 'Supervisor').length;
+    this.totalAdministradores = this.users.filter(u => u.tipoUsuario === 'Administrador').length;
   }
 
   filterUsers() {

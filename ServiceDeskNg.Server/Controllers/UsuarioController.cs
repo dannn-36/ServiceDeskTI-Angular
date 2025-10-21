@@ -95,7 +95,7 @@ namespace ServiceDeskNg.Server.Controllers
                 }
 
                 string tipo = usuarioDto.TipoUsuario;
-                if (tipo == "EndUser")
+                if (tipo == "Cliente")
                 {
                     var nivel = _usuarioService.GetNivelAccesoPorNombre("EndUser");
                     var endUser = new EndUser
@@ -124,6 +124,16 @@ namespace ServiceDeskNg.Server.Controllers
                         IdNivel = nivel?.IdNivel ?? 1
                     };
                     _usuarioService.CrearSupervisor(supervisor);
+                }
+                else if (tipo == "Administrador")
+                {
+                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Administrador");
+                    var admin = new Administrador
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        IdNivel = nivel?.IdNivel ?? 1
+                    };
+                    _usuarioService.CrearAdministrador(admin);
                 }
 
                 return CreatedAtAction(nameof(GetById), new { id = usuario.IdUsuario }, usuario);

@@ -247,5 +247,17 @@ namespace ServiceDeskNg.Server.Services
         {
             return _context.Usuarios.FirstOrDefault(u => u.CorreoUsuario == correo);
         }
+
+        // Nuevo: Crear Administrador desde UsuarioService
+        public void CrearAdministrador(Administrador admin)
+        {
+            if (admin == null)
+                throw new ArgumentNullException(nameof(admin));
+            _context.Administradores.Add(admin);
+            _context.SaveChanges();
+            var existe = _context.Administradores.Any(a => a.IdUsuario == admin.IdUsuario);
+            if (!existe)
+                throw new Exception($"No se pudo crear el registro Administrador para el usuario {admin.IdUsuario}");
+        }
     }
 }

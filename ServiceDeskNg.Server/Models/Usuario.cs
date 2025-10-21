@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ServiceDeskNg.Server.Models;
 
@@ -36,4 +37,8 @@ public partial class Usuario
     public virtual ICollection<TicketArchivo> TicketArchivos { get; set; } = new List<TicketArchivo>();
 
     public virtual ICollection<TicketMensaje> TicketMensajes { get; set; } = new List<TicketMensaje>();
+
+    // Propiedad auxiliar para mostrar el rol
+    [NotMapped]
+    public string? Rol { get; set; }
 }

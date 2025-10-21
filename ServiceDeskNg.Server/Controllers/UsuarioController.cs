@@ -66,28 +66,64 @@ namespace ServiceDeskNg.Server.Controllers
         /// POST api/Usuario
         /// Crea un nuevo usuario. Espera un objeto Usuario en el body.
         /// Retorna 201 con la ubicación del nuevo recurso.
-   
         [HttpPost]
-        public IActionResult Create([FromBody] Usuario usuario)
+        public IActionResult Create([FromBody] UsuarioCreateDto usuarioDto)
         {
             try
             {
-                if (usuario == null)
+                if (usuarioDto == null)
                     return BadRequest(new { message = "Los datos del usuario son inválidos." });
 
+                var usuario = new Usuario
+                {
+                    NombreUsuario = usuarioDto.NombreUsuario,
+                    CorreoUsuario = usuarioDto.CorreoUsuario,
+                    ContrasenaUsuario = usuarioDto.ContrasenaUsuario,
+                    DepartamentoUsuario = usuarioDto.DepartamentoUsuario,
+                    EstadoUsuario = usuarioDto.EstadoUsuario,
+                    UbicacionUsuario = usuarioDto.UbicacionUsuario
+                };
+
                 _usuarioService.Create(usuario);
+
+                string tipo = usuarioDto.TipoUsuario;
+                if (tipo == "EndUser")
+                {
+                    var nivel = _usuarioService.GetNivelAccesoPorNombre("EndUser");
+                    var endUser = new EndUser
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        IdNivel = nivel?.IdNivel ?? 1
+                    };
+                    _usuarioService.CrearEndUser(endUser);
+                }
+                else if (tipo == "Agente")
+                {
+                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Agente");
+                    var agente = new Agente
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        IdNivel = nivel?.IdNivel ?? 1
+                    };
+                    _usuarioService.CrearAgente(agente);
+                }
+                else if (tipo == "Supervisor")
+                {
+                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Supervisor");
+                    var supervisor = new Supervisor
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        IdNivel = nivel?.IdNivel ?? 1
+                    };
+                    _usuarioService.CrearSupervisor(supervisor);
+                }
+
                 return CreatedAtAction(nameof(GetById), new { id = usuario.IdUsuario }, usuario);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
             }
             catch (Exception ex)
             {
+                // Log detallado para depuración
+                System.Console.WriteLine("ERROR AL CREAR USUARIO: " + ex.ToString());
                 return StatusCode(500, new { message = "Error al crear el usuario", error = ex.Message });
             }
         }
@@ -96,30 +132,33 @@ namespace ServiceDeskNg.Server.Controllers
         /// Actualiza un usuario existente. El ID en la ruta debe coincidir con usuario.IdUsuario.
         /// Retorna 204 en caso de éxito.
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Usuario usuario)
+        public IActionResult Update(int id, [FromBody] UsuarioUpdateDto usuarioDto)
         {
             try
             {
-                if (usuario == null || usuario.IdUsuario != id)
+                if (usuarioDto == null)
                     return BadRequest(new { message = "Datos inválidos para actualizar el usuario." });
+
+                var usuario = _usuarioService.GetById(id);
+                if (usuario == null)
+                    return NotFound(new { message = "Usuario no encontrado." });
+
+                usuario.NombreUsuario = usuarioDto.NombreUsuario;
+                usuario.CorreoUsuario = usuarioDto.CorreoUsuario;
+                if (!string.IsNullOrWhiteSpace(usuarioDto.ContrasenaUsuario))
+                {
+                    usuario.ContrasenaUsuario = BCrypt.Net.BCrypt.HashPassword(usuarioDto.ContrasenaUsuario);
+                }
+                usuario.DepartamentoUsuario = usuarioDto.DepartamentoUsuario;
+                usuario.EstadoUsuario = usuarioDto.EstadoUsuario;
+                usuario.UbicacionUsuario = usuarioDto.UbicacionUsuario;
 
                 _usuarioService.Update(usuario);
                 return NoContent();
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
             catch (Exception ex)
             {
+                System.Console.WriteLine("ERROR AL ACTUALIZAR USUARIO: " + ex.ToString());
                 return StatusCode(500, new { message = "Error al actualizar el usuario", error = ex.Message });
             }
         }

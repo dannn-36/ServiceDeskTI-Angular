@@ -9,12 +9,12 @@ namespace ServiceDeskNg.Server.Controllers
     public class AdministradorController : ControllerBase
     {
         private readonly AdministradorService _administradorService;
-        private readonly IConfiguration _configuration;
-       
+        private readonly UsuarioService _usuarioService;
         public AdministradorController(
-            AdministradorService administradorService)
+            AdministradorService administradorService, UsuarioService usuarioService)
         {
             _administradorService = administradorService;
+            _usuarioService = usuarioService;
         }
         // ===========================================================
         // 🔹 OBTENER TODOS LOS ADMINISTRADORES (con o sin relaciones)
@@ -52,27 +52,6 @@ namespace ServiceDeskNg.Server.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Error al obtener el administrador", error = ex.Message });
-            }
-        }
-        // ===========================================================
-        // 🔹 CREAR NUEVO ADMINISTRADOR
-        // POST: api/administrador
-        // ===========================================================
-        [HttpPost]
-        public IActionResult Create([FromBody] Administrador administrador)
-        {
-            try
-            {
-                _administradorService.Create(administrador);
-                return CreatedAtAction(nameof(GetById), new { id = administrador.IdAdmin }, administrador);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al crear el administrador", error = ex.Message });
             }
         }
         // ===========================================================

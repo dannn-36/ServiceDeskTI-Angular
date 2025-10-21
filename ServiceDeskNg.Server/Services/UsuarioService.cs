@@ -1,4 +1,5 @@
-﻿using ServiceDeskNg.Server.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using ServiceDeskNg.Server.Data;
 using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Repositories;
 
@@ -9,12 +10,14 @@ namespace ServiceDeskNg.Server.Services
         private readonly UsuarioRepository _usuarioRepo;
         private readonly ServiceDeskContext _context;
         private readonly SesionRepository _sesionRepo;
+        private readonly EndUserRepository _endUserRepo;
 
-        public UsuarioService(UsuarioRepository usuarioRepo, ServiceDeskContext context, SesionRepository sesionRepo)
+        public UsuarioService(UsuarioRepository usuarioRepo, ServiceDeskContext context, SesionRepository sesionRepo, EndUserRepository endUserRepo)
         {
             _usuarioRepo = usuarioRepo;
             _context = context;
             _sesionRepo = sesionRepo;
+            _endUserRepo = endUserRepo;
         }
 
         // ✅ Obtener todos los usuarios
@@ -23,6 +26,10 @@ namespace ServiceDeskNg.Server.Services
             if (includeRelations)
             {
                 return _context.Usuarios
+                    .Include(u => u.Administradores)
+                    .Include(u => u.Supervisores)
+                    .Include(u => u.Agentes)
+                    .Include(u => u.Clientes)
                     .Select(u => new Usuario
                     {
                         IdUsuario = u.IdUsuario,
@@ -35,12 +42,22 @@ namespace ServiceDeskNg.Server.Services
                         Administradores = u.Administradores,
                         Agentes = u.Agentes,
                         Clientes = u.Clientes,
-                        Supervisores = u.Supervisores
+                        Supervisores = u.Supervisores,
+                        Rol = u.Administradores.Any() ? "Administrador" :
+                              u.Supervisores.Any() ? "Supervisor" :
+                              u.Agentes.Any() ? "Agente" :
+                              u.Clientes.Any() ? "Cliente" : "Sin Rol"
                     })
                     .ToList();
             }
-
-            return _usuarioRepo.GetAll();
+            var usuarios = _usuarioRepo.GetAll().Select(u => {
+                u.Rol = u.Administradores.Any() ? "Administrador" :
+                        u.Supervisores.Any() ? "Supervisor" :
+                        u.Agentes.Any() ? "Agente" :
+                        u.Clientes.Any() ? "Cliente" : "Sin Rol";
+                return u;
+            }).ToList();
+            return usuarios;
         }
 
         // ✅ Obtener un usuario por ID
@@ -162,6 +179,38 @@ namespace ServiceDeskNg.Server.Services
 
 
 
+        }
+
+        // Nuevo: Crear EndUser desde UsuarioService
+        public void CrearEndUser(EndUser endUser)
+        {
+            if (endUser == null)
+                throw new ArgumentNullException(nameof(endUser));
+            _endUserRepo.Add(endUser);
+        }
+
+        // Nuevo: Crear Agente desde UsuarioService
+        public void CrearAgente(Agente agente)
+        {
+            if (agente == null)
+                throw new ArgumentNullException(nameof(agente));
+            _context.Agentes.Add(agente);
+            _context.SaveChanges();
+        }
+
+        // Nuevo: Crear Supervisor desde UsuarioService
+        public void CrearSupervisor(Supervisor supervisor)
+        {
+            if (supervisor == null)
+                throw new ArgumentNullException(nameof(supervisor));
+            _context.Supervisores.Add(supervisor);
+            _context.SaveChanges();
+        }
+
+        // Nuevo: Obtener nivel de acceso por nombre
+        public NivelesAcceso? GetNivelAccesoPorNombre(string nombre)
+        {
+            return _context.NivelesAccesos.FirstOrDefault(n => n.Nombre == nombre);
         }
     }
 }

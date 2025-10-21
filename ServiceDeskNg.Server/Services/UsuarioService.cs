@@ -29,7 +29,7 @@ namespace ServiceDeskNg.Server.Services
                     .Include(u => u.Administradores)
                     .Include(u => u.Supervisores)
                     .Include(u => u.Agentes)
-                    .Include(u => u.Clientes)
+                    .Include(u => u.Clientes) // Asegura que siempre se incluye la relación Clientes
                     .Select(u => new Usuario
                     {
                         IdUsuario = u.IdUsuario,
@@ -46,7 +46,7 @@ namespace ServiceDeskNg.Server.Services
                         Rol = u.Administradores.Any() ? "Administrador" :
                               u.Supervisores.Any() ? "Supervisor" :
                               u.Agentes.Any() ? "Agente" :
-                              u.Clientes.Any() ? "Cliente" : "Sin Rol"
+                              u.Clientes.Any() ? "EndUser" : "Sin Rol"
                     })
                     .ToList();
             }
@@ -54,7 +54,7 @@ namespace ServiceDeskNg.Server.Services
                 u.Rol = u.Administradores.Any() ? "Administrador" :
                         u.Supervisores.Any() ? "Supervisor" :
                         u.Agentes.Any() ? "Agente" :
-                        u.Clientes.Any() ? "Cliente" : "Sin Rol";
+                        u.Clientes.Any() ? "EndUser" : "Sin Rol";
                 return u;
             }).ToList();
             return usuarios;
@@ -187,6 +187,10 @@ namespace ServiceDeskNg.Server.Services
             if (endUser == null)
                 throw new ArgumentNullException(nameof(endUser));
             _endUserRepo.Add(endUser);
+            // Validación extra: lanzar excepción si no se insertó
+            var existe = _endUserRepo.GetAll().Any(e => e.IdUsuario == endUser.IdUsuario);
+            if (!existe)
+                throw new Exception($"No se pudo crear el registro EndUser para el usuario {endUser.IdUsuario}");
         }
 
         // Nuevo: Crear Agente desde UsuarioService
@@ -211,6 +215,37 @@ namespace ServiceDeskNg.Server.Services
         public NivelesAcceso? GetNivelAccesoPorNombre(string nombre)
         {
             return _context.NivelesAccesos.FirstOrDefault(n => n.Nombre == nombre);
+        }
+
+        // Nuevo: Obtener todos los usuarios como DTOs
+        public IEnumerable<UsuarioDto> GetAllUsuariosDto()
+        {
+            var usuarios = _context.Usuarios
+                .Include(u => u.Administradores)
+                .Include(u => u.Supervisores)
+                .Include(u => u.Agentes)
+                .Include(u => u.Clientes)
+                .ToList();
+
+            return usuarios.Select(u => new UsuarioDto
+            {
+                IdUsuario = u.IdUsuario,
+                NombreUsuario = u.NombreUsuario,
+                CorreoUsuario = u.CorreoUsuario,
+                EstadoUsuario = u.EstadoUsuario,
+                DepartamentoUsuario = u.DepartamentoUsuario,
+                UbicacionUsuario = u.UbicacionUsuario,
+                FechaHoraCreacionUsuario = u.FechaHoraCreacionUsuario,
+                TipoUsuario = u.Administradores.Any() ? "Administrador" :
+                              u.Supervisores.Any() ? "Supervisor" :
+                              u.Agentes.Any() ? "Agente" :
+                              u.Clientes.Any() ? "Cliente" : "Sin Rol"
+            });
+        }
+
+        public Usuario? GetByCorreo(string correo)
+        {
+            return _context.Usuarios.FirstOrDefault(u => u.CorreoUsuario == correo);
         }
     }
 }

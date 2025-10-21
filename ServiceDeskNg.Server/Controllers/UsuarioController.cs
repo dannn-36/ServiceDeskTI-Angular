@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Services;
+using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
@@ -26,12 +27,12 @@ namespace ServiceDeskNg.Server.Controllers
         /// (por ejemplo, administradores/agentes asociados) para facilitar vistas detalladas.
       
         [HttpGet]
-        public IActionResult GetAll([FromQuery] bool includeRelations = false)
+        public IActionResult GetAll()
         {
             try
             {
-                var usuarios = _usuarioService.GetAll(includeRelations);
-                return Ok(usuarios);
+                var usuariosDto = _usuarioService.GetAllUsuariosDto();
+                return Ok(usuariosDto);
             }
             catch (Exception ex)
             {
@@ -85,6 +86,13 @@ namespace ServiceDeskNg.Server.Controllers
                 };
 
                 _usuarioService.Create(usuario);
+
+                // Obtener el usuario recién creado por correo para asegurar el IdUsuario
+                var usuarioCreado = _usuarioService.GetByCorreo(usuario.CorreoUsuario);
+                if (usuarioCreado != null)
+                {
+                    usuario.IdUsuario = usuarioCreado.IdUsuario;
+                }
 
                 string tipo = usuarioDto.TipoUsuario;
                 if (tipo == "EndUser")

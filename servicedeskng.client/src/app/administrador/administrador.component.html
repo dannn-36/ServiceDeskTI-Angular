@@ -375,7 +375,7 @@
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
@@ -387,30 +387,30 @@
                         <span class="text-sm">👤</span>
                       </div>
                       <div>
-                        <div class="text-sm font-medium text-gray-900">{{user.nombre}}</div>
-                        <div class="text-sm text-gray-500">{{user.correo}}</div>
+                        <div class="text-sm font-medium text-gray-900">{{user.nombreUsuario}}</div>
+                        <div class="text-sm text-gray-500">{{user.correoUsuario}}</div>
                       </div>
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                           [ngClass]="{
-                            'bg-blue-100 text-blue-800': user.rol === 'Cliente',
-                            'bg-green-100 text-green-800': user.rol === 'Agente',
-                            'bg-yellow-100 text-yellow-800': user.rol === 'Supervisor',
-                            'bg-purple-100 text-purple-800': user.rol === 'Administrador'
+                            'bg-blue-100 text-blue-800': user.tipoUsuario === 'EndUser',
+                            'bg-green-100 text-green-800': user.tipoUsuario === 'Agente',
+                            'bg-yellow-100 text-yellow-800': user.tipoUsuario === 'Supervisor',
+                            'bg-purple-100 text-purple-800': user.tipoUsuario === 'Administrador'
                           }">
-                      {{user.rol}}
+                      {{user.tipoUsuario}}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{user.departamento}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{user.departamentoUsuario}}</td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          [ngClass]="user.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                      {{user.estado}}
+                          [ngClass]="user.estadoUsuario === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
+                      {{user.estadoUsuario}}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{user.ultimoAcceso}}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{user.fechaHoraCreacionUsuario | date:'short'}}</td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="startEditUser(user)">Editar</button>
                     <button class="text-red-600 hover:text-red-900" (click)="deleteUser(user)">Eliminar</button>
@@ -603,19 +603,23 @@
   <div *ngIf="showUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl w-96 p-6">
       <h2 class="text-xl font-semibold mb-4 text-gray-800">Nuevo Usuario</h2>
-      <form (submit)="$event.preventDefault(); closeUserModal();">
+      <form (ngSubmit)="createUser()">
         <div class="mb-3">
           <label for="userName" class="block text-sm font-medium text-gray-700">Nombre completo</label>
-          <input type="text" id="userName" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
+          <input type="text" id="userName" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="newUser.nombreUsuario" name="nombreUsuario" required>
         </div>
         <div class="mb-3">
           <label for="userEmail" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
-          <input type="email" id="userEmail" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
+          <input type="email" id="userEmail" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="newUser.correoUsuario" name="correoUsuario" required>
+        </div>
+        <div class="mb-3">
+          <label for="userPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+          <input type="password" id="userPassword" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="newUser.contrasenaUsuario" name="contrasenaUsuario" required>
         </div>
         <div class="mb-3">
           <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
-          <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="Cliente">Cliente</option>
+          <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="newUser.tipoUsuario" name="tipoUsuario" required (change)="onRoleChange($event)">
+            <option value="EndUser">Cliente</option>
             <option value="Agente">Agente</option>
             <option value="Supervisor">Supervisor</option>
             <option value="Administrador">Administrador</option>
@@ -623,12 +627,7 @@
         </div>
         <div class="mb-4">
           <label for="userDept" class="block text-sm font-medium text-gray-700">Departamento</label>
-          <select id="userDept" class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            <option>Ventas</option>
-            <option>TI</option>
-            <option>Contabilidad</option>
-            <option>Soporte</option>
-          </select>
+          <input id="userDept" class="mt-1 w-full border border-gray-300 rounded-md p-2" [(ngModel)]="newUser.departamentoUsuario" name="departamentoUsuario">
         </div>
         <div class="flex justify-end space-x-2 mt-5">
           <button type="button" (click)="closeUserModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>

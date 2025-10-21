@@ -1,2 +1,26 @@
-<p>usuario works!</p>
-:)):):):):):):):):):):):):):):
+<div class="p-4">
+  <h2 class="text-xl font-bold mb-4">Lista de Usuarios</h2>
+  <div *ngIf="loading">Cargando...</div>
+  <div *ngIf="error" class="text-red-600">{{error}}</div>
+  <table *ngIf="usuarios.length > 0" class="min-w-full divide-y divide-gray-200 mt-4">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-4 py-2">Nombre</th>
+        <th class="px-4 py-2">Correo</th>
+        <th class="px-4 py-2">Rol</th>
+        <th class="px-4 py-2">Departamento</th>
+        <th class="px-4 py-2">Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of usuarios">
+        <td class="px-4 py-2">{{user.nombreUsuario}}</td>
+        <td class="px-4 py-2">{{user.correoUsuario}}</td>
+        <td class="px-4 py-2">{{user.tipoUsuario}}</td>
+        <td class="px-4 py-2">{{user.departamentoUsuario}}</td>
+        <td class="px-4 py-2">{{user.estadoUsuario}}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div *ngIf="!loading && usuarios.length === 0" class="text-gray-500">No hay usuarios registrados.</div>
+</div>

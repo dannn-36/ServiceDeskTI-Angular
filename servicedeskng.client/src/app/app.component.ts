@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
 
 interface WeatherForecast {
   date: string;
@@ -14,12 +15,25 @@ interface WeatherForecast {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnInit {
-  public forecasts: WeatherForecast[] = [];
+  title = 'servicedeskng.client';
 
-  constructor(private http: HttpClient) {}
+  public forecasts: WeatherForecast[] = [];
+  correoUsuario: string = '';
+  contrasenaUsuario: string = '';
+  rol: string | null = null;
+  loginError: string = '';
+  showMenu = true;
+
+  constructor(private http: HttpClient, private router: Router) {}
 
   ngOnInit() {
-    this.getForecasts();
+    this.rol = localStorage.getItem('rol');
+    this.router.events.subscribe(event => {
+      if (event instanceof NavigationEnd) {
+        // Oculta el menú solo en la página de login
+        this.showMenu = !['/', '/hogar', '/login'].includes(this.router.url);
+      }
+    });
   }
 
   getForecasts() {
@@ -33,5 +47,28 @@ export class AppComponent implements OnInit {
     );
   }
 
-  title = 'servicedeskng.client';
+  login() {
+    this.loginError = '';
+    const body = {
+      CorreoUsuario: this.correoUsuario,
+      ContrasenaUsuario: this.contrasenaUsuario
+    };
+    this.http.post<any>('/api/auth/login', body).subscribe({
+      next: (response) => {
+        this.rol = response.rol;
+        localStorage.setItem('rol', response.rol);
+        // Puedes guardar más datos si lo necesitas
+      },
+      error: (err) => {
+        this.loginError = err.error?.message || 'Error de autenticación';
+      }
+    });
+  }
+
+  logout() {
+    localStorage.removeItem('rol');
+    this.rol = null;
+    this.correoUsuario = '';
+    this.contrasenaUsuario = '';
+  }
 }

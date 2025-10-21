@@ -144,7 +144,12 @@ namespace ServiceDeskNg.Server.Services
             if (string.IsNullOrWhiteSpace(correo) || string.IsNullOrWhiteSpace(contrasena))
                 throw new ArgumentException("El correo y la contraseña son obligatorios.");
 
-            var usuario = _context.Usuarios.FirstOrDefault(u => u.CorreoUsuario == correo);
+            var usuario = _context.Usuarios
+                .Include(u => u.Administradores)
+                .Include(u => u.Supervisores)
+                .Include(u => u.Agentes)
+                .Include(u => u.Clientes)
+                .FirstOrDefault(u => u.CorreoUsuario == correo);
 
             if (usuario == null)
                 throw new UnauthorizedAccessException("Usuario no encontrado.");

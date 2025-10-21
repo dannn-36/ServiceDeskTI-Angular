@@ -1,12 +1,26 @@
+<div *ngIf="!rol">
+  <h2>Iniciar sesión</h2>
+  <form (ngSubmit)="login()" #loginForm="ngForm">
+    <label for="correoUsuario">Correo electrónico:</label>
+    <input id="correoUsuario" name="correoUsuario" [(ngModel)]="correoUsuario" required>
+    <br>
+    <label for="contrasenaUsuario">Contraseña:</label>
+    <input id="contrasenaUsuario" name="contrasenaUsuario" type="password" [(ngModel)]="contrasenaUsuario" required>
+    <br>
+    <button type="submit">Entrar</button>
+    <div *ngIf="loginError" style="color:red">{{loginError}}</div>
+  </form>
+</div>
 
-<nav>
+<nav *ngIf="showMenu && rol">
   <a routerLink="/">Hogar</a> |
-  <a routerLink="/cliente">Cliente</a> |
-  <a routerLink="/administrador">Administrador</a> |
-  <a routerLink="/agente">Agente</a> |
-  <a routerLink="/tickets">Tickets</a> |
-  <a routerLink="/supervisor">Supervisor</a>
+  <a *ngIf="rol === 'Cliente'" routerLink="/cliente">Cliente</a> |
+  <a *ngIf="rol === 'Administrador'" routerLink="/administrador">Administrador</a> |
+  <a *ngIf="rol === 'Agente'" routerLink="/agente">Agente</a> |
+  <a *ngIf="rol === 'Supervisor'" routerLink="/supervisor">Supervisor</a> |
+  <a routerLink="/tickets">Tickets</a>
+  <button (click)="logout()">Cerrar sesión</button>
 </nav>
-<hr>
+<hr *ngIf="showMenu && rol">
 <router-outlet></router-outlet>
 

@@ -37,6 +37,18 @@ namespace ServiceDeskNg.Server.Controllers
 
                 var usuario = _usuarioService.Authenticate(request.CorreoUsuario, request.ContrasenaUsuario);
 
+                // Determinar el rol del usuario
+                if (usuario.Administradores != null && usuario.Administradores.Count > 0)
+                    usuario.Rol = "Administrador";
+                else if (usuario.Supervisores != null && usuario.Supervisores.Count > 0)
+                    usuario.Rol = "Supervisor";
+                else if (usuario.Agentes != null && usuario.Agentes.Count > 0)
+                    usuario.Rol = "Agente";
+                else if (usuario.Clientes != null && usuario.Clientes.Count > 0)
+                    usuario.Rol = "Cliente";
+                else
+                    usuario.Rol = "Desconocido";
+
                 // Crear sesión
                 var sesion = new Sesion
                 {
@@ -51,11 +63,15 @@ namespace ServiceDeskNg.Server.Controllers
                 // No devolver contraseña
                 usuario.ContrasenaUsuario = null!;
 
+                // Log para depuración
+                Console.WriteLine($"Login OK: usuario={usuario.CorreoUsuario}, rol={usuario.Rol}");
+
                 return Ok(new
                 {
                     message = "Autenticación exitosa",
                     usuario,
-                    sessionId = sesion.IdSesion
+                    sessionId = sesion.IdSesion,
+                    rol = usuario.Rol // <-- Asegura que sea exactamente 'Administrador', 'Cliente', etc.
                 });
             }
             catch (UnauthorizedAccessException ex)

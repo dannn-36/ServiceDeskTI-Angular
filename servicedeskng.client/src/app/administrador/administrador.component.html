@@ -609,7 +609,7 @@
         <div class="mb-3" *ngIf="!userEditMode">
           <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
           <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="formUser.tipoUsuario" name="tipoUsuario" required (change)="onRoleChange($event)">
-            <option value="EndUser">Cliente</option>
+            <option value="Cliente">Cliente</option>
             <option value="Agente">Agente</option>
             <option value="Supervisor">Supervisor</option>
             <option value="Administrador">Administrador</option>

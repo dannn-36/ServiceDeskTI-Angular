@@ -27,8 +27,8 @@ export class HogarComponent {
         // Redirigir según el rol
         if (response.rol === 'Administrador') {
           this.router.navigate(['/administrador']);
-        } else if (response.rol === 'Cliente') {
-          this.router.navigate(['/cliente']);
+        } else if (response.rol === 'Cliente' || response.rol === 'EndUser') {
+          this.router.navigate(['/end-user']);
         } else if (response.rol === 'Agente') {
           this.router.navigate(['/agente']);
         } else if (response.rol === 'Supervisor') {

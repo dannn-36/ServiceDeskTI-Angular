@@ -15,7 +15,7 @@ export class AdministradorComponent implements OnInit {
   loadingUsers = false;
   userError = '';
   selectedUser: Usuario | null = null;
-  formUser: Partial<Usuario> = { tipoUsuario: 'Cliente' };
+  formUser: Partial<Usuario> = {};
   userEditMode = false;
 
   // Secciones y perfil
@@ -75,7 +75,7 @@ export class AdministradorComponent implements OnInit {
   openUserModal() {
     this.userEditMode = false;
     this.selectedUser = null;
-    this.formUser = { tipoUsuario: 'Cliente' };
+    this.formUser = { tipoUsuario: 'EndUser' };
     this.showUserModal = true;
   }
   closeUserModal() {
@@ -94,7 +94,7 @@ export class AdministradorComponent implements OnInit {
       estadoUsuario: this.formUser.estadoUsuario || undefined
     };
     this.usuarioService.create(usuario).subscribe({
-      next: () => { this.getUsers(); this.formUser = { tipoUsuario: 'Cliente' }; this.showUserModal = false; },
+      next: () => { this.getUsers(); this.formUser = { tipoUsuario: 'EndUser' }; this.showUserModal = false; },
       error: (err) => {
         this.userError = err?.error?.message || 'Error al crear usuario';
       }
@@ -136,7 +136,7 @@ export class AdministradorComponent implements OnInit {
 
   onRoleChange(event: any) {
     if (event.target.value === 'Cliente') {
-      this.formUser.tipoUsuario = 'Cliente';
+      this.formUser.tipoUsuario = 'EndUser';
     }
   }
 

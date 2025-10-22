@@ -1,112 +1,153 @@
-<div class="p-6">
-  <div class="mb-6 flex justify-between items-center">
-    <div>
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
-      <p class="text-gray-600">Administra usuarios finales del sistema</p>
-    </div>
-    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" (click)="openUserModal()">
-      ➕ Nuevo Usuario
-    </button>
-  </div>
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold text-gray-900">Lista de Usuarios</h3>
-      <div class="flex space-x-3">
-        <input type="text" [(ngModel)]="userSearch" (input)="filterUsers()" placeholder="Buscar usuarios..."
-               class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-        <select [(ngModel)]="userRoleFilter" (change)="filterUsers()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-          <option value="">Todos los roles</option>
-          <option value="cliente">Clientes</option>
-          <option value="agente">Agentes</option>
-          <option value="supervisor">Supervisores</option>
-          <option value="admin">Administradores</option>
-        </select>
+<!-- Header -->
+<header class="bg-white shadow-sm border-b border-gray-200">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">IT</span>
+          </div>
+          <h1 class="text-xl font-bold text-gray-900">Portal de Soporte TI</h1>
+        </div>
+      </div>
+
+      <!-- Lado derecho -->
+      <div class="flex items-center space-x-4">
+        <!-- Perfil -->
+        <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" (click)="showProfileModal()">
+          <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+            <span>👤</span>
+          </div>
+          <span id="profileName">Carlos Mendoza</span>
+        </div>
+
+        <!-- Ajustes -->
+        <button class="text-gray-400 hover:text-gray-600 transition-colors" (click)="showProfileModal()" aria-label="Ajustes">
+          ⚙️
+        </button>
+
+        <!-- Botón de cerrar sesión (puerta) -->
+        <button id="logoutBtn"
+                class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+                (click)="confirmLogout()"
+                aria-label="Cerrar sesión"
+                title="Cerrar sesión">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-5 w-5" fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+          </svg>
+          <span class="text-sm font-medium">Salir</span>
+        </button>
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último Acceso</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-          </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
-          <tr *ngFor="let user of filteredUsers">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="flex items-center">
-                <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                  <span class="text-sm">👤</span>
-                </div>
-                <div>
-                  <div class="text-sm font-medium text-gray-900">{{user.nombre}}</div>
-                  <div class="text-sm text-gray-500">{{user.correo}}</div>
-                </div>
-              </div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    [ngClass]="{
-                      'bg-blue-100 text-blue-800': user.rol === 'Cliente',
-                      'bg-green-100 text-green-800': user.rol === 'Agente',
-                      'bg-yellow-100 text-yellow-800': user.rol === 'Supervisor',
-                      'bg-purple-100 text-purple-800': user.rol === 'Administrador'
-                    }">
-                {{user.rol}}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{user.departamento}}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                    [ngClass]="user.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                {{user.estado}}
-              </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{user.ultimoAcceso}}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-              <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="startEdit(user)">Editar</button>
-              <button class="text-red-600 hover:text-red-900" (click)="deleteUser(user)">Eliminar</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Welcome Section -->
+  <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 mb-8 text-white">
+    <!-- Encabezado y acciones rápidas -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-2xl font-bold mb-2">¡Hola {{usuarioNombre}}! 👋</h2>
+        <p class="text-blue-700 mb-4">¿Necesitas ayuda con algún problema de tecnología? Estamos aquí para ayudarte.</p>
+        <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors"
+                (click)="abrirModalTicket()">
+          🎫 Reportar Problema
+        </button>
+      </div>
+      <div class="flex gap-4">
+        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
+             (click)="abrirModalTicket('hardware')">
+          <span class="text-2xl">🖥️</span>
+          <div class="font-semibold">Problemas de Hardware</div>
+          <div class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</div>
+        </div>
+        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
+             (click)="abrirModalTicket('software')">
+          <span class="text-2xl">💾</span>
+          <div class="font-semibold">Problemas de Software</div>
+          <div class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</div>
+        </div>
+        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
+             (click)="abrirModalTicket('network')">
+          <span class="text-2xl">🌐</span>
+          <div class="font-semibold">Problemas de Red</div>
+          <div class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</div>
+        </div>
+      </div>
     </div>
   </div>
-  <!-- Modal de creación/edición de usuario -->
-  <div *ngIf="showUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-96 p-6">
-      <h2 class="text-xl font-semibold mb-4 text-gray-800">{{editMode ? 'Editar Usuario' : 'Nuevo Usuario'}}</h2>
-      <form (submit)="$event.preventDefault(); editMode ? saveEdit() : createUser();">
+
+  <!-- Modal para crear ticket -->
+  <div *ngIf="mostrarModalTicket" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+      <h3 class="text-lg font-semibold mb-4">Reportar Problema de TI</h3>
+      <form (ngSubmit)="crearTicket()">
         <div class="mb-3">
-          <label for="userName" class="block text-sm font-medium text-gray-700">Nombre completo</label>
-          <input type="text" id="userName" [(ngModel)]="editMode ? selectedUser.nombre : newUser.nombre" name="userName" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
-        </div>
-        <div class="mb-3">
-          <label for="userEmail" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
-          <input type="email" id="userEmail" [(ngModel)]="editMode ? selectedUser.correo : newUser.correo" name="userEmail" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" required>
-        </div>
-        <div class="mb-3">
-          <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
-          <select id="userRole" [(ngModel)]="editMode ? selectedUser.rol : newUser.rol" name="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500">
-            <option value="Cliente">Cliente</option>
-            <option value="Agente">Agente</option>
-            <option value="Supervisor">Supervisor</option>
-            <option value="Administrador">Administrador</option>
+          <label class="block mb-1 font-medium">Categoría</label>
+          <select class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.categoria" name="categoria" required>
+            <option value="">Selecciona una categoría</option>
+            <option value="hardware">Hardware</option>
+            <option value="software">Software</option>
+            <option value="network">Red</option>
+            <option value="email">Email</option>
+            <option value="phone">Teléfono</option>
+            <option value="access">Accesos</option>
+            <option value="other">Otro</option>
           </select>
         </div>
-        <div class="mb-4">
-          <label for="userDept" class="block text-sm font-medium text-gray-700">Departamento</label>
-          <input type="text" id="userDept" [(ngModel)]="editMode ? selectedUser.departamento : newUser.departamento" name="userDept" class="mt-1 w-full border border-gray-300 rounded-md p-2">
+        <div class="mb-3">
+          <label class="block mb-1 font-medium">Asunto</label>
+          <input class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.asunto" name="asunto" required>
         </div>
-        <div class="flex justify-end space-x-2 mt-5">
-          <button type="button" (click)="closeUserModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Guardar</button>
+        <div class="mb-3">
+          <label class="block mb-1 font-medium">Descripción</label>
+          <textarea class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.descripcion" name="descripcion" required></textarea>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" (click)="cerrarModalTicket()">Cancelar</button>
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700">Crear Ticket</button>
         </div>
       </form>
     </div>
   </div>
-</div>
+
+  <!-- Lista de tickets -->
+  <div class="max-w-2xl mx-auto my-8">
+    <h3 class="text-lg font-bold mb-2">Mis Tickets</h3>
+    <ul class="divide-y divide-gray-200">
+      <li *ngFor="let ticket of tickets" class="py-4 flex justify-between items-center">
+        <div>
+          <div class="font-semibold">{{ticket.tituloTicket}}</div>
+          <div class="text-sm text-gray-500">
+            Estado: {{getNombreEstado(ticket.idEstadoTicket)}}
+            | Categoría: {{getNombreCategoria(ticket.idCategoriaTicket)}}
+          </div>
+        </div>
+        <button class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700" (click)="abrirChat(ticket)">Chat</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Área de chat -->
+  <div *ngIf="ticketSeleccionado" class="max-w-2xl mx-auto my-8 p-4 bg-white rounded shadow">
+    <h4 class="font-bold mb-2">Chat con agente asignado (Ticket: {{ticketSeleccionado.tituloTicket}})</h4>
+    <div class="h-64 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
+      <div *ngFor="let mensaje of mensajes">
+        <div [ngClass]="{'text-right': mensaje.esCliente, 'text-left': !mensaje.esCliente}">
+          <span class="font-semibold">{{mensaje.remitente}}:</span>
+          <span>{{mensaje.texto}}</span>
+        </div>
+      </div>
+    </div>
+    <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
+      <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
+    </form>
+  </div>
+</main>

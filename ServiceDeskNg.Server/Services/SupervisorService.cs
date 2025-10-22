@@ -28,7 +28,8 @@ namespace ServiceDeskNg.Server.Services
                         IdUsuario = s.IdUsuario,
                         IdNivel = s.IdNivel,
                         AreaResponsabilidadSupervisor = s.AreaResponsabilidadSupervisor,
-
+                        IdUsuarioNavigation = s.IdUsuarioNavigation,
+                        IdNivelNavigation = s.IdNivelNavigation
                     })
                     .ToList();
             }

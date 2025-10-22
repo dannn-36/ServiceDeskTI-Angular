@@ -1,85 +1,163 @@
-import { Component, OnInit } from '@angular/core';
-import { EndUserService, EndUser } from './end-user.service';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { TicketService, Ticket } from '../ticket/ticket.service';
+import { ChatService } from '../chat/chat.service';
+import { Subscription } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+
+interface MensajeChat {
+  remitente: string;
+  texto: string;
+  esCliente: boolean;
+}
 
 @Component({
   selector: 'app-end-user',
   templateUrl: './end-user.component.html',
   styleUrls: ['./end-user.component.css']
 })
-export class EndUserComponent implements OnInit {
-  users: EndUser[] = [];
-  filteredUsers: EndUser[] = [];
-  userSearch: string = '';
-  userRoleFilter: string = '';
-  loading = false;
-  error = '';
-  selectedUser: EndUser | null = null;
-  newUser: Partial<EndUser> = {};
-  editMode = false;
-  showUserModal = false;
+export class EndUserComponent implements OnInit, OnDestroy {
+  tickets: Ticket[] = [];
+  nuevoTicket = { asunto: '', descripcion: '', categoria: '' };
+  mostrarModalTicket = false;
+  ticketSeleccionado: Ticket | null = null;
+  mensajes: MensajeChat[] = [];
+  mensajeTexto = '';
+  usuarioNombre = '';
+  usuarioId = 0;
+  categoriaSeleccionada = '';
+  private chatSub: Subscription | null = null;
 
-  constructor(private endUserService: EndUserService) {}
+  // Nuevos: para IDs de categorías y estados
+  categorias: any[] = [];
+  estados: any[] = [];
+
+  constructor(
+    private ticketService: TicketService,
+    private chatService: ChatService,
+    private http: HttpClient
+  ) {}
 
   ngOnInit() {
-    this.getUsers();
+    this.usuarioNombre = localStorage.getItem('usuario') || 'Cliente';
+    this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
+    this.cargarCategorias();
+    this.cargarEstados();
+    this.cargarTickets();
   }
 
-  getUsers() {
-    this.loading = true;
-    this.endUserService.getAll().subscribe({
-      next: (data) => { this.users = data; this.filterUsers(); this.loading = false; },
-      error: () => { this.error = 'Error al cargar usuarios'; this.loading = false; }
+  ngOnDestroy() {
+    if (this.chatSub) this.chatSub.unsubscribe();
+    this.chatService.desconectar();
+  }
+
+  cargarCategorias() {
+    this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
+      this.categorias = data;
     });
   }
 
-  filterUsers() {
-    const search = this.userSearch.toLowerCase();
-    const role = this.userRoleFilter.toLowerCase();
-    this.filteredUsers = this.users.filter(user => {
-      const matchesSearch = user.nombre.toLowerCase().includes(search) || user.correo.toLowerCase().includes(search);
-      const matchesRole = !role || user.rol.toLowerCase() === role;
-      return matchesSearch && matchesRole;
+  cargarEstados() {
+    this.http.get<any[]>('/api/tickets/estados').subscribe(data => {
+      this.estados = data;
     });
   }
 
-  selectUser(user: EndUser) {
-    this.selectedUser = { ...user };
-    this.editMode = false;
+  abrirModalTicket(categoria: string = '') {
+    this.mostrarModalTicket = true;
+    this.categoriaSeleccionada = categoria;
+    if (categoria) {
+      this.nuevoTicket.categoria = categoria;
+    }
   }
 
-  startEdit(user: EndUser) {
-    this.selectedUser = { ...user };
-    this.editMode = true;
+  cerrarModalTicket() {
+    this.mostrarModalTicket = false;
+    this.categoriaSeleccionada = '';
+    this.nuevoTicket = { asunto: '', descripcion: '', categoria: '' };
   }
 
-  saveEdit() {
-    if (!this.selectedUser) return;
-    this.endUserService.update(this.selectedUser.idEndUser, this.selectedUser).subscribe({
-      next: () => { this.getUsers(); this.editMode = false; this.selectedUser = null; },
-      error: () => { this.error = 'Error al actualizar usuario'; }
+  cargarTickets() {
+    this.ticketService.getTicketsByUser(this.usuarioId).subscribe(tickets => {
+      this.tickets = tickets;
     });
   }
 
-  deleteUser(user: EndUser) {
-    if (!confirm('¿Eliminar este usuario?')) return;
-    this.endUserService.delete(user.idEndUser).subscribe({
-      next: () => this.getUsers(),
-      error: () => { this.error = 'Error al eliminar usuario'; }
+  crearTicket() {
+    // Buscar el ID de la categoría seleccionada
+    const categoriaObj = this.categorias.find(c => c.nombreCategoria === this.nuevoTicket.categoria);
+    // Buscar el ID del estado "abierto"
+    const estadoObj = this.estados.find(e => e.nombreEstado === 'abierto');
+    // Log para depuración
+    console.log('usuarioId:', this.usuarioId, 'asunto:', this.nuevoTicket.asunto, 'descripcion:', this.nuevoTicket.descripcion, 'categoria:', this.nuevoTicket.categoria, 'categoriaObj:', categoriaObj, 'estadoObj:', estadoObj);
+    if (!categoriaObj || !estadoObj) {
+      alert('No se pudo encontrar la categoría o el estado.');
+      return;
+    }
+    // Validar campos requeridos
+    if (!this.usuarioId || !this.nuevoTicket.asunto || !this.nuevoTicket.descripcion) {
+      alert('Faltan campos requeridos.');
+      return;
+    }
+    const ticketData = {
+      idCliente: this.usuarioId,
+      idEstadoTicket: estadoObj.idEstado,
+      idCategoriaTicket: categoriaObj.idCategoria,
+      tituloTicket: this.nuevoTicket.asunto,
+      descripcionTicket: this.nuevoTicket.descripcion,
+      prioridadTicket: 'media',
+      ubicacionTicket: '',
+      departamentoTicket: ''
+    };
+    this.ticketService.createTicket(ticketData).subscribe({
+      next: ticket => {
+        this.tickets.unshift(ticket);
+        this.cerrarModalTicket();
+      },
+      error: err => {
+        console.error('Error al crear ticket:', err);
+        alert('Error al crear ticket: ' + (err.error?.message || err.message || 'Error desconocido'));
+      }
     });
   }
 
-  createUser() {
-    this.endUserService.create(this.newUser as EndUser).subscribe({
-      next: () => { this.getUsers(); this.newUser = {}; },
-      error: () => { this.error = 'Error al crear usuario'; }
+  getNombreEstado(idEstado: number): string {
+    const estado = this.estados.find(e => e.idEstado === idEstado);
+    return estado ? estado.nombreEstado : idEstado;
+  }
+
+  getNombreCategoria(idCategoria: number): string {
+    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
+    return categoria ? categoria.nombreCategoria : idCategoria;
+  }
+
+  abrirChat(ticket: Ticket) {
+    this.ticketSeleccionado = ticket;
+    this.mensajes = [];
+    this.chatService.desconectar();
+    this.chatService.conectar(ticket.idTicket!);
+    if (this.chatSub) this.chatSub.unsubscribe();
+    this.chatSub = this.chatService.mensajes$.subscribe(m => {
+      this.mensajes.push(m);
     });
   }
 
-  cancelEdit() {
-    this.editMode = false;
-    this.selectedUser = null;
+  enviarMensaje() {
+    if (!this.mensajeTexto.trim() || !this.ticketSeleccionado) return;
+    this.chatService.enviarMensaje(
+      this.ticketSeleccionado.idTicket!,
+      this.usuarioNombre,
+      this.mensajeTexto,
+      true
+    );
+    this.mensajes.push({ remitente: this.usuarioNombre, texto: this.mensajeTexto, esCliente: true });
+    this.mensajeTexto = '';
   }
 
-  openUserModal() { this.showUserModal = true; }
-  closeUserModal() { this.showUserModal = false; }
+  showProfileModal() {
+    // Implementa la lógica para mostrar el modal de perfil si lo necesitas
+  }
+
+  confirmLogout() {
+    // Implementa la lógica para cerrar sesión si lo necesitas
+  }
 }

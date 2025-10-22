@@ -15,4 +15,5 @@ public partial class Auditoria
 
     public DateTime? FechaAuditoria { get; set; }
 
+    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
 }

@@ -28,7 +28,8 @@ namespace ServiceDeskNg.Server.Services
                         IdUsuario = a.IdUsuario,
                         AccionAuditoria = a.AccionAuditoria,
                         DetalleAuditoria = a.DetalleAuditoria,
-                        FechaAuditoria = a.FechaAuditoria,  
+                        FechaAuditoria = a.FechaAuditoria,
+                        IdUsuarioNavigation = a.IdUsuarioNavigation
                     })
                     .ToList();
             }

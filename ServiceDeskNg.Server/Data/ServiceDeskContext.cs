@@ -132,6 +132,9 @@ public partial class ServiceDeskContext : DbContext
                 .HasColumnType("timestamp")
                 .HasColumnName("fecha_auditoria");
             entity.Property(e => e.IdUsuario).HasColumnName("id_usuario");
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Auditoria)
+            .HasForeignKey(d => d.IdUsuario)
+            .HasConstraintName("auditoria_ibfk_1");
 
         });
 

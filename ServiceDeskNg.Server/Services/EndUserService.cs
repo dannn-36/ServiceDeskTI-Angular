@@ -26,8 +26,6 @@ namespace ServiceDeskNg.Server.Services
                         IdCliente = e.IdCliente,
                         IdUsuario = e.IdUsuario,
                         IdNivel = e.IdNivel,
-                        IdNivelNavigation = e.IdNivelNavigation,
-                        IdUsuarioNavigation = e.IdUsuarioNavigation,
                         Tickets = e.Tickets
                     })
                     .ToList();

@@ -181,9 +181,6 @@ namespace ServiceDeskNg.Server.Services
         {
             return _context.Sesiones.Any(s => s.IdUsuario == userId && s.SesionActiva == true);
 
-
-
-
         }
 
         // Nuevo: Crear EndUser desde UsuarioService

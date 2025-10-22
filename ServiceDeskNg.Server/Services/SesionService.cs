@@ -28,7 +28,6 @@ namespace ServiceDeskNg.Server.Services
                         FechaHoraInicioSesion = s.FechaHoraInicioSesion,
                         FechaHoraFinSesion = s.FechaHoraFinSesion,
                         SesionActiva = s.SesionActiva,
-                        IdUsuarioNavigation = s.IdUsuarioNavigation
                     })
                     .ToList();
             }

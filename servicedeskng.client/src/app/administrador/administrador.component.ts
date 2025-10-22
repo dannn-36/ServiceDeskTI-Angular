@@ -36,6 +36,7 @@ export class AdministradorComponent implements OnInit {
     this.getUsers();
     this.filterUsers();
   }
+  //HOLA MUNDO
 
   showSection(section: string) {
     this.currentSection = section;

@@ -14,6 +14,8 @@ import { HogarComponent } from './hogar/hogar.component';
 import { SupervisorComponent } from './supervisor/supervisor.component';
 import { UsuarioComponent } from './usuario/usuario.component';
 import { EndUserComponent } from './end-user/end-user.component';
+import { AuditoriaComponent } from './auditoria/auditoria.component';
+import { TicketMensajesComponent } from './ticket-mensajes/ticket-mensajes.component';
 
 @NgModule({
   declarations: [
@@ -24,7 +26,9 @@ import { EndUserComponent } from './end-user/end-user.component';
     HogarComponent,
     SupervisorComponent,
     UsuarioComponent,
-    EndUserComponent
+    EndUserComponent,
+    AuditoriaComponent,
+    TicketMensajesComponent
   ],
   imports: [
     BrowserModule,

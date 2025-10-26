@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { TicketService, Ticket } from '../ticket/ticket.service';
+import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
 import { Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
@@ -32,7 +32,7 @@ export class EndUserComponent implements OnInit, OnDestroy {
   estados: any[] = [];
 
   constructor(
-    private ticketService: TicketService,
+    private ticketService: TicketsService,
     private chatService: ChatService,
     private http: HttpClient
   ) {}
@@ -47,8 +47,11 @@ export class EndUserComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     if (this.chatSub) this.chatSub.unsubscribe();
-    this.chatService.desconectar();
+    if (this.ticketSeleccionado) {
+      this.chatService.disconnect(this.ticketSeleccionado.idTicket!.toString());
+    }
   }
+
 
   cargarCategorias() {
     this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
@@ -133,31 +136,55 @@ export class EndUserComponent implements OnInit, OnDestroy {
   abrirChat(ticket: Ticket) {
     this.ticketSeleccionado = ticket;
     this.mensajes = [];
-    this.chatService.desconectar();
-    this.chatService.conectar(ticket.idTicket!);
-    if (this.chatSub) this.chatSub.unsubscribe();
-    this.chatSub = this.chatService.mensajes$.subscribe(m => {
-      this.mensajes.push(m);
+
+    // Desconecta sesión anterior si hay
+    if (this.ticketSeleccionado) {
+      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
+    }
+
+    // Conecta al nuevo chat
+    this.chatService.connect(ticket.idTicket.toString());
+
+    // Suscríbete a los mensajes recibidos
+    this.chatService.onReceiveMessage((user, message, fecha) => {
+      this.mensajes.push({
+        remitente: user,
+        texto: message,
+        esCliente: user === this.usuarioNombre
+      });
     });
   }
 
+
   enviarMensaje() {
     if (!this.mensajeTexto.trim() || !this.ticketSeleccionado) return;
-    this.chatService.enviarMensaje(
-      this.ticketSeleccionado.idTicket!,
+
+    this.chatService.sendMessage(
+      this.ticketSeleccionado.idTicket.toString(),
       this.usuarioNombre,
       this.mensajeTexto,
-      true
+      this.usuarioId
     );
-    this.mensajes.push({ remitente: this.usuarioNombre, texto: this.mensajeTexto, esCliente: true });
+
+    this.mensajes.push({
+      remitente: this.usuarioNombre,
+      texto: this.mensajeTexto,
+      esCliente: true
+    });
+
     this.mensajeTexto = '';
   }
 
   showProfileModal() {
-    // Implementa la lógica para mostrar el modal de perfil si lo necesitas
+    // TODO: aquí puedes abrir un modal o mostrar el perfil del usuario
+    console.log('Abrir modal de perfil');
   }
 
   confirmLogout() {
-    // Implementa la lógica para cerrar sesión si lo necesitas
+    // TODO: lógica para cerrar sesión (borrar localStorage y redirigir)
+    console.log('Cerrar sesión');
+    localStorage.clear();
+    window.location.href = '/'; // o usar el router: this.router.navigate(['/login']);
   }
+
 }

@@ -55,7 +55,7 @@ export class TicketsComponent implements OnInit {
   }
 
   createTicket() {
-    this.ticketsService.create(this.newTicket as Ticket).subscribe({
+    this.ticketsService.createTicket(this.newTicket as Ticket).subscribe({
       next: () => { this.getTickets(); this.newTicket = {}; },
       error: () => { this.error = 'Error al crear ticket'; }
     });

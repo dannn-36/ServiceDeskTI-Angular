@@ -141,6 +141,8 @@ export class EndUserComponent implements OnInit, OnDestroy {
     if (this.ticketSeleccionado) {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
     }
+    this.ticketSeleccionado = ticket;
+
 
     // Conecta al nuevo chat
     this.chatService.connect(ticket.idTicket.toString());

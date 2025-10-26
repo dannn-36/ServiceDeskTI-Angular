@@ -12,7 +12,10 @@ export class ChatService {
   constructor() { }
 
   // 🔹 Conectar al hub
+  private isConnected = false;
+
   connect(ticketId: string): void {
+    if (this.isConnected) return;
     this.hubConnection = new signalR.HubConnectionBuilder()
       .withUrl(this.hubUrl)
       .configureLogging(signalR.LogLevel.Information)
@@ -22,10 +25,12 @@ export class ChatService {
       .start()
       .then(() => {
         console.log('✅ Conectado al hub');
+        this.isConnected = true;
         this.joinTicket(ticketId);
       })
       .catch(err => console.error('❌ Error de conexión:', err));
   }
+
 
   // 🔹 Unirse al grupo del ticket
   joinTicket(ticketId: string): void {
@@ -51,8 +56,14 @@ export class ChatService {
   }
 
   // 🔹 Cerrar conexión
-  disconnect(ticketId: string): void {
-    this.leaveTicket(ticketId);
-    this.hubConnection.stop();
+  disconnect(ticketId?: string): void {
+    if (ticketId) {
+      this.leaveTicket(ticketId);
+    }
+    if (this.hubConnection) {
+      this.hubConnection.stop();
+    }
+    this.isConnected = false;
   }
+
 }

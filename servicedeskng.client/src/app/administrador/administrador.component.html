@@ -104,7 +104,7 @@
             <div class="relative">
               <button
                 class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                onclick="showNotifications()"
+                (click)="showNotifications()"
               >
                 🔔
               </button>
@@ -116,19 +116,19 @@
             <!-- Perfil admin -->
             <div
               class="flex items-center space-x-2 text-gray-600 cursor-pointer"
-              onclick="showProfileModal()"
+              (click)="openProfile()"
             >
               <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
                 <span>👨‍💼</span>
               </div>
-              <span id="profileName">Admin Sistema</span>
+              <span id="profileName">{{profileName}}</span>
             </div>
           </div>
 
           <!-- Botón de ajustes -->
           <button
             class="text-gray-400 hover:text-gray-600 transition-colors"
-            onclick="showProfileModal()"
+            (click)="openProfile()"
             aria-label="Ajustes"
             title="Editar perfil"
           >
@@ -139,7 +139,7 @@
           <button
             id="logoutBtn"
             class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
-            onclick="confirmLogout()"
+            (click)="logout()"
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
           >

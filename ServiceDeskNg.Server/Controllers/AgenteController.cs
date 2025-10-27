@@ -66,5 +66,13 @@ namespace ServiceDeskNg.Server.Controllers
             _context.SaveChanges();
             return NoContent();
         }
+
+        [HttpGet("by-usuario/{idUsuario}")]
+        public IActionResult GetByUsuario(int idUsuario)
+        {
+            var agente = _context.Agentes.FirstOrDefault(a => a.IdUsuario == idUsuario);
+            if (agente == null) return NotFound();
+            return Ok(agente);
+        }
     }
 }

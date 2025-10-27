@@ -9,6 +9,7 @@ import { EndUserComponent } from './end-user/end-user.component';
 
 const routes: Routes = [
   { path: '', component: HogarComponent },
+  { path: 'hogar', component: HogarComponent }, // Agrega la ruta /hogar para login
   { path: 'end-user', component: EndUserComponent },
   { path: 'administrador', component: AdministradorComponent },
   { path: 'agente', component: AgenteComponent },

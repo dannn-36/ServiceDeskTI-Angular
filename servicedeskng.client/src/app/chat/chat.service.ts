@@ -51,6 +51,10 @@ export class ChatService {
 
   // 🔹 Enviar mensaje
   sendMessage(ticketId: string, userName: string, message: string, userId: number): void {
+    if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
+      console.error('No hay conexión activa al chat.');
+      return;
+    }
     this.hubConnection.invoke('SendMessage', ticketId, userName, message, userId)
       .catch(err => console.error('Error al enviar mensaje:', err));
   }

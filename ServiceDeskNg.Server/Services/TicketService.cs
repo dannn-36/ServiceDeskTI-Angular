@@ -105,7 +105,34 @@ namespace ServiceDeskNg.Server.Services
                     entity.IdEstadoTicket = estadoAbierto.IdEstado;
             }
 
+            // Balanceo: Asignar agente disponible con menos tickets abiertos/en-progreso
+            var estadosActivos = _context.TicketsEstados
+                .Where(e => e.NombreEstado.ToLower() == "abierto" || e.NombreEstado.ToLower() == "en-progreso")
+                .Select(e => e.IdEstado)
+                .ToList();
+
+            var agenteDisponible = _context.Agentes
+                .Where(a => a.DisponibilidadAgente == true)
+                .Select(a => new {
+                    Agente = a,
+                    TicketsActivos = _context.Tickets.Count(t => t.IdAgenteAsignado == a.IdAgente && estadosActivos.Contains(t.IdEstadoTicket))
+                })
+                .OrderBy(x => x.TicketsActivos)
+                .Select(x => x.Agente)
+                .FirstOrDefault();
+
+            if (agenteDisponible != null)
+            {
+                entity.IdAgenteAsignado = agenteDisponible.IdAgente;
+                Console.WriteLine($"[TicketService] Ticket asignado al agente: {agenteDisponible.IdAgente}");
+            }
+            else
+            {
+                Console.WriteLine("[TicketService] No hay agentes disponibles para asignar el ticket.");
+            }
+
             _ticketRepo.Add(entity);
+            Console.WriteLine($"[TicketService] Ticket creado: {entity.IdTicket}, Agente asignado: {entity.IdAgenteAsignado}");
         }
 
         // ✅ Actualizar ticket existente

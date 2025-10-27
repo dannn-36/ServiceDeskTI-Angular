@@ -84,7 +84,8 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   cargarTickets() {
-    this.ticketService.getTicketsByUser(this.usuarioId).subscribe(tickets => {
+    const clienteId = +(localStorage.getItem('clienteId') || 0);
+    this.ticketService.getTicketsByUser(clienteId).subscribe(tickets => {
       this.tickets = tickets;
       this.filtrarTickets();
     });

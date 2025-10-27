@@ -28,9 +28,9 @@ export class TicketsService {
     return this.http.get<Ticket[]>(this.apiUrl);
   }
 
-  // ✅ Obtener tickets por ID de usuario (usado en EndUserComponent)
-  getTicketsByUser(userId: number): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/usuario/${userId}`);
+  // ✅ Obtener tickets por ID de cliente (usado en EndUserComponent)
+  getTicketsByUser(clienteId: number): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>(`${this.apiUrl}/cliente/${clienteId}`);
   }
 
   // ✅ Obtener un ticket por ID
@@ -51,5 +51,10 @@ export class TicketsService {
   // ✅ Eliminar ticket
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
+
+  // ✅ Obtener tickets por ID de agente (nuevos métodos)
+  getTicketsByAgente(agenteId: number): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>(`${this.apiUrl}/agente/${agenteId}`);
   }
 }

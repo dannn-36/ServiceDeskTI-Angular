@@ -42,7 +42,16 @@ export class HogarComponent {
         } else if (response.rol === 'Administrador') {
           this.router.navigate(['/administrador']);
         } else if (response.rol === 'Agente') {
-          this.router.navigate(['/agente']);
+          // Obtener el agenteId usando el idUsuario
+          this.http.get<any>(`/api/agente/by-usuario/${response.usuario.idUsuario}`).subscribe({
+            next: agente => {
+              localStorage.setItem('agenteId', agente.idAgente);
+              this.router.navigate(['/agente']);
+            },
+            error: () => {
+              this.router.navigate(['/agente']);
+            }
+          });
         } else if (response.rol === 'Supervisor') {
           this.router.navigate(['/supervisor']);
         } else {

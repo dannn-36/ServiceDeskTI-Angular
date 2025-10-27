@@ -33,6 +33,9 @@ export class AdministradorComponent implements OnInit {
   constructor(private usuarioService: UsuarioService) { }
 
   ngOnInit(): void {
+    // Obtener nombre y correo del usuario desde localStorage
+    this.profileName = localStorage.getItem('usuario') || 'Admin Sistema';
+    this.profileEmail = localStorage.getItem('usuarioEmail') || 'admin@empresa.com';
     this.getUsers();
     this.filterUsers();
   }
@@ -143,4 +146,15 @@ export class AdministradorComponent implements OnInit {
 
   openProfile() { this.showProfile = true; }
   closeProfile() { this.showProfile = false; }
+
+  logout() {
+    // Limpia datos de sesión y redirige a login
+    localStorage.clear();
+    window.location.href = '/hogar';
+  }
+
+  showNotifications() {
+    // Puedes implementar una notificación real aquí
+    alert('Panel de notificaciones en desarrollo');
+  }
 }

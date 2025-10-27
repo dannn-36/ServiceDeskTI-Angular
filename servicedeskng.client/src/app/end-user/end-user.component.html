@@ -1,4 +1,4 @@
-<!-- Header -->
+<!-- Header y bienvenida -->
 <header class="bg-white shadow-sm border-b border-gray-200">
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex justify-between items-center h-16">
@@ -10,34 +10,17 @@
           <h1 class="text-xl font-bold text-gray-900">Portal de Soporte TI</h1>
         </div>
       </div>
-
-      <!-- Lado derecho -->
       <div class="flex items-center space-x-4">
-        <!-- Perfil -->
         <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" (click)="showProfileModal()">
           <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
             <span>👤</span>
           </div>
-          <span id="profileName">Carlos Mendoza</span>
+          <span id="profileName">{{usuarioNombre}}</span>
         </div>
-
-        <!-- Ajustes -->
-        <button class="text-gray-400 hover:text-gray-600 transition-colors" (click)="showProfileModal()" aria-label="Ajustes">
-          ⚙️
-        </button>
-
-        <!-- Botón de cerrar sesión (puerta) -->
-        <button id="logoutBtn"
-                class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
-                (click)="confirmLogout()"
-                aria-label="Cerrar sesión"
-                title="Cerrar sesión">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               class="h-5 w-5" fill="none"
-               viewBox="0 0 24 24"
-               stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+        <button class="text-gray-400 hover:text-gray-600 transition-colors" (click)="showProfileModal()">⚙️</button>
+        <button id="logoutBtn" class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors" (click)="confirmLogout()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
           </svg>
           <span class="text-sm font-medium">Salir</span>
         </button>
@@ -46,38 +29,51 @@
   </div>
 </header>
 
-<!-- Main Content -->
 <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <!-- Welcome Section -->
+  <!-- Welcome Section y acciones rápidas -->
   <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 mb-8 text-white">
-    <!-- Encabezado y acciones rápidas -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div class="flex items-center justify-between">
       <div>
         <h2 class="text-2xl font-bold mb-2">¡Hola {{usuarioNombre}}! 👋</h2>
-        <p class="text-blue-700 mb-4">¿Necesitas ayuda con algún problema de tecnología? Estamos aquí para ayudarte.</p>
-        <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-                (click)="abrirModalTicket()">
+        <p class="text-blue-100 mb-4">¿Necesitas ayuda con algún problema de tecnología? Estamos aquí para ayudarte.</p>
+        <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors" (click)="abrirModalTicket()">
           🎫 Reportar Problema
         </button>
       </div>
-      <div class="flex gap-4">
-        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
-             (click)="abrirModalTicket('hardware')">
-          <span class="text-2xl">🖥️</span>
-          <div class="font-semibold">Problemas de Hardware</div>
-          <div class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</div>
+      <div class="hidden md:block text-6xl opacity-20">💻</div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('hardware')">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+            <span class="text-2xl">🖥️</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Problemas de Hardware</h3>
+            <p class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</p>
+          </div>
         </div>
-        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
-             (click)="abrirModalTicket('software')">
-          <span class="text-2xl">💾</span>
-          <div class="font-semibold">Problemas de Software</div>
-          <div class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</div>
+      </div>
+      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('software')">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span class="text-2xl">💾</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Problemas de Software</h3>
+            <p class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</p>
+          </div>
         </div>
-        <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all"
-             (click)="abrirModalTicket('network')">
-          <span class="text-2xl">🌐</span>
-          <div class="font-semibold">Problemas de Red</div>
-          <div class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</div>
+      </div>
+      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('network')">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <span class="text-2xl">🌐</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Problemas de Red</h3>
+            <p class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</p>
+          </div>
         </div>
       </div>
     </div>
@@ -118,15 +114,24 @@
   </div>
 
   <!-- Lista de tickets -->
-  <div class="max-w-2xl mx-auto my-8">
-    <h3 class="text-lg font-bold mb-2">Mis Tickets</h3>
-    <ul class="divide-y divide-gray-200">
-      <li *ngFor="let ticket of tickets" class="py-4 flex justify-between items-center">
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h2 class="text-lg font-semibold text-gray-900">Mis Tickets</h2>
+      <div class="flex items-center space-x-2">
+        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1.5" [(ngModel)]="filtroEstado" (change)="filtrarTickets()">
+          <option value="">Todos</option>
+          <option value="abierto">Abiertos</option>
+          <option value="en-progreso">En Progreso</option>
+          <option value="resuelto">Resueltos</option>
+        </select>
+      </div>
+    </div>
+    <ul class="divide-y divide-gray-200 px-6">
+      <li *ngFor="let ticket of ticketsFiltrados" class="py-4 flex justify-between items-center">
         <div>
           <div class="font-semibold">{{ticket.tituloTicket}}</div>
           <div class="text-sm text-gray-500">
-            Estado: {{getNombreEstado(ticket.idEstadoTicket)}}
-            | Categoría: {{getNombreCategoria(ticket.idCategoriaTicket)}}
+            Estado: {{getNombreEstado(ticket.idEstadoTicket)}} | Categoría: {{getNombreCategoria(ticket.idCategoriaTicket)}}
           </div>
         </div>
         <button class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700" (click)="abrirChat(ticket)">Chat</button>

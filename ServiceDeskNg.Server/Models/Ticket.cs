@@ -31,11 +31,11 @@ public partial class Ticket
 
     public virtual Agente? IdAgenteAsignadoNavigation { get; set; }
 
-    public virtual TicketsCategoria IdCategoriaTicketNavigation { get; set; } = null!;
+    public virtual TicketsCategoria? IdCategoriaTicketNavigation { get; set; }
 
-    public virtual EndUser IdClienteNavigation { get; set; } = null!;
+    public virtual EndUser? IdClienteNavigation { get; set; }
 
-    public virtual TicketsEstado IdEstadoTicketNavigation { get; set; } = null!;
+    public virtual TicketsEstado? IdEstadoTicketNavigation { get; set; }
 
     public virtual ICollection<Integracion> Integraciones { get; set; } = new List<Integracion>();
 

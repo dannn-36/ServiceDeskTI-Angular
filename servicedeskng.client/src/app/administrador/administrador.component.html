@@ -1,586 +1,819 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServiceDesk TI - Panel Administrador</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ServiceDesk TI - Panel Administrador</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-    body {
-      font-family: 'Inter', sans-serif;
-      box-sizing: border-box;
-    }
-
-    .sidebar-item:hover {
-      background-color: #f3f4f6;
-    }
-
-    .sidebar-item.active {
-      background-color: #dbeafe;
-      border-right: 3px solid #3b82f6;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
+      body {
+        font-family: "Inter", sans-serif;
+        box-sizing: border-box;
       }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .fade-in {
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
+      .sidebar-item:hover {
+        background-color: #f3f4f6;
       }
 
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .slide-in {
-      animation: slideIn 0.4s ease-out;
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      transition: all 0.3s ease;
-    }
-
-    .notification-dot {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
+      .sidebar-item.active {
+        background-color: #dbeafe;
+        border-right: 3px solid #3b82f6;
       }
 
-      50% {
-        opacity: 0.5;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
-    }
 
-    .chart-container {
-      position: relative;
-      height: 300px;
-    }
-  </style>
-</head>
-<body class="bg-gray-50 h-screen overflow-hidden">
-  <!-- Header -->
-  <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
-    <div class="h-full px-6 flex justify-between items-center">
-      <!-- Lado izquierdo -->
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-            <span class="text-white font-bold text-sm">AD</span>
-          </div>
-          <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
-        </div>
-        <span class="text-gray-400">|</span>
-        <span class="text-sm text-gray-600">Panel Administrador</span>
-      </div>
+      .fade-in {
+        animation: fadeIn 0.3s ease-out;
+      }
 
-      <!-- Lado derecho -->
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-4 text-sm">
-          <!-- Notificaciones -->
-          <div class="relative">
-            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
-              🔔
-            </button>
-            <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
-          </div>
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-20px);
+        }
 
-          <!-- Perfil admin -->
-          <div class="flex items-center space-x-2 text-gray-600 cursor-pointer" onclick="showProfileModal()">
-            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-              <span>👨‍💼</span>
-            </div>
-            <span id="profileName">Admin Sistema</span>
-          </div>
-        </div>
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
 
-        <!-- Botón de ajustes -->
-        <button class="text-gray-400 hover:text-gray-600 transition-colors"
-                onclick="showProfileModal()" aria-label="Ajustes" title="Editar perfil">
-          ⚙️
-        </button>
+      .slide-in {
+        animation: slideIn 0.4s ease-out;
+      }
 
-        <!-- Botón de cerrar sesión (puerta SVG) -->
-        <button id="logoutBtn"
-                class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
-                onclick="confirmLogout()"
-                aria-label="Cerrar sesión"
-                title="Cerrar sesión">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               class="h-5 w-5" fill="none"
-               viewBox="0 0 24 24"
-               stroke="currentColor" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
-          </svg>
-          <span class="text-sm font-medium">Salir</span>
-        </button>
-      </div>
-    </div>
-  </header>
-  <div class="flex h-full">
-    <!-- Sidebar -->
-    <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <nav class="flex-1 p-4 space-y-2">
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
-             [ngClass]="{ 'active': currentSection === 'dashboard' }"
-             (click)="showSection('dashboard')">
+      .stat-card:hover {
+        transform: translateY(-2px);
+        transition: all 0.3s ease;
+      }
+
+      .notification-dot {
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .chart-container {
+        position: relative;
+        height: 300px;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 h-screen overflow-hidden">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
+      <div class="h-full px-6 flex justify-between items-center">
+        <!-- Lado izquierdo -->
+        <div class="flex items-center space-x-4">
           <div class="flex items-center space-x-3">
-            <span class="text-lg">📊</span>
-            <span class="font-medium">Dashboard</span>
+            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+              <span class="text-white font-bold text-sm">AD</span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
           </div>
+          <span class="text-gray-400">|</span>
+          <span class="text-sm text-gray-600">Panel Administrador</span>
         </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
-             [ngClass]="{ 'active': currentSection === 'users' }"
-             (click)="showSection('users')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">👥</span>
-            <span class="font-medium">Gestión de Usuarios</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
-             [ngClass]="{ 'active': currentSection === 'tickets' }"
-             (click)="showSection('tickets')">
-          <div class="flex items-center space-x-3 w-full">
-            <span class="text-lg">🎫</span>
-            <span class="font-medium">Gestión de Tickets</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
-             [ngClass]="{ 'active': currentSection === 'reports' }"
-             (click)="showSection('reports')">
-          <div class="flex items-center space-x-3 w-full">
-            <span class="text-lg">📈</span>
-            <span class="font-medium">Reportes y Analytics</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
-             [ngClass]="{ 'active': currentSection === 'settings' }"
-             (click)="showSection('settings')">
-          <div class="flex items-center space-x-3 w-full">
-            <span class="text-lg">⚙️</span>
-            <span class="font-medium">Configuración</span>
-          </div>
-        </div>
-      </nav>
-    </div>
-    <!-- Contenido Principal -->
-    <div class="flex-1 overflow-y-auto">
-      <!-- Dashboard Section -->
-      <div *ngIf="currentSection === 'dashboard'" class="p-6">
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Ejecutivo</h2>
-          <p class="text-gray-600">Resumen general del sistema ServiceDesk TI</p>
-        </div>
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Total Tickets</p>
-                <p class="text-3xl font-bold text-gray-900">1,247</p>
-                <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
+
+        <!-- Lado derecho -->
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-4 text-sm">
+            <!-- Notificaciones -->
+            <div class="relative">
+              <button
+                class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                onclick="showNotifications()"
+              >
+                🔔
+              </button>
+              <div
+                class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"
+              ></div>
+            </div>
+
+            <!-- Perfil admin -->
+            <div
+              class="flex items-center space-x-2 text-gray-600 cursor-pointer"
+              onclick="showProfileModal()"
+            >
+              <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                <span>👨‍💼</span>
               </div>
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">🎫</span>
-              </div>
+              <span id="profileName">Admin Sistema</span>
             </div>
           </div>
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
-                <p class="text-3xl font-bold text-gray-900">342</p>
-                <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
-              </div>
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">👥</span>
-              </div>
-            </div>
-          </div>
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
-                <p class="text-3xl font-bold text-gray-900">2.4h</p>
-                <p class="text-sm text-red-600">↗ +5% vs mes anterior</p>
-              </div>
-              <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">⏱️</span>
-              </div>
-            </div>
-          </div>
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Satisfacción</p>
-                <p class="text-3xl font-bold text-gray-900">94%</p>
-                <p class="text-sm text-green-600">↗ +2% vs mes anterior</p>
-              </div>
-              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">⭐</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets por Estado</h3>
-            <div class="chart-container">
-              <canvas id="statusChart"></canvas>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Mensual</h3>
-            <div class="chart-container">
-              <canvas id="trendChart"></canvas>
-            </div>
-          </div>
-        </div>
-        <!-- Recent Activity -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente del Sistema</h3>
-          <div class="space-y-4">
-            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-              <span class="text-2xl">🆕</span>
-              <div class="flex-1">
-                <p class="font-medium text-gray-900">Nuevo usuario registrado</p>
-                <p class="text-sm text-gray-600">María Rodríguez se unió al departamento de Ventas</p>
-              </div>
-              <span class="text-sm text-gray-500">Hace 5 min</span>
-            </div>
-            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-              <span class="text-2xl">⚠️</span>
-              <div class="flex-1">
-                <p class="font-medium text-gray-900">Ticket urgente asignado</p>
-                <p class="text-sm text-gray-600">TK-1248 - Servidor principal sin respuesta</p>
-              </div>
-              <span class="text-sm text-gray-500">Hace 12 min</span>
-            </div>
-            <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-              <span class="text-2xl">✅</span>
-              <div class="flex-1">
-                <p class="font-medium text-gray-900">Integración completada</p>
-                <p class="text-sm text-gray-600">Conexión con Microsoft Teams establecida</p>
-              </div>
-              <span class="text-sm text-gray-500">Hace 1 hora</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Users Section -->
-      <div *ngIf="currentSection === 'users'" class="p-6">
-        <div class="mb-6 flex justify-between items-center">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Usuarios</h2>
-            <p class="text-gray-600">Administra usuarios, roles y permisos del sistema</p>
-          </div>
-          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors" (click)="openUserModal()">
-            ➕ Nuevo Usuario
+
+          <!-- Botón de ajustes -->
+          <button
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+            onclick="showProfileModal()"
+            aria-label="Ajustes"
+            title="Editar perfil"
+          >
+            ⚙️
+          </button>
+
+          <!-- Botón de cerrar sesión (puerta SVG) -->
+          <button
+            id="logoutBtn"
+            class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors"
+            onclick="confirmLogout()"
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z"
+              />
+            </svg>
+            <span class="text-sm font-medium">Salir</span>
           </button>
         </div>
-        <!-- User Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span>👤</span>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">Clientes</p>
-                <p class="text-xl font-bold">{{ totalClientes }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <span>👨‍💻</span>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">Agentes</p>
-                <p class="text-xl font-bold">{{ totalAgentes }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span>👨‍💼</span>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">Supervisores</p>
-                <p class="text-xl font-bold">{{ totalSupervisores }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span>👨‍💼</span>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">Administradores</p>
-                <p class="text-xl font-bold">{{ totalAdministradores }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Users Table -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <!-- Header: Título + Buscador + Filtro de Roles -->
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Lista de Usuarios</h3>
-            <div class="flex space-x-3">
-              <input type="text" [(ngModel)]="userSearch" (input)="filterUsers()" placeholder="Buscar usuarios..."
-                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-              <select [(ngModel)]="userRoleFilter" (change)="filterUsers()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-                <option value="">Todos los roles</option>
-                <option value="enduser">Clientes</option>
-                <option value="agente">Agentes</option>
-                <option value="supervisor">Supervisores</option>
-                <option value="administrador">Administradores</option>
-              </select>
-            </div>
-          </div>
-          <!-- Tabla de usuarios -->
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departamento</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Creación</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                <tr *ngFor="let user of filteredUsers">
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                      <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-sm">👤</span>
-                      </div>
-                      <div>
-                        <div class="text-sm font-medium text-gray-900">{{user.nombreUsuario}}</div>
-                        <div class="text-sm text-gray-500">{{user.correoUsuario}}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{user.departamentoUsuario}}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{user.tipoUsuario}}</td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                          [ngClass]="user.estadoUsuario === 'activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                      {{user.estadoUsuario}}
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{user.fechaHoraCreacionUsuario | date:'short'}}</td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button class="text-blue-600 hover:text-blue-900 mr-3" (click)="startEditUser(user)">Editar</button>
-                    <button class="text-red-600 hover:text-red-900" (click)="deleteUser(user)">Eliminar</button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
-      <!-- Tickets Section -->
-      <div *ngIf="currentSection === 'tickets'" class="p-6">
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Tickets</h2>
-          <p class="text-gray-600">Supervisa y administra todos los tickets del sistema</p>
-        </div>
-        <!-- Ticket Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-blue-600">45</p>
-              <p class="text-sm text-gray-600">Abiertos</p>
+    </header>
+    <div class="flex h-full">
+      <!-- Sidebar -->
+      <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
+        <nav class="flex-1 p-4 space-y-2">
+          <div
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
+            [ngClass]="{ active: currentSection === 'dashboard' }"
+            (click)="showSection('dashboard')"
+          >
+            <div class="flex items-center space-x-3">
+              <span class="text-lg">📊</span>
+              <span class="font-medium">Dashboard</span>
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-yellow-600">32</p>
-              <p class="text-sm text-gray-600">En Progreso</p>
+          <div
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
+            [ngClass]="{ active: currentSection === 'users' }"
+            (click)="showSection('users')"
+          >
+            <div class="flex items-center space-x-3">
+              <span class="text-lg">👥</span>
+              <span class="font-medium">Gestión de Usuarios</span>
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-purple-600">18</p>
-              <p class="text-sm text-gray-600">Pendientes</p>
+          <div
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+            [ngClass]="{ active: currentSection === 'tickets' }"
+            (click)="showSection('tickets')"
+          >
+            <div class="flex items-center space-x-3 w-full">
+              <span class="text-lg">🎫</span>
+              <span class="font-medium">Gestión de Tickets</span>
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-green-600">156</p>
-              <p class="text-sm text-gray-600">Resueltos</p>
+          <div
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+            [ngClass]="{ active: currentSection === 'reports' }"
+            (click)="showSection('reports')"
+          >
+            <div class="flex items-center space-x-3 w-full">
+              <span class="text-lg">📈</span>
+              <span class="font-medium">Reportes y Analytics</span>
             </div>
           </div>
-          <div class="bg-white rounded-lg p-4 border border-gray-200">
-            <div class="text-center">
-              <p class="text-2xl font-bold text-red-600">8</p>
-              <p class="text-sm text-gray-600">Urgentes</p>
+          <div
+            class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors w-full flex items-center"
+            [ngClass]="{ active: currentSection === 'settings' }"
+            (click)="showSection('settings')"
+          >
+            <div class="flex items-center space-x-3 w-full">
+              <span class="text-lg">⚙️</span>
+              <span class="font-medium">Configuración</span>
             </div>
           </div>
-        </div>
-        <!-- Tickets Management -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div class="p-6 border-b border-gray-200">
-            <div class="flex justify-between items-center">
-              <h3 class="text-lg font-semibold text-gray-900">Tickets Recientes</h3>
-              <div class="flex space-x-3">
-                <input type="text"
-                       id="ticketSearch"
-                       placeholder="Buscar tickets..."
-                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64">
-                <select id="ticketStatusFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option value="">Todos los estados</option>
-                  <option value="abierto">Abiertos</option>
-                  <option value="en-progreso">En progreso</option>
-                  <option value="pendiente">Pendientes</option>
-                </select>
-                <select id="ticketCategoryFilter" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option value="">Todas las categorías</option>
-                  <option value="hardware">Hardware</option>
-                  <option value="software">Software</option>
-                  <option value="red">Red</option>
-                </select>
+        </nav>
+      </div>
+      <!-- Contenido Principal -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- Dashboard Section -->
+        <div *ngIf="currentSection === 'dashboard'" class="p-6">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              Dashboard Ejecutivo
+            </h2>
+            <p class="text-gray-600">
+              Resumen general del sistema ServiceDesk TI
+            </p>
+          </div>
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600">Total Tickets</p>
+                  <p class="text-3xl font-bold text-gray-900">1,247</p>
+                  <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">🎫</span>
+                </div>
+              </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
+                  <p class="text-3xl font-bold text-gray-900">342</p>
+                  <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">👥</span>
+                </div>
+              </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                  <p class="text-3xl font-bold text-gray-900">2.4h</p>
+                  <p class="text-sm text-red-600">↗ +5% vs mes anterior</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">⏱️</span>
+                </div>
+              </div>
+            </div>
+            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-600">Satisfacción</p>
+                  <p class="text-3xl font-bold text-gray-900">94%</p>
+                  <p class="text-sm text-green-600">↗ +2% vs mes anterior</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">⭐</span>
+                </div>
               </div>
             </div>
           </div>
-          <div class="p-6">
-            <div class="space-y-4" id="ticketsList">
-              <!-- Tickets se cargarán desde JS -->
+          <!-- Charts Row -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Tickets por Estado
+              </h3>
+              <div class="chart-container">
+                <canvas id="statusChart"></canvas>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Tendencia Mensual
+              </h3>
+              <div class="chart-container">
+                <canvas id="trendChart"></canvas>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-      <!-- Reports Section -->
-      <div *ngIf="currentSection === 'reports'" class="p-6">
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Reportes y Analytics</h2>
-          <p class="text-gray-600">Análisis detallado del rendimiento del sistema</p>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Recent Activity -->
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Rendimiento por Agente</h3>
-            <div class="chart-container">
-              <canvas id="agentPerformanceChart"></canvas>
-            </div>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets por Categoría</h3>
-            <div class="chart-container">
-              <canvas id="categoryChart"></canvas>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              Actividad Reciente del Sistema
+            </h3>
+            <div class="space-y-4">
+              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">🆕</span>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-900">Nuevo usuario registrado</p>
+                  <p class="text-sm text-gray-600">
+                    María Rodríguez se unió al departamento de Ventas
+                  </p>
+                </div>
+                <span class="text-sm text-gray-500">Hace 5 min</span>
+              </div>
+              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">⚠️</span>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-900">Ticket urgente asignado</p>
+                  <p class="text-sm text-gray-600">
+                    TK-1248 - Servidor principal sin respuesta
+                  </p>
+                </div>
+                <span class="text-sm text-gray-500">Hace 12 min</span>
+              </div>
+              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">✅</span>
+                <div class="flex-1">
+                  <p class="font-medium text-gray-900">Integración completada</p>
+                  <p class="text-sm text-gray-600">
+                    Conexión con Microsoft Teams establecida
+                  </p>
+                </div>
+                <span class="text-sm text-gray-500">Hace 1 hora</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <!-- Configuración Section -->
-      <div *ngIf="currentSection === 'settings'" class="p-6">
-        <!-- Título de sección -->
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Configuración del Sistema</h2>
-          <p class="text-gray-600">Administra la configuración general del ServiceDesk</p>
-        </div>
-        <!-- Grid de configuración -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Tiempo esperado por categoría -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col justify-between">
+        <!-- Users Section -->
+        <div *ngIf="currentSection === 'users'" class="p-6">
+          <div class="mb-6 flex justify-between items-center">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">Tiempo Esperado por Categoría</h3>
-              <p class="text-gray-600 mb-4">Define el tiempo esperado de respuesta según la categoría del ticket (en horas):</p>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">🖥️ Hardware</label>
-                  <input type="number" id="time-hardware" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">💾 Software</label>
-                  <input type="number" id="time-software" value="48" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">🌐 Red</label>
-                  <input type="number" id="time-network" value="36" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">📧 Correo</label>
-                  <input type="number" id="time-email" value="12" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">📞 Teléfono</label>
-                  <input type="number" id="time-phone" value="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">🔐 Accesos</label>
-                  <input type="number" id="time-access" value="6" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">📝 Otro</label>
-                  <input type="number" id="time-other" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                </div>
-              </div>
+              <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                Gestión de Usuarios
+              </h2>
+              <p class="text-gray-600">
+                Administra usuarios, roles y permisos del sistema
+              </p>
             </div>
-            <!-- Botón Guardar -->
-            <button onclick="saveCategoryTimes()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-4 self-start">
-              💾 Guardar
+            <button
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              (click)="openUserModal()"
+            >
+              ➕ Nuevo Usuario
             </button>
           </div>
-          <!-- Respaldo y restauración -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Respaldo y Restauración</h3>
-            <p class="text-sm text-gray-600 mb-6">
-              Desde aquí puedes crear copias de seguridad del sistema o restaurar datos desde un respaldo existente.
-            </p>
-            <div class="space-y-6">
-              <div class="flex items-center justify-between p-0 rounded-lg">
-                <div>
-                  <p class="text-sm font-medium text-gray-900">Copia de seguridad manual</p>
-                  <p class="text-xs text-gray-500">Genera una copia de todos los datos del sistema.</p>
+          <!-- User Stats -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span>👤</span>
                 </div>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-1" onclick="backupSystem()">
-                  💾 Crear respaldo
-                </button>
+                <div>
+                  <p class="text-sm text-gray-600">Clientes</p>
+                  <p class="text-xl font-bold">{{ totalClientes }}</p>
+                </div>
               </div>
-              <div class="p-0 rounded-lg border-t border-gray-200 pt-6">
-                <p class="text-sm font-medium text-gray-900">Restaurar desde respaldo</p>
-                <p class="text-xs text-gray-500 mb-3">Restaura los datos desde un archivo de respaldo.</p>
-                <div class="flex items-center space-x-2">
-                  <input type="file" id="restoreFile" class="hidden">
-                  <label for="restoreFile" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 text-sm transition-colors cursor-pointer rounded-lg border border-gray-300 whitespace-nowrap">
-                    Seleccionar archivo
-                  </label>
-                  <span id="fileName" class="text-sm text-gray-500 flex-1 whitespace-nowrap">Sin archivos seleccionados</span>
-                  <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center space-x-1 ml-auto" onclick="restoreSystem()">
-                    ♻️ Restaurar
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span>👨‍💻</span>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600">Agentes</p>
+                  <p class="text-xl font-bold">{{ totalAgentes }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <span>👨‍💼</span>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600">Supervisores</p>
+                  <p class="text-xl font-bold">{{ totalSupervisores }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <span>👨‍💼</span>
+                </div>
+                <div>
+                  <p class="text-sm text-gray-600">Administradores</p>
+                  <p class="text-xl font-bold">{{ totalAdministradores }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Users Table -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <!-- Header: Título + Buscador + Filtro de Roles -->
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">
+                Lista de Usuarios
+              </h3>
+              <div class="flex space-x-3">
+                <input
+                  type="text"
+                  [(ngModel)]="userSearch"
+                  (input)="filterUsers()"
+                  placeholder="Buscar usuarios..."
+                  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  [(ngModel)]="userRoleFilter"
+                  (change)="filterUsers()"
+                  class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos los roles</option>
+                  <option value="enduser">Clientes</option>
+                  <option value="agente">Agentes</option>
+                  <option value="supervisor">Supervisores</option>
+                  <option value="administrador">Administradores</option>
+                </select>
+              </div>
+            </div>
+            <!-- Tabla de usuarios -->
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Usuario
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Departamento
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Rol
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Estado
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Fecha Creación
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr *ngFor="let user of filteredUsers">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <div class="flex items-center">
+                        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                          <span class="text-sm">👤</span>
+                        </div>
+                        <div>
+                          <div
+                            class="text-sm font-medium text-gray-900"
+                            >{{user.nombreUsuario}}</div
+                          >
+                          <div class="text-sm text-gray-500">
+                            {{user.correoUsuario}}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {{user.departamentoUsuario}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {{user.tipoUsuario}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="
+                          user.estadoUsuario === 'activo'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        "
+                        >{{user.estadoUsuario}}</span
+                      >
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {{user.fechaHoraCreacionUsuario | date:'short'}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        class="text-blue-600 hover:text-blue-900 mr-3"
+                        (click)="startEditUser(user)"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        class="text-red-600 hover:text-red-900"
+                        (click)="deleteUser(user)"
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <!-- Tickets Section -->
+        <div *ngIf="currentSection === 'tickets'" class="p-6">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              Gestión de Tickets
+            </h2>
+            <p class="text-gray-600">
+              Supervisa y administra todos los tickets del sistema
+            </p>
+          </div>
+          <!-- Ticket Stats -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-blue-600">45</p>
+                <p class="text-sm text-gray-600">Abiertos</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-yellow-600">32</p>
+                <p class="text-sm text-gray-600">En Progreso</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-purple-600">18</p>
+                <p class="text-sm text-gray-600">Pendientes</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-green-600">156</p>
+                <p class="text-sm text-gray-600">Resueltos</p>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4 border border-gray-200">
+              <div class="text-center">
+                <p class="text-2xl font-bold text-red-600">8</p>
+                <p class="text-sm text-gray-600">Urgentes</p>
+              </div>
+            </div>
+          </div>
+          <!-- Tickets Management -->
+          <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+              <div class="flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">
+                  Tickets Recientes
+                </h3>
+                <div class="flex space-x-3">
+                  <input
+                    type="text"
+                    id="ticketSearch"
+                    placeholder="Buscar tickets..."
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
+                  />
+                  <select
+                    id="ticketStatusFilter"
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="abierto">Abiertos</option>
+                    <option value="en-progreso">En progreso</option>
+                    <option value="pendiente">Pendientes</option>
+                  </select>
+                  <select
+                    id="ticketCategoryFilter"
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value="">Todas las categorías</option>
+                    <option value="hardware">Hardware</option>
+                    <option value="software">Software</option>
+                    <option value="red">Red</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4" id="ticketsList">
+                <!-- Tickets se cargarán desde JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Reports Section -->
+        <div *ngIf="currentSection === 'reports'" class="p-6">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              Reportes y Analytics
+            </h2>
+            <p class="text-gray-600">
+              Análisis detallado del rendimiento del sistema
+            </p>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Rendimiento por Agente
+              </h3>
+              <div class="chart-container">
+                <canvas id="agentPerformanceChart"></canvas>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Tickets por Categoría
+              </h3>
+              <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Configuración Section -->
+        <div *ngIf="currentSection === 'settings'" class="p-6">
+          <!-- Título de sección -->
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">
+              Configuración del Sistema
+            </h2>
+            <p class="text-gray-600">
+              Administra la configuración general del ServiceDesk
+            </p>
+          </div>
+          <!-- Grid de configuración -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Tiempo esperado por categoría -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col justify-between">
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                  Tiempo Esperado por Categoría
+                </h3>
+                <p class="text-gray-600 mb-4">
+                  Define el tiempo esperado de respuesta según la categoría del
+                  ticket (en horas):
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >🖥️ Hardware</label
+                    >
+                    <input
+                      type="number"
+                      id="time-hardware"
+                      value="24"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >💾 Software</label
+                    >
+                    <input
+                      type="number"
+                      id="time-software"
+                      value="48"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >🌐 Red</label
+                    >
+                    <input
+                      type="number"
+                      id="time-network"
+                      value="36"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >📧 Correo</label
+                    >
+                    <input
+                      type="number"
+                      id="time-email"
+                      value="12"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >📞 Teléfono</label
+                    >
+                    <input
+                      type="number"
+                      id="time-phone"
+                      value="8"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >🔐 Accesos</label
+                    >
+                    <input
+                      type="number"
+                      id="time-access"
+                      value="6"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                      >📝 Otro</label
+                    >
+                    <input
+                      type="number"
+                      id="time-other"
+                      value="24"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+              <!-- Botón Guardar -->
+              <button
+                onclick="saveCategoryTimes()"
+                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors mt-4 self-start"
+              >
+                💾 Guardar
+              </button>
+            </div>
+            <!-- Respaldo y restauración -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Respaldo y Restauración
+              </h3>
+              <p class="text-sm text-gray-600 mb-6">
+                Desde aquí puedes crear copias de seguridad del sistema o
+                restaurar datos desde un respaldo existente.
+              </p>
+              <div class="space-y-6">
+                <div class="flex items-center justify-between p-0 rounded-lg">
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">
+                      Copia de seguridad manual
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      Genera una copia de todos los datos del sistema.
+                    </p>
+                  </div>
+                  <button
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-1"
+                    onclick="backupSystem()"
+                  >
+                    💾 Crear respaldo
                   </button>
+                </div>
+                <div class="p-0 rounded-lg border-t border-gray-200 pt-6">
+                  <p class="text-sm font-medium text-gray-900">
+                    Restaurar desde respaldo
+                  </p>
+                  <p class="text-xs text-gray-500 mb-3">
+                    Restaura los datos desde un archivo de respaldo.
+                  </p>
+                  <div class="flex items-center space-x-2">
+                    <input type="file" id="restoreFile" class="hidden" />
+                    <label
+                      for="restoreFile"
+                      class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 text-sm transition-colors cursor-pointer rounded-lg border border-gray-300 whitespace-nowrap"
+                    >
+                      Seleccionar archivo
+                    </label>
+                    <span
+                      id="fileName"
+                      class="text-sm text-gray-500 flex-1 whitespace-nowrap"
+                    >
+                      Sin archivos seleccionados
+                    </span>
+                    <button
+                      class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center space-x-1 ml-auto"
+                      onclick="restoreSystem()"
+                    >
+                      ♻️ Restaurar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -588,68 +821,178 @@
         </div>
       </div>
     </div>
-  </div>
-  <!-- Modal de creación/edición de usuario -->
-  <div *ngIf="showUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-96 p-6">
-      <h2 class="text-xl font-semibold mb-4 text-gray-800">{{ userEditMode ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
-      <form (ngSubmit)="userEditMode ? saveUserEdit() : createUser()">
-        <div class="mb-3">
-          <label for="userName" class="block text-sm font-medium text-gray-700">Nombre completo</label>
-          <input type="text" id="userName" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="formUser.nombreUsuario" name="nombreUsuario" required>
-        </div>
-        <div class="mb-3">
-          <label for="userEmail" class="block text-sm font-medium text-gray-700">Correo electrónico</label>
-          <input type="email" id="userEmail" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="formUser.correoUsuario" name="correoUsuario" required>
-        </div>
-        <div class="mb-3">
-          <label for="userPassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
-          <input type="password" id="userPassword" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="formUser.contrasenaUsuario" name="contrasenaUsuario" [required]="!userEditMode">
-        </div>
-        <div class="mb-3" *ngIf="!userEditMode">
-          <label for="userRole" class="block text-sm font-medium text-gray-700">Rol</label>
-          <select id="userRole" class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500" [(ngModel)]="formUser.tipoUsuario" name="tipoUsuario" required (change)="onRoleChange($event)">
-            <option value="Cliente">Cliente</option>
-            <option value="Agente">Agente</option>
-            <option value="Supervisor">Supervisor</option>
-            <option value="Administrador">Administrador</option>
-          </select>
-        </div>
-        <div class="mb-4">
-          <label for="userDept" class="block text-sm font-medium text-gray-700">Departamento</label>
-          <input id="userDept" class="mt-1 w-full border border-gray-300 rounded-md p-2" [(ngModel)]="formUser.departamentoUsuario" name="departamentoUsuario">
-        </div>
-        <div class="flex justify-end space-x-2 mt-5">
-          <button type="button" (click)="closeUserModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-  <!-- Modal de edición de perfil -->
-  <div *ngIf="showProfile" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
-          <button (click)="closeProfile()" class="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-        <form class="p-6 space-y-4" (submit)="$event.preventDefault(); closeProfile();">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-            <input type="text" [(ngModel)]="profileName" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+    <!-- Modal de creación/edición de usuario -->
+    <div
+      *ngIf="showUserModal"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl w-96 p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800">
+          {{ userEditMode ? "Editar Usuario" : "Nuevo Usuario" }}
+        </h2>
+        <form (ngSubmit)="userEditMode ? saveUserEdit() : createUser()">
+          <div class="mb-3">
+            <label
+              for="userName"
+              class="block text-sm font-medium text-gray-700"
+            >
+              Nombre completo
+            </label>
+            <input
+              type="text"
+              id="userName"
+              class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+              [(ngModel)]="formUser.nombreUsuario"
+              name="nombreUsuario"
+              required
+            />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
-            <input type="email" [(ngModel)]="profileEmail" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+          <div class="mb-3">
+            <label
+              for="userEmail"
+              class="block text-sm font-medium text-gray-700"
+            >
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              id="userEmail"
+              class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+              [(ngModel)]="formUser.correoUsuario"
+              name="correoUsuario"
+              required
+            />
           </div>
-          <div class="flex justify-end space-x-3 pt-4">
-            <button type="button" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" (click)="closeProfile()">Cancelar</button>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+          <div class="mb-3">
+            <label
+              for="userPassword"
+              class="block text-sm font-medium text-gray-700"
+            >
+              Contraseña
+            </label>
+            <input
+              type="password"
+              id="userPassword"
+              class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+              [(ngModel)]="formUser.contrasenaUsuario"
+              name="contrasenaUsuario"
+              [required]="!userEditMode"
+            />
+          </div>
+          <div class="mb-3" *ngIf="!userEditMode">
+            <label
+              for="userRole"
+              class="block text-sm font-medium text-gray-700"
+            >
+              Rol
+            </label>
+            <select
+              id="userRole"
+              class="mt-1 w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
+              [(ngModel)]="formUser.tipoUsuario"
+              name="tipoUsuario"
+              required
+              (change)="onRoleChange($event)"
+            >
+              <option value="Cliente">Cliente</option>
+              <option value="Agente">Agente</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Administrador">Administrador</option>
+            </select>
+          </div>
+          <div class="mb-4">
+            <label
+              for="userDept"
+              class="block text-sm font-medium text-gray-700"
+            >
+              Departamento
+            </label>
+            <input
+              id="userDept"
+              class="mt-1 w-full border border-gray-300 rounded-md p-2"
+              [(ngModel)]="formUser.departamentoUsuario"
+              name="departamentoUsuario"
+            />
+          </div>
+          <div class="flex justify-end space-x-2 mt-5">
+            <button
+              type="button"
+              (click)="closeUserModal()"
+              class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
+            >
+              Guardar
+            </button>
           </div>
         </form>
       </div>
     </div>
-  </div>
-</body>
+    <!-- Modal de edición de perfil -->
+    <div *ngIf="showProfile" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
+          <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+            <button
+              (click)="closeProfile()"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+          <form
+            class="p-6 space-y-4"
+            (submit)="$event.preventDefault(); closeProfile();"
+          >
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Nombre
+              </label>
+              <input
+                type="text"
+                [(ngModel)]="profileName"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Correo
+              </label>
+              <input
+                type="email"
+                [(ngModel)]="profileEmail"
+                required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                (click)="closeProfile()"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium"
+              >
+                Guardar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </body>
 </html>

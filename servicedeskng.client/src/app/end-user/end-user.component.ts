@@ -31,6 +31,10 @@ export class EndUserComponent implements OnInit, OnDestroy {
   categorias: any[] = [];
   estados: any[] = [];
 
+  // Filtro de estado para tickets
+  filtroEstado: string = '';
+  ticketsFiltrados: Ticket[] = [];
+
   constructor(
     private ticketService: TicketsService,
     private chatService: ChatService,
@@ -82,7 +86,16 @@ export class EndUserComponent implements OnInit, OnDestroy {
   cargarTickets() {
     this.ticketService.getTicketsByUser(this.usuarioId).subscribe(tickets => {
       this.tickets = tickets;
+      this.filtrarTickets();
     });
+  }
+
+  filtrarTickets() {
+    if (!this.filtroEstado) {
+      this.ticketsFiltrados = this.tickets;
+    } else {
+      this.ticketsFiltrados = this.tickets.filter(t => this.getNombreEstado(t.idEstadoTicket).toLowerCase() === this.filtroEstado.toLowerCase());
+    }
   }
 
   crearTicket() {
@@ -101,8 +114,9 @@ export class EndUserComponent implements OnInit, OnDestroy {
       alert('Faltan campos requeridos.');
       return;
     }
+    const clienteId = +(localStorage.getItem('clienteId') || 0);
     const ticketData = {
-      idCliente: this.usuarioId,
+      idCliente: clienteId,
       idEstadoTicket: estadoObj.idEstado,
       idCategoriaTicket: categoriaObj.idCategoria,
       tituloTicket: this.nuevoTicket.asunto,
@@ -111,14 +125,17 @@ export class EndUserComponent implements OnInit, OnDestroy {
       ubicacionTicket: '',
       departamentoTicket: ''
     };
+    // Solo enviar los campos primitivos, sin propiedades de navegación
+    console.log('Datos enviados al backend:', ticketData);
     this.ticketService.createTicket(ticketData).subscribe({
       next: ticket => {
         this.tickets.unshift(ticket);
         this.cerrarModalTicket();
+        this.abrirChat(ticket); // Abrir el chat automáticamente al crear el ticket
       },
       error: err => {
-        console.error('Error al crear ticket:', err);
-        alert('Error al crear ticket: ' + (err.error?.message || err.message || 'Error desconocido'));
+        console.error('Error al crear ticket:', err.error);
+        alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
       }
     });
   }
@@ -141,6 +158,8 @@ export class EndUserComponent implements OnInit, OnDestroy {
     if (this.ticketSeleccionado) {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
     }
+    this.ticketSeleccionado = ticket;
+
 
     // Conecta al nuevo chat
     this.chatService.connect(ticket.idTicket.toString());

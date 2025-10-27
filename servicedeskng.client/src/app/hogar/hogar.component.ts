@@ -24,11 +24,23 @@ export class HogarComponent {
       next: (response) => {
         console.log('Respuesta del backend:', response); // Para depuración
         localStorage.setItem('rol', response.rol);
-        // Redirigir según el rol
-        if (response.rol === 'Administrador') {
+        localStorage.setItem('usuarioId', response.usuario.idUsuario); // Guarda el idUsuario
+        localStorage.setItem('usuario', response.usuario.nombreUsuario); // Guarda el nombre del usuario
+
+        // Solo buscar clienteId si el rol es Cliente o EndUser
+        if (response.rol === 'Cliente' || response.rol === 'EndUser') {
+          this.http.get<any>(`/api/enduser/by-usuario/${response.usuario.idUsuario}`).subscribe({
+            next: cliente => {
+              localStorage.setItem('clienteId', cliente.idCliente);
+              this.router.navigate(['/end-user']);
+            },
+            error: () => {
+              // Si no existe cliente, igual redirige
+              this.router.navigate(['/end-user']);
+            }
+          });
+        } else if (response.rol === 'Administrador') {
           this.router.navigate(['/administrador']);
-        } else if (response.rol === 'Cliente' || response.rol === 'EndUser') {
-          this.router.navigate(['/end-user']);
         } else if (response.rol === 'Agente') {
           this.router.navigate(['/agente']);
         } else if (response.rol === 'Supervisor') {

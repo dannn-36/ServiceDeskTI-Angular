@@ -109,5 +109,22 @@ namespace ServiceDeskNg.Server.Controllers
                 return StatusCode(500, new { message = "Error al eliminar el usuario final", error = ex.Message });
             }
         }
+
+        // GET: api/enduser/by-usuario/{idUsuario}
+        [HttpGet("by-usuario/{idUsuario}")]
+        public IActionResult GetByUsuarioId(int idUsuario)
+        {
+            try
+            {
+                var cliente = _endUserService.GetAll().FirstOrDefault(e => e.IdUsuario == idUsuario);
+                if (cliente == null)
+                    return NotFound(new { message = "No existe cliente para el usuario especificado." });
+                return Ok(cliente);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Error al buscar el cliente por usuario.", error = ex.Message });
+            }
+        }
     }
 }

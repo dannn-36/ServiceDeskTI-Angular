@@ -1,11 +1,17 @@
 import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef } from '@angular/core';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
+import { HttpClient } from '@angular/common/http';
 
 interface MensajeChat {
   remitente: string;
   texto: string;
   esAgente: boolean;
+}
+
+interface EstadoTicket {
+  idEstado: number;
+  nombreEstado: string;
 }
 
 @Component({
@@ -24,17 +30,26 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   filtroEstado: string = '';
   filtroPrioridad: string = '';
   filtroCategoria: string = '';
+  estados: EstadoTicket[] = [];
   @ViewChild('chatScroll') chatScroll!: ElementRef;
 
   constructor(
     private ticketsService: TicketsService,
-    private chatService: ChatService
+    private chatService: ChatService,
+    private http: HttpClient
   ) {}
 
   ngOnInit() {
     this.usuarioNombre = localStorage.getItem('usuario') || 'Agente';
     this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
+    this.cargarEstados();
     this.cargarTicketsAsignados();
+  }
+
+  cargarEstados() {
+    this.http.get<EstadoTicket[]>('/api/tickets/estados').subscribe(estados => {
+      this.estados = estados;
+    });
   }
 
   ngOnDestroy() {
@@ -56,10 +71,18 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
     this.ticketSeleccionado = ticket;
     this.mensajes = [];
+    // Cambiar estado a "En Progreso" si no lo está
+    const estadoEnProgreso = this.estados.find(e => e.nombreEstado.toLowerCase() === 'en-progreso');
+    if (estadoEnProgreso && ticket.idEstadoTicket !== estadoEnProgreso.idEstado) {
+      const actualizado = { ...ticket, idEstadoTicket: estadoEnProgreso.idEstado };
+      this.ticketsService.update(ticket.idTicket, actualizado).subscribe(() => {
+        ticket.idEstadoTicket = estadoEnProgreso.idEstado;
+      });
+    }
     // Cargar mensajes históricos
     this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
       this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.usuario, // Asegura que el nombre del usuario aparezca
+        remitente: m.usuarioNombre || m.usuario,
         texto: m.mensajeTicket,
         esAgente: m.idUsuario === this.usuarioId
       }));
@@ -68,7 +91,7 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.chatService.connect(ticket.idTicket.toString());
     this.chatService.onReceiveMessage((user, message, fecha) => {
       this.mensajes.push({
-        remitente: user, // El nombre del usuario que envía el mensaje
+        remitente: user,
         texto: message,
         esAgente: user === this.usuarioNombre
       });
@@ -91,15 +114,31 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.mensajeTexto = '';
   }
 
-  cambiarEstadoTicket() {
-    if (!this.ticketSeleccionado) return;
-    this.ticketsService.update(this.ticketSeleccionado.idTicket, this.ticketSeleccionado).subscribe({
+  cambiarEstadoTicket(ticket: Ticket, estado: string) {
+    const estadoObj = this.estados.find(e => e.nombreEstado.toLowerCase() === estado.toLowerCase());
+    if (!estadoObj) return;
+    const actualizado = {
+      ...ticket,
+      idEstadoTicket: estadoObj.idEstado,
+      tituloTicket: ticket.tituloTicket || '',
+      descripcionTicket: ticket.descripcionTicket || '',
+      idCliente: ticket.idCliente,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      prioridadTicket: ticket.prioridadTicket || 'media',
+      ubicacionTicket: ticket.ubicacionTicket || '',
+      departamentoTicket: ticket.departamentoTicket || '',
+      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
+      fechaHoraActualizacionTicket: new Date().toISOString()
+    };
+    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
       next: () => {
-        // Opcional: notificación visual
+        this.cargarTicketsAsignados(); // Recarga la lista de tickets
+        // Actualiza el ticket seleccionado si corresponde
+        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
+          this.ticketSeleccionado.idEstadoTicket = estadoObj.idEstado;
+        }
       },
-      error: () => {
-        // Opcional: manejo de error
-      }
+      error: (err) => { /* Manejo de error */ }
     });
   }
 
@@ -120,5 +159,30 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   logout() {
     localStorage.clear();
     window.location.href = '/';
+  }
+
+  ponerUrgente(ticket: Ticket) {
+    const actualizado = {
+      ...ticket,
+      prioridadTicket: 'urgente',
+      idEstadoTicket: ticket.idEstadoTicket,
+      tituloTicket: ticket.tituloTicket || '',
+      descripcionTicket: ticket.descripcionTicket || '',
+      idCliente: ticket.idCliente,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      ubicacionTicket: ticket.ubicacionTicket || '',
+      departamentoTicket: ticket.departamentoTicket || '',
+      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
+      fechaHoraActualizacionTicket: new Date().toISOString()
+    };
+    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
+      next: () => {
+        this.cargarTicketsAsignados(); // Recarga la lista
+        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
+          this.ticketSeleccionado.prioridadTicket = 'urgente';
+        }
+      },
+      error: (err) => { /* Manejo de error */ }
+    });
   }
 }

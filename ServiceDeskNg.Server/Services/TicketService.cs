@@ -145,14 +145,23 @@ namespace ServiceDeskNg.Server.Services
             if (existing == null)
                 throw new KeyNotFoundException($"No se encontró el ticket con ID {entity.IdTicket}");
 
+            // Validaciones
             if (string.IsNullOrWhiteSpace(entity.TituloTicket))
                 throw new ArgumentException("El título del ticket es obligatorio.");
-
             if (string.IsNullOrWhiteSpace(entity.DescripcionTicket))
                 throw new ArgumentException("La descripción del ticket es obligatoria.");
 
-            entity.FechaHoraActualizacionTicket = DateTime.UtcNow;
-            _ticketRepo.Update(entity);
+            // Actualiza solo los campos primitivos
+            existing.TituloTicket = entity.TituloTicket;
+            existing.DescripcionTicket = entity.DescripcionTicket;
+            existing.IdEstadoTicket = entity.IdEstadoTicket;
+            existing.IdCategoriaTicket = entity.IdCategoriaTicket;
+            existing.PrioridadTicket = entity.PrioridadTicket;
+            existing.UbicacionTicket = entity.UbicacionTicket;
+            existing.DepartamentoTicket = entity.DepartamentoTicket;
+            existing.FechaHoraActualizacionTicket = DateTime.UtcNow;
+
+            _ticketRepo.Update(existing); // Solo actualiza la instancia ya trackeada
         }
 
         // ✅ Eliminar ticket

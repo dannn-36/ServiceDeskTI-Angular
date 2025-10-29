@@ -237,7 +237,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-sm font-medium text-gray-600">Total Tickets</p>
-                  <p class="text-3xl font-bold text-gray-900">1,247</p>
+                  <p class="text-3xl font-bold text-gray-900">{{tickets.length}}</p>
                   <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -249,7 +249,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
-                  <p class="text-3xl font-bold text-gray-900">342</p>
+                  <p class="text-3xl font-bold text-gray-900">{{totalClientes + totalAgentes + totalSupervisores + totalAdministradores}}</p>
                   <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -307,35 +307,13 @@
               Actividad Reciente del Sistema
             </h3>
             <div class="space-y-4">
-              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+              <div *ngFor="let ticket of tickets | slice:0:3" class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
                 <span class="text-2xl">🆕</span>
                 <div class="flex-1">
-                  <p class="font-medium text-gray-900">Nuevo usuario registrado</p>
-                  <p class="text-sm text-gray-600">
-                    María Rodríguez se unió al departamento de Ventas
-                  </p>
+                  <p class="font-medium text-gray-900">{{ticket.tituloTicket}}</p>
+                  <p class="text-sm text-gray-600">Ticket #{{ticket.idTicket}} - {{getCategoriaNombre(ticket.idCategoriaTicket)}}</p>
                 </div>
-                <span class="text-sm text-gray-500">Hace 5 min</span>
-              </div>
-              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <span class="text-2xl">⚠️</span>
-                <div class="flex-1">
-                  <p class="font-medium text-gray-900">Ticket urgente asignado</p>
-                  <p class="text-sm text-gray-600">
-                    TK-1248 - Servidor principal sin respuesta
-                  </p>
-                </div>
-                <span class="text-sm text-gray-500">Hace 12 min</span>
-              </div>
-              <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <span class="text-2xl">✅</span>
-                <div class="flex-1">
-                  <p class="font-medium text-gray-900">Integración completada</p>
-                  <p class="text-sm text-gray-600">
-                    Conexión con Microsoft Teams establecida
-                  </p>
-                </div>
-                <span class="text-sm text-gray-500">Hace 1 hora</span>
+                <span class="text-sm text-gray-500">{{ticket.fechaHoraCreacionTicket | date:'short'}}</span>
               </div>
             </div>
           </div>
@@ -531,42 +509,38 @@
         <!-- Tickets Section -->
         <div *ngIf="currentSection === 'tickets'" class="p-6">
           <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-              Gestión de Tickets
-            </h2>
-            <p class="text-gray-600">
-              Supervisa y administra todos los tickets del sistema
-            </p>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Gestión de Tickets</h2>
+            <p class="text-gray-600">Supervisa y administra todos los tickets del sistema</p>
           </div>
           <!-- Ticket Stats -->
           <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <div class="text-center">
-                <p class="text-2xl font-bold text-blue-600">45</p>
+                <p class="text-2xl font-bold text-blue-600">{{totalAbiertos}}</p>
                 <p class="text-sm text-gray-600">Abiertos</p>
               </div>
             </div>
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <div class="text-center">
-                <p class="text-2xl font-bold text-yellow-600">32</p>
+                <p class="text-2xl font-bold text-yellow-600">{{totalEnProgreso}}</p>
                 <p class="text-sm text-gray-600">En Progreso</p>
               </div>
             </div>
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <div class="text-center">
-                <p class="text-2xl font-bold text-purple-600">18</p>
+                <p class="text-2xl font-bold text-purple-600">{{totalPendientes}}</p>
                 <p class="text-sm text-gray-600">Pendientes</p>
               </div>
             </div>
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <div class="text-center">
-                <p class="text-2xl font-bold text-green-600">156</p>
+                <p class="text-2xl font-bold text-green-600">{{totalResueltos}}</p>
                 <p class="text-sm text-gray-600">Resueltos</p>
               </div>
             </div>
             <div class="bg-white rounded-lg p-4 border border-gray-200">
               <div class="text-center">
-                <p class="text-2xl font-bold text-red-600">8</p>
+                <p class="text-2xl font-bold text-red-600">{{totalUrgentes}}</p>
                 <p class="text-sm text-gray-600">Urgentes</p>
               </div>
             </div>
@@ -575,27 +549,30 @@
           <div class="bg-white rounded-xl shadow-sm border border-gray-200">
             <div class="p-6 border-b border-gray-200">
               <div class="flex justify-between items-center">
-                <h3 class="text-lg font-semibold text-gray-900">
-                  Tickets Recientes
-                </h3>
+                <h3 class="text-lg font-semibold text-gray-900">Tickets Recientes</h3>
                 <div class="flex space-x-3">
                   <input
                     type="text"
-                    id="ticketSearch"
+                    [(ngModel)]="ticketSearch"
+                    (input)="filterTickets()"
                     placeholder="Buscar tickets..."
                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 w-64"
                   />
                   <select
-                    id="ticketStatusFilter"
+                    [(ngModel)]="ticketStatusFilter"
+                    (change)="filterTickets()"
                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   >
                     <option value="">Todos los estados</option>
                     <option value="abierto">Abiertos</option>
-                    <option value="en-progreso">En progreso</option>
+                    <option value="en progreso">En Progreso</option>
                     <option value="pendiente">Pendientes</option>
+                    <option value="resuelto">Resueltos</option>
+                    <option value="urgente">Urgentes</option>
                   </select>
                   <select
-                    id="ticketCategoryFilter"
+                    [(ngModel)]="ticketCategoryFilter"
+                    (change)="filterTickets()"
                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   >
                     <option value="">Todas las categorías</option>
@@ -607,8 +584,48 @@
               </div>
             </div>
             <div class="p-6">
-              <div class="space-y-4" id="ticketsList">
-                <!-- Tickets se cargarán desde JS -->
+              <div *ngIf="loadingTickets" class="text-gray-500">Cargando tickets...</div>
+              <div *ngIf="ticketError" class="text-red-600">{{ticketError}}</div>
+              <div *ngIf="filteredTickets.length === 0 && !loadingTickets" class="text-gray-500">No hay tickets para mostrar.</div>
+              <div class="space-y-4" *ngIf="filteredTickets.length > 0">
+                <div *ngFor="let ticket of filteredTickets" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <div class="flex items-center space-x-4">
+                    <span class="text-xl">{{getCategoriaNombre(ticket.idCategoriaTicket)}}</span>
+                    <div>
+                      <h4 class="font-medium text-gray-900">{{ticket.tituloTicket}}</h4>
+                      <p class="text-sm text-gray-600">#{{ticket.idTicket}} • Cliente: {{ticket.idCliente}}</p>
+                      <p class="text-xs text-gray-500">{{getEstadoNombre(ticket.idEstadoTicket)}} • Prioridad: {{ticket.prioridadTicket}}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [ngClass]="{
+                            'bg-blue-100 text-blue-800': getEstadoNombre(ticket.idEstadoTicket) === 'Abierto',
+                            'bg-yellow-100 text-yellow-800': getEstadoNombre(ticket.idEstadoTicket) === 'En Progreso',
+                            'bg-purple-100 text-purple-800': getEstadoNombre(ticket.idEstadoTicket) === 'Pendiente',
+                            'bg-green-100 text-green-800': getEstadoNombre(ticket.idEstadoTicket) === 'Resuelto'
+                          }">
+                    {{getEstadoNombre(ticket.idEstadoTicket)}}
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          [ngClass]="{
+                            'bg-red-100 text-red-800': ticket.prioridadTicket === 'urgente',
+                            'bg-orange-100 text-orange-800': ticket.prioridadTicket === 'alta',
+                            'bg-blue-100 text-blue-800': ticket.prioridadTicket === 'media',
+                            'bg-gray-100 text-gray-800': ticket.prioridadTicket === 'baja'
+                          }">
+                    {{ticket.prioridadTicket}}
+                    </span>
+                    <span class="text-sm text-gray-500">{{ticket.fechaHoraCreacionTicket | date:'short'}}</span>
+                    <!-- Botones de cambio de estado -->
+                    <div class="flex space-x-2">
+                      <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium" (click)="finalizarTicket(ticket)">Finalizar</button>
+                      <button class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-xs font-medium" (click)="ponerEnProgreso(ticket)">En Progreso</button>
+                      <button class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-medium" (click)="ponerPendiente(ticket)">Pendiente</button>
+                      <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-medium" (click)="ponerUrgente(ticket)">Urgente</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -897,7 +914,7 @@
               <option value="Cliente">Cliente</option>
               <option value="Agente">Agente</option>
               <option value="Supervisor">Supervisor</option>
-              <option value="Administrador">Administrador</option>
+              <option value="Administradores">Administrador</option>
             </select>
           </div>
           <div class="mb-4">

@@ -1,12 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { UsuarioService, Usuario } from '../usuario/usuario.service';
+import { TicketsService, Ticket } from '../tickets/tickets.service';
+import { HttpClient } from '@angular/common/http';
+declare var Chart: any;
+
+interface EstadoTicket {
+  idEstado: number;
+  nombreEstado: string;
+}
 
 @Component({
   selector: 'app-administrador',
   templateUrl: './administrador.component.html',
   styleUrls: ['./administrador.component.css']
 })
-export class AdministradorComponent implements OnInit {
+export class AdministradorComponent implements OnInit, AfterViewInit {
+  // ...usuarios...
   users: Usuario[] = [];
   filteredUsers: Usuario[] = [];
   userSearch: string = '';
@@ -30,22 +39,118 @@ export class AdministradorComponent implements OnInit {
   totalSupervisores = 0;
   totalAdministradores = 0;
 
-  constructor(private usuarioService: UsuarioService) { }
+  // --- TICKETS ---
+  tickets: Ticket[] = [];
+  filteredTickets: Ticket[] = [];
+  ticketSearch: string = '';
+  ticketStatusFilter: string = '';
+  ticketCategoryFilter: string = '';
+  loadingTickets = false;
+  ticketError = '';
+  estados: EstadoTicket[] = [];
+
+  // Contadores por estado
+  totalAbiertos = 0;
+  totalEnProgreso = 0;
+  totalPendientes = 0;
+  totalResueltos = 0;
+  totalUrgentes = 0;
+
+  constructor(
+    private usuarioService: UsuarioService,
+    private ticketsService: TicketsService,
+    private http: HttpClient
+  ) { }
 
   ngOnInit(): void {
-    // Obtener nombre y correo del usuario desde localStorage
     this.profileName = localStorage.getItem('usuario') || 'Admin Sistema';
     this.profileEmail = localStorage.getItem('usuarioEmail') || 'admin@empresa.com';
     this.getUsers();
     this.filterUsers();
+    this.cargarEstados();
+    this.getTickets();
   }
-  //HOLA MUNDO
+
+  ngAfterViewInit(): void {
+    this.initCharts();
+  }
+
+  initCharts() {
+    // Tickets por Estado
+    const statusChartEl = document.getElementById('statusChart');
+    if (statusChartEl) {
+      new Chart(statusChartEl, {
+        type: 'doughnut',
+        data: {
+          labels: ['Abiertos', 'En Progreso', 'Pendientes', 'Resueltos', 'Urgentes'],
+          datasets: [{
+            data: [
+              this.totalAbiertos,
+              this.totalEnProgreso,
+              this.totalPendientes,
+              this.totalResueltos,
+              this.totalUrgentes
+            ],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(139, 92, 246, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(239, 68, 68, 0.8)'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+    // Tendencia Mensual (simulada)
+    const trendChartEl = document.getElementById('trendChart');
+    if (trendChartEl) {
+      new Chart(trendChartEl, {
+        type: 'line',
+        data: {
+          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+          datasets: [
+            {
+              label: 'Tickets Creados',
+              data: [65, 78, 90, 81, 95, 102],
+              borderColor: 'rgba(59, 130, 246, 1)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Tickets Resueltos',
+              data: [60, 75, 85, 85, 92, 98],
+              borderColor: 'rgba(16, 185, 129, 1)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+  }
+
+  cargarEstados() {
+    this.http.get<EstadoTicket[]>('/api/tickets/estados').subscribe(estados => {
+      this.estados = estados;
+    });
+  }
 
   showSection(section: string) {
     this.currentSection = section;
     if (section === 'users') this.filterUsers();
+    if (section === 'tickets') this.filterTickets();
   }
 
+  // --- USUARIOS ---
   getUsers() {
     this.loadingUsers = true;
     this.usuarioService.getAll().subscribe({
@@ -148,13 +253,138 @@ export class AdministradorComponent implements OnInit {
   closeProfile() { this.showProfile = false; }
 
   logout() {
-    // Limpia datos de sesión y redirige a login
     localStorage.clear();
     window.location.href = '/hogar';
   }
 
   showNotifications() {
-    // Puedes implementar una notificación real aquí
     alert('Panel de notificaciones en desarrollo');
+  }
+
+  // --- TICKETS ---
+  getTickets() {
+    this.loadingTickets = true;
+    this.ticketsService.getAll().subscribe({
+      next: (data) => {
+        this.tickets = data;
+        this.updateTicketCounts();
+        this.filterTickets();
+        this.loadingTickets = false;
+      },
+      error: () => { this.ticketError = 'Error al cargar tickets'; this.loadingTickets = false; }
+    });
+  }
+
+  updateTicketCounts() {
+    this.totalAbiertos = this.tickets.filter(t => this.getEstadoNombre(t.idEstadoTicket) === 'Abierto').length;
+    this.totalEnProgreso = this.tickets.filter(t => this.getEstadoNombre(t.idEstadoTicket) === 'En Progreso').length;
+    this.totalPendientes = this.tickets.filter(t => this.getEstadoNombre(t.idEstadoTicket) === 'Pendiente').length;
+    this.totalResueltos = this.tickets.filter(t => this.getEstadoNombre(t.idEstadoTicket) === 'Resuelto').length;
+    this.totalUrgentes = this.tickets.filter(t => t.prioridadTicket?.toLowerCase() === 'urgente').length;
+    console.log('Contadores:', {
+      abiertos: this.totalAbiertos,
+      enProgreso: this.totalEnProgreso,
+      pendientes: this.totalPendientes,
+      resueltos: this.totalResueltos,
+      urgentes: this.totalUrgentes,
+      tickets: this.tickets.map(t => ({ id: t.idTicket, estado: this.getEstadoNombre(t.idEstadoTicket), prioridad: t.prioridadTicket }))
+    });
+  }
+
+  filterTickets() {
+    const search = this.ticketSearch.toLowerCase();
+    const status = this.ticketStatusFilter.toLowerCase();
+    const category = this.ticketCategoryFilter.toLowerCase();
+    this.filteredTickets = this.tickets.filter(ticket => {
+      const matchesSearch = ticket.tituloTicket.toLowerCase().includes(search) || ticket.descripcionTicket?.toLowerCase().includes(search) || ticket.idTicket.toString().includes(search);
+      const matchesStatus = !status || this.getEstadoNombre(ticket.idEstadoTicket).toLowerCase() === status;
+      const matchesCategory = !category || this.getCategoriaNombre(ticket.idCategoriaTicket).toLowerCase() === category;
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }
+
+  getEstadoNombre(idEstado: number): string {
+    const estado = this.estados.find(e => e.idEstado === idEstado);
+    if (!estado) return idEstado.toString();
+    // Normaliza el nombre para los contadores
+    switch (estado.nombreEstado.trim().toLowerCase()) {
+      case 'abierto': return 'Abierto';
+      case 'en progreso': return 'En Progreso';
+      case 'en-progreso': return 'En Progreso';
+      case 'pendiente': return 'Pendiente';
+      case 'resuelto': return 'Resuelto';
+      case 'urgente': return 'Urgente';
+      default: return estado.nombreEstado;
+    }
+  }
+  getCategoriaNombre(idCategoria: number): string {
+    switch (idCategoria) {
+      case 1: return 'Hardware';
+      case 2: return 'Software';
+      case 3: return 'Red';
+      default: return 'Otro';
+    }
+  }
+
+  cambiarEstadoTicket(ticket: Ticket, estado: string) {
+    const estadoObj = this.estados.find(e => e.nombreEstado.toLowerCase() === estado.toLowerCase());
+    if (!estadoObj) return;
+    const actualizado = {
+      ...ticket,
+      idEstadoTicket: estadoObj.idEstado,
+      tituloTicket: ticket.tituloTicket || '',
+      descripcionTicket: ticket.descripcionTicket || '',
+      idCliente: ticket.idCliente,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      prioridadTicket: ticket.prioridadTicket || 'media',
+      ubicacionTicket: ticket.ubicacionTicket || '',
+      departamentoTicket: ticket.departamentoTicket || '',
+      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
+      fechaHoraActualizacionTicket: new Date().toISOString()
+    };
+    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
+      next: () => {
+        this.getTickets(); // Recarga la lista de tickets
+        // Actualiza el ticket seleccionado si corresponde
+        if (this.filteredTickets && this.filteredTickets.length > 0) {
+          const idx = this.filteredTickets.findIndex(t => t.idTicket === ticket.idTicket);
+          if (idx !== -1) {
+            this.filteredTickets[idx].idEstadoTicket = estadoObj.idEstado;
+          }
+        }
+      },
+      error: (err) => { /* Manejo de error */ }
+    });
+  }
+
+  finalizarTicket(ticket: Ticket) {
+    this.cambiarEstadoTicket(ticket, 'Resuelto');
+  }
+  ponerPendiente(ticket: Ticket) {
+    this.cambiarEstadoTicket(ticket, 'Pendiente');
+  }
+  ponerUrgente(ticket: Ticket) {
+    const actualizado = {
+      ...ticket,
+      prioridadTicket: 'urgente',
+      idEstadoTicket: ticket.idEstadoTicket,
+      tituloTicket: ticket.tituloTicket || '',
+      descripcionTicket: ticket.descripcionTicket || '',
+      idCliente: ticket.idCliente,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      ubicacionTicket: ticket.ubicacionTicket || '',
+      departamentoTicket: ticket.departamentoTicket || '',
+      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
+      fechaHoraActualizacionTicket: new Date().toISOString()
+    };
+    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
+      next: () => {
+        this.getTickets(); // Recarga la lista
+      },
+      error: (err) => { /* Manejo de error */ }
+    });
+  }
+  ponerEnProgreso(ticket: Ticket) {
+    this.cambiarEstadoTicket(ticket, 'En Progreso');
   }
 }

@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import * as signalR from '@microsoft/signalr';
 
 @Injectable({
@@ -6,9 +8,10 @@ import * as signalR from '@microsoft/signalr';
 })
 export class ChatService {
   private hubConnection!: signalR.HubConnection;
-  private readonly hubUrl = 'http://localhost:5076/chathub'; // Cambiado a HTTP para evitar error SSL
+  private readonly hubUrl = 'http://localhost:5076/chathub';
+  private readonly apiUrl = 'http://localhost:5076/api/ticketmensaje';
 
-  constructor() { }
+  constructor(private http: HttpClient) { }
 
   private isConnected = false;
 
@@ -61,5 +64,10 @@ export class ChatService {
       this.hubConnection.stop();
     }
     this.isConnected = false;
+  }
+
+  // Nuevo: obtener mensajes históricos de un ticket
+  getMensajesPorTicket(ticketId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/ticket/${ticketId}`);
   }
 }

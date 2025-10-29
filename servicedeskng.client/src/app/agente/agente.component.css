@@ -46,3 +46,41 @@ button[type="submit"] {
 button[type="submit"]:hover {
   background: #1d4ed8;
 }
+
+/* Estilo para el botón de salir y barra superior personalizada */
+button[title="Salir"] {
+  font-size: 1rem;
+  font-weight: 500;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 0.375rem 1rem;
+  transition: background 0.2s, color 0.2s;
+}
+button[title="Salir"]:hover {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+.w-10 {
+  width: 2.5rem;
+}
+.h-10 {
+  height: 2.5rem;
+}
+.text-purple-700 {
+  color: #7c3aed;
+}
+.text-base {
+  font-size: 1rem;
+}
+.font-medium {
+  font-weight: 500;
+}
+.bg-gray-200 {
+  background-color: #e5e7eb;
+}
+.rounded-full {
+  border-radius: 9999px;
+}

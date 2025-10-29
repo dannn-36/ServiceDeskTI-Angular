@@ -100,11 +100,43 @@
     </div>
   </header>
 
+  <!-- Barra superior única y funcional -->
+  <div class="w-full flex justify-end items-center p-4 space-x-4 bg-white border-b border-gray-200">
+    <div class="flex items-center space-x-2">
+      <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+        <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+        En línea
+      </span>
+      <span class="flex items-center space-x-2 ml-2">
+        <span class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xl">👤</span>
+        <span class="font-medium text-gray-700">{{usuarioNombre}} - Agente TI</span>
+      </span>
+      <button (click)="logout()" class="ml-4 flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors" title="Cerrar sesión">
+        <span class="mr-1 text-lg">🔒</span>
+        <span class="font-semibold">Salir</span>
+      </button>
+    </div>
+  </div>
+
   <div class="flex h-screen bg-gray-50">
     <!-- Sidebar -->
     <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
       <div class="p-4 bg-gray-50 border-b border-gray-200">
         <h2 class="text-lg font-bold mb-2">Tickets asignados</h2>
+        <div class="grid grid-cols-3 gap-3 text-center mb-4">
+          <div class="bg-white rounded-lg p-3">
+            <div class="text-lg font-bold text-blue-600">{{getTicketsCountByEstado(1)}}</div>
+            <div class="text-xs text-gray-500">Abiertos</div>
+          </div>
+          <div class="bg-white rounded-lg p-3">
+            <div class="text-lg font-bold text-yellow-600">{{getTicketsCountByEstado(2)}}</div>
+            <div class="text-xs text-gray-500">En Progreso</div>
+          </div>
+          <div class="bg-white rounded-lg p-3">
+            <div class="text-lg font-bold text-gray-600">{{getTicketsCountByEstado(4)}}</div>
+            <div class="text-xs text-gray-500">Cerrados</div>
+          </div>
+        </div>
       </div>
       <div class="flex-1 overflow-y-auto">
         <ul>
@@ -130,6 +162,22 @@
 
     <!-- Área principal de chat -->
     <div class="flex-1 flex flex-col items-center justify-center">
+      <!-- Header superior derecha -->
+      <div class="w-full flex justify-end items-center p-4 space-x-4">
+        <div class="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full">
+          <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+          <span>En línea</span>
+        </div>
+        <div class="flex items-center space-x-2 text-gray-600">
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <span>👨‍💻</span>
+          </div>
+          <span>{{usuarioNombre}} - Agente TI</span>
+        </div>
+        <button (click)="logout()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Cerrar sesión">
+          🔒
+        </button>
+      </div>
       <div *ngIf="!ticketSeleccionado" class="text-gray-500 text-center">
         <div class="text-6xl mb-4">💬</div>
         <h3 class="text-lg font-medium mb-2">Selecciona un ticket</h3>
@@ -467,383 +515,3 @@
                                 <span class="text-lg">${categoryIcon}</span>
                                 <span class="text-xs font-mono text-gray-500">${ticket.id}</span>
                                 ${ticket.unread ? '<div class="w-2 h-2 bg-orange-400 rounded-full notification-dot"></div>' : ''}
-                            </div>
-                            <div class="flex items-center space-x-1">
-                                <div class="w-2 h-2 ${ticket.userOnline ? 'bg-green-400' : 'bg-gray-300'} rounded-full"></div>
-                                <span class="text-xs text-gray-500">${ticket.lastUpdate.split(' ')[1]}</span>
-                            </div>
-                        </div>
-                        <h4 class="font-medium text-gray-900 mb-1 text-sm leading-tight">${ticket.title}</h4>
-                        <p class="text-xs text-gray-600 mb-2 line-clamp-2">${ticket.description}</p>
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center space-x-1">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}">${statusConfig.text}</span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${priorityConfig.color}">${priorityConfig.text}</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-between text-xs text-gray-500">
-                            <span>👤 ${ticket.user}</span>
-                            <span>💬 ${ticket.messages.length}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            updateStats();
-        }
-
-        function updateStats() {
-            const openCount = tickets.filter(t => t.status === 'abierto').length;
-            const inProgressCount = tickets.filter(t => t.status === 'en-progreso').length;
-            const urgentCount = tickets.filter(t => t.priority === 'urgente').length;
-
-            document.getElementById('openTickets').textContent = openCount;
-            document.getElementById('inProgressTickets').textContent = inProgressCount;
-            document.getElementById('urgentTickets').textContent = urgentCount;
-        }
-
-        function selectTicket(ticketId) {
-            selectedTicket = tickets.find(t => t.id === ticketId);
-            if (!selectedTicket) return;
-
-            // Marcar como leído
-            selectedTicket.unread = false;
-
-            // Actualizar UI
-            document.getElementById('noTicketSelected').classList.add('hidden');
-            document.getElementById('ticketView').classList.remove('hidden');
-
-            // Actualizar información del ticket
-            document.getElementById('ticketCategoryIcon').textContent = getCategoryIcon(selectedTicket.category);
-            document.getElementById('ticketId').textContent = selectedTicket.id;
-            document.getElementById('ticketTitle').textContent = selectedTicket.title;
-            document.getElementById('ticketUser').textContent = `👤 ${selectedTicket.user}`;
-            document.getElementById('ticketDepartment').textContent = `🏢 ${selectedTicket.department}`;
-            document.getElementById('ticketLocation').textContent = `📍 ${selectedTicket.location}`;
-            document.getElementById('ticketDate').textContent = `📅 ${selectedTicket.created}`;
-
-            // Actualizar estado online del usuario
-            const onlineStatus = document.getElementById('userOnlineStatus');
-            if (selectedTicket.userOnline) {
-                onlineStatus.innerHTML = '<div class="w-2 h-2 bg-green-400 rounded-full"></div><span>Usuario en línea</span>';
-                onlineStatus.className = 'flex items-center space-x-1 text-xs text-green-600';
-            } else {
-                onlineStatus.innerHTML = '<div class="w-2 h-2 bg-gray-300 rounded-full"></div><span>Usuario desconectado</span>';
-                onlineStatus.className = 'flex items-center space-x-1 text-xs text-gray-500';
-            }
-
-            // Actualizar badges
-            const statusConfig = getStatusBadge(selectedTicket.status);
-            const priorityConfig = getPriorityBadge(selectedTicket.priority);
-
-            document.getElementById('ticketStatus').className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}`;
-            document.getElementById('ticketStatus').textContent = statusConfig.text;
-
-            document.getElementById('ticketPriority').className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityConfig.color}`;
-            document.getElementById('ticketPriority').textContent = priorityConfig.text;
-
-            // Actualizar select de estado
-            document.getElementById('ticketStatusSelect').value = selectedTicket.status;
-
-            // Cargar mensajes del chat
-            loadChatMessages();
-
-            // Re-renderizar lista para mostrar selección
-            renderTickets();
-        }
-
-        function loadChatMessages() {
-            const chatContainer = document.getElementById('chatMessages');
-
-            chatContainer.innerHTML = selectedTicket.messages.map(message => `
-                <div class="chat-message flex ${message.type === 'agent' ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-xs lg:max-w-md">
-                        <div class="flex items-center space-x-2 mb-1 ${message.type === 'agent' ? 'justify-end' : 'justify-start'}">
-                            <span class="text-xs text-gray-500">${message.author}</span>
-                            <span class="text-xs text-gray-400">${message.time}</span>
-                        </div>
-                        <div class="px-3 py-2 rounded-lg text-sm ${
-                            message.type === 'agent'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-900'
-                        }">
-                            ${message.content}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            // Scroll al final
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function filterTickets() {
-            const searchTerm = document.getElementById('searchTickets').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const priorityFilter = document.getElementById('priorityFilter').value;
-            const categoryFilter = document.getElementById('categoryFilter').value;
-
-            const filteredTickets = tickets.filter(ticket => {
-                const matchesSearch = ticket.title.toLowerCase().includes(searchTerm) ||
-                                    ticket.user.toLowerCase().includes(searchTerm) ||
-                                    ticket.id.toLowerCase().includes(searchTerm);
-                const matchesStatus = !statusFilter || ticket.status === statusFilter;
-                const matchesPriority = !priorityFilter || ticket.priority === priorityFilter;
-                const matchesCategory = !categoryFilter || ticket.category === categoryFilter;
-
-                return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-            });
-
-            renderTickets(filteredTickets);
-        }
-
-        function updateTicketStatus() {
-            if (!selectedTicket) return;
-
-            const newStatus = document.getElementById('ticketStatusSelect').value;
-            selectedTicket.status = newStatus;
-
-            // Actualizar badge
-            const statusConfig = getStatusBadge(newStatus);
-            document.getElementById('ticketStatus').className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}`;
-            document.getElementById('ticketStatus').textContent = statusConfig.text;
-
-            renderTickets();
-            showNotification('Estado del ticket actualizado', 'success');
-        }
-
-        function handleChatKeyPress(event) {
-            if (event.ctrlKey && event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        function handleTyping() {
-            const input = document.getElementById('chatInput');
-            const charCount = document.getElementById('charCount');
-            charCount.textContent = `${input.value.length}/500`;
-
-            if (input.value.length > 500) {
-                input.value = input.value.substring(0, 500);
-                charCount.textContent = '500/500';
-            }
-        }
-
-        function insertQuickResponse(type) {
-            const response = quickResponses[type];
-            const input = document.getElementById('chatInput');
-            const userName = selectedTicket ? selectedTicket.user : 'Usuario';
-
-            const processedResponse = response.replace('{usuario}', userName);
-            input.value = processedResponse;
-            input.focus();
-            handleTyping();
-        }
-
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-
-            if (!message || !selectedTicket) return;
-
-            // Agregar mensaje del agente
-            selectedTicket.messages.push({
-                type: 'agent',
-                author: 'Ana López',
-                time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-                content: message
-            });
-
-            // Actualizar timestamp del ticket
-            selectedTicket.lastUpdate = new Date().toISOString().split('T')[0] + ' ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-
-            input.value = '';
-            handleTyping();
-            loadChatMessages();
-            renderTickets();
-
-            showNotification('Mensaje enviado', 'success');
-
-            // Simular respuesta del usuario (solo para demo)
-            if (selectedTicket.userOnline && Math.random() > 0.7) {
-                setTimeout(() => {
-                    simulateUserResponse();
-                }, 2000 + Math.random() * 3000);
-            }
-        }
-
-        function simulateUserResponse() {
-            if (!selectedTicket) return;
-
-            const responses = [
-                'Perfecto, voy a probar eso ahora.',
-                'Sí, eso funcionó. Muchas gracias.',
-                'Hmm, sigue sin funcionar.',
-                'Ok, dame un momento para revisar.',
-                'Excelente, ya está resuelto.',
-                'No estoy seguro de cómo hacer eso.'
-            ];
-
-            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-
-            selectedTicket.messages.push({
-                type: 'user',
-                author: selectedTicket.user,
-                time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-                content: randomResponse
-            });
-
-            selectedTicket.unread = true;
-            loadChatMessages();
-            renderTickets();
-
-            showNotification(`Nuevo mensaje de ${selectedTicket.user}`, 'info');
-        }
-
-        function attachFile() {
-            showNotification('Función de adjuntar archivos en desarrollo', 'info');
-        }
-
-        function showTicketInfo() {
-            if (!selectedTicket) return;
-
-            const statusConfig = getStatusBadge(selectedTicket.status);
-            const priorityConfig = getPriorityBadge(selectedTicket.priority);
-            const categoryIcon = getCategoryIcon(selectedTicket.category);
-
-            document.getElementById('ticketInfoContent').innerHTML = `
-                <div class="space-y-4">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-2xl">${categoryIcon}</span>
-                        <div>
-                            <h4 class="font-medium text-gray-900">${selectedTicket.title}</h4>
-                            <p class="text-sm text-gray-600">${selectedTicket.id}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <span class="text-gray-500">Usuario:</span>
-                            <p class="font-medium">${selectedTicket.user}</p>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Email:</span>
-                            <p class="font-medium">${selectedTicket.email}</p>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Departamento:</span>
-                            <p class="font-medium">${selectedTicket.department}</p>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Ubicación:</span>
-                            <p class="font-medium">${selectedTicket.location}</p>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Estado:</span>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig.color}">
-                                ${statusConfig.text}
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Prioridad:</span>
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${priorityConfig.color}">
-                                ${priorityConfig.text}
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Creado:</span>
-                            <p class="font-medium">${selectedTicket.created}</p>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Última actualización:</span>
-                            <p class="font-medium">${selectedTicket.lastUpdate}</p>
-                        </div>
-                    </div>
-
-                    <div>
-                        <span class="text-gray-500">Descripción:</span>
-                        <p class="mt-1 text-sm text-gray-900">${selectedTicket.description}</p>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('ticketInfoModal').classList.remove('hidden');
-        }
-
-        function closeTicketInfoModal() {
-            document.getElementById('ticketInfoModal').classList.add('hidden');
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 fade-in ${
-                type === 'success' ? 'bg-green-500' :
-                type === 'error' ? 'bg-red-500' : 'bg-blue-500'
-            }`;
-            notification.textContent = message;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
-
-        // Inicializar aplicación
-        document.addEventListener('DOMContentLoaded', function() {
-            renderTickets();
-        });
-
-        // Cerrar modal al hacer clic fuera
-        document.addEventListener('click', function(event) {
-            if (event.target.id === 'ticketInfoModal') {
-                closeTicketInfoModal();
-            }
-        });
-
-        // Simular nuevos tickets ocasionalmente
-        setInterval(() => {
-            if (Math.random() > 0.95) { // 5% de probabilidad cada 10 segundos
-                const newTicketId = `TK-${String(Math.floor(Math.random() * 1000) + 100).padStart(3, '0')}`;
-                const categories = ['hardware', 'software', 'network', 'email'];
-                const users = ['Pedro López', 'Carmen Ruiz', 'Diego Morales', 'Sofía Castro'];
-                const departments = ['Ventas', 'Marketing', 'Contabilidad', 'Desarrollo'];
-
-                const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-                const randomUser = users[Math.floor(Math.random() * users.length)];
-                const randomDepartment = departments[Math.floor(Math.random() * departments.length)];
-
-                const newTicket = {
-                    id: newTicketId,
-                    category: randomCategory,
-                    title: `Nuevo problema de ${randomCategory}`,
-                    description: `Usuario reporta problema con ${randomCategory}`,
-                    user: randomUser,
-                    department: randomDepartment,
-                    location: 'Piso 2',
-                    email: `${randomUser.toLowerCase().replace(' ', '.')}@empresa.com`,
-                    status: 'abierto',
-                    priority: 'media',
-                    created: new Date().toISOString().split('T')[0],
-                    lastUpdate: new Date().toISOString().split('T')[0] + ' ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-                    unread: true,
-                    userOnline: true,
-                    messages: [
-                        {
-                            type: 'user',
-                            author: randomUser,
-                            time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-                            content: `Hola, tengo un problema con ${randomCategory}. ¿Pueden ayudarme?`
-                        }
-                    ]
-                };
-
-                tickets.unshift(newTicket);
-                renderTickets();
-                showNotification(`Nuevo ticket de ${randomUser}`, 'info');
-            }
-        }, 10000);
-  </script>
-  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c35a7935adf78a',t:'MTc1NzM4NTk2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
-</body>
-</html>

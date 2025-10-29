@@ -52,10 +52,19 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
     this.ticketSeleccionado = ticket;
     this.mensajes = [];
+    // Cargar mensajes históricos
+    this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
+      this.mensajes = mensajes.map(m => ({
+        remitente: m.usuarioNombre || m.usuario, // Asegura que el nombre del usuario aparezca
+        texto: m.mensajeTicket,
+        esAgente: m.idUsuario === this.usuarioId
+      }));
+    });
+    // Conecta al hub y suscríbete a los mensajes en tiempo real
     this.chatService.connect(ticket.idTicket.toString());
     this.chatService.onReceiveMessage((user, message, fecha) => {
       this.mensajes.push({
-        remitente: user,
+        remitente: user, // El nombre del usuario que envía el mensaje
         texto: message,
         esAgente: user === this.usuarioNombre
       });
@@ -98,5 +107,14 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     try {
       this.chatScroll.nativeElement.scrollTop = this.chatScroll.nativeElement.scrollHeight;
     } catch (err) {}
+  }
+
+  getTicketsCountByEstado(estado: number): number {
+    return this.tickets.filter(t => t.idEstadoTicket === estado).length;
+  }
+
+  logout() {
+    localStorage.clear();
+    window.location.href = '/';
   }
 }

@@ -1,3 +1,48 @@
 /* Agente styles */
 ul { list-style: none; padding: 0; }
 li { margin-bottom: 8px; }
+
+/* Ajustes visuales para el área de chat del agente */
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.flex-1 {
+  flex: 1 1 0%;
+  min-height: 0;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  background: #fff;
+}
+
+input[name="mensajeTexto"] {
+  flex: 1;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+}
+
+button[type="submit"] {
+  background: #2563eb;
+  color: #fff;
+  border-radius: 0.375rem;
+  padding: 0.25rem 1rem;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+button[type="submit"]:hover {
+  background: #1d4ed8;
+}

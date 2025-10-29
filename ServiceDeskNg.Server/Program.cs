@@ -99,14 +99,15 @@ namespace ServiceDeskNg.Server
                 options.AddPolicy("AllowAngular", policy =>
                 {
                     policy.WithOrigins(
-                        "https://127.0.0.1:59435",
-                        "http://127.0.0.1:59435",
-                        "https://localhost:59435",
-                        "http://localhost:59435"
+                        "http://localhost:59435",
+                        "http://localhost:5076",
+                        "http://localhost:4200",
+                        "http://127.0.0.1:5076",
+                        "http://127.0.0.1:59435"
                     )
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
-                 
+                    .AllowAnyMethod()
+                    .AllowCredentials();
                 });
             });
 

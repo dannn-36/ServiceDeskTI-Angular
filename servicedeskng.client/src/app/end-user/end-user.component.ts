@@ -152,21 +152,19 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   abrirChat(ticket: Ticket) {
-    this.ticketSeleccionado = ticket;
-    this.mensajes = [];
-
     // Desconecta sesión anterior si hay
     if (this.ticketSeleccionado) {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
     }
     this.ticketSeleccionado = ticket;
+    this.mensajes = [];
 
-
-    // Conecta al nuevo chat
+    // Conecta SIEMPRE al nuevo chat (no depende de ticketSeleccionado)
     this.chatService.connect(ticket.idTicket.toString());
 
-    // Suscríbete a los mensajes recibidos
+    // Suscríbete a los mensajes recibidos SOLO una vez por conexión
     this.chatService.onReceiveMessage((user, message, fecha) => {
+      console.log('Mensaje recibido:', user, message, fecha); // Depuración
       this.mensajes.push({
         remitente: user,
         texto: message,

@@ -1,7 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef } from '@angular/core';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
-import * as signalR from '@microsoft/signalr';
 
 interface MensajeChat {
   remitente: string;
@@ -14,21 +13,14 @@ interface MensajeChat {
   templateUrl: './agente.component.html',
   styleUrls: ['./agente.component.css']
 })
-export class AgenteComponent implements OnInit, OnDestroy {
-  agente = {
-    idAgente: 0,
-    idUsuario: 0,
-    idNivel: 0,
-    especialidadAgente: '',
-    disponibilidadAgente: false
-  };
-
+export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   tickets: Ticket[] = [];
   ticketSeleccionado: Ticket | null = null;
   mensajes: MensajeChat[] = [];
   mensajeTexto = '';
   usuarioNombre = '';
   usuarioId = 0;
+  @ViewChild('chatScroll') chatScroll!: ElementRef;
 
   constructor(
     private ticketsService: TicketsService,
@@ -36,12 +28,8 @@ export class AgenteComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // Obtener datos del agente desde localStorage
     this.usuarioNombre = localStorage.getItem('usuario') || 'Agente';
     this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
-    this.agente.idAgente = +(localStorage.getItem('agenteId') || 0);
-    this.agente.idUsuario = this.usuarioId;
-    console.log('Agente ID:', this.agente.idAgente); // Depuración
     this.cargarTicketsAsignados();
   }
 
@@ -52,22 +40,19 @@ export class AgenteComponent implements OnInit, OnDestroy {
   }
 
   cargarTicketsAsignados() {
-    this.ticketsService.getTicketsByAgente(this.agente.idAgente).subscribe(tickets => {
-      console.log('Tickets recibidos:', tickets); // Depuración
+    const agenteId = +(localStorage.getItem('agenteId') || 0);
+    this.ticketsService.getTicketsByAgente(agenteId).subscribe(tickets => {
       this.tickets = tickets;
     });
   }
 
   abrirChat(ticket: Ticket) {
-    // Desconecta sesión anterior si hay
     if (this.ticketSeleccionado) {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
     }
     this.ticketSeleccionado = ticket;
     this.mensajes = [];
-    // Conecta al nuevo chat
     this.chatService.connect(ticket.idTicket.toString());
-    // Suscríbete a los mensajes recibidos
     this.chatService.onReceiveMessage((user, message, fecha) => {
       this.mensajes.push({
         remitente: user,
@@ -79,11 +64,6 @@ export class AgenteComponent implements OnInit, OnDestroy {
 
   enviarMensaje() {
     if (!this.mensajeTexto.trim() || !this.ticketSeleccionado) return;
-    // Verifica que la conexión esté activa antes de enviar
-    if (!this.chatService['hubConnection'] || this.chatService['hubConnection'].state !== signalR.HubConnectionState.Connected) {
-      console.error('No hay conexión activa al chat.');
-      return;
-    }
     this.chatService.sendMessage(
       this.ticketSeleccionado.idTicket.toString(),
       this.usuarioNombre,
@@ -96,5 +76,27 @@ export class AgenteComponent implements OnInit, OnDestroy {
       esAgente: true
     });
     this.mensajeTexto = '';
+  }
+
+  cambiarEstadoTicket() {
+    if (!this.ticketSeleccionado) return;
+    this.ticketsService.update(this.ticketSeleccionado.idTicket, this.ticketSeleccionado).subscribe({
+      next: () => {
+        // Opcional: notificación visual
+      },
+      error: () => {
+        // Opcional: manejo de error
+      }
+    });
+  }
+
+  ngAfterViewChecked() {
+    this.scrollToBottom();
+  }
+
+  scrollToBottom() {
+    try {
+      this.chatScroll.nativeElement.scrollTop = this.chatScroll.nativeElement.scrollHeight;
+    } catch (err) {}
   }
 }

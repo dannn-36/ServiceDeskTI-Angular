@@ -15,6 +15,7 @@ import { SupervisorComponent } from './supervisor/supervisor.component';
 import { UsuarioComponent } from './usuario/usuario.component';
 import { EndUserComponent } from './end-user/end-user.component';
 import { AuditoriaComponent } from './auditoria/auditoria.component';
+import { TicketFiltroPipe } from './agente/ticketFiltro.pipe';
 
 @NgModule({
   declarations: [
@@ -27,6 +28,7 @@ import { AuditoriaComponent } from './auditoria/auditoria.component';
     UsuarioComponent,
     EndUserComponent,
     AuditoriaComponent,
+    TicketFiltroPipe,
   ],
   imports: [
     BrowserModule,

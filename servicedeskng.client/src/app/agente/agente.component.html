@@ -1,517 +1,152 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ServiceDesk TI - Vista Agente</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+<!-- Barra superior única y funcional -->
+<div class="w-full flex justify-end items-center p-4 space-x-4 bg-white border-b border-gray-200">
+  <div class="flex items-center space-x-2">
+    <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+      <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+      En línea
+    </span>
+    <span class="flex items-center space-x-2 ml-2">
+      <span class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xl">👤</span>
+      <span class="font-medium text-gray-700">{{usuarioNombre}} - Agente TI</span>
+    </span>
+    <button (click)="logout()" class="ml-4 flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors" title="Cerrar sesión">
+      <span class="mr-1 text-lg">🔒</span>
+      <span class="font-semibold">Salir</span>
+    </button>
+  </div>
+</div>
 
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-
-    .ticket-item:hover {
-      background-color: #f8fafc;
-    }
-
-    .ticket-item.selected {
-      background-color: #eff6ff;
-      border-left: 4px solid #3b82f6;
-    }
-
-    .ticket-item.unread {
-      border-left: 4px solid #f59e0b;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .fade-in {
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    .chat-message {
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .typing-indicator {
-      animation: pulse 1.5s infinite;
-    }
-
-    .notification-dot {
-      animation: bounce 1s infinite;
-    }
-  </style>
-</head>
-<body class="bg-gray-50 h-screen overflow-hidden">
-  <!-- Header -->
-  <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0">
-    <div class="h-full px-6 flex justify-between items-center">
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span class="text-white font-bold text-sm">IT</span>
-          </div>
-          <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
+<div class="flex h-full">
+  <!-- Sidebar - Lista de Tickets -->
+  <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div class="p-4 bg-gray-50 border-b border-gray-200">
+      <div class="grid grid-cols-3 gap-3 text-center">
+        <div class="bg-white rounded-lg p-3">
+          <div class="text-lg font-bold text-blue-600">{{getTicketsCountByEstado(1)}}</div>
+          <div class="text-xs text-gray-500">Abiertos</div>
         </div>
-        <span class="text-gray-400">|</span>
-        <span class="text-sm text-gray-600">Vista Agente</span>
-      </div>
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-4 text-sm">
-          <div class="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full">
-            <div class="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span>En línea</span>
-          </div>
-          <div class="flex items-center space-x-2 text-gray-600">
-            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span>👨‍💻</span>
-            </div>
-            <span>Ana López - Agente TI</span>
-          </div>
+        <div class="bg-white rounded-lg p-3">
+          <div class="text-lg font-bold text-yellow-600">{{getTicketsCountByEstado(2)}}</div>
+          <div class="text-xs text-gray-500">En Progreso</div>
         </div>
-        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-          ⚙️
-        </button>
+        <div class="bg-white rounded-lg p-3">
+          <div class="text-lg font-bold text-red-600">{{getTicketsCountByEstado(3)}}</div>
+          <div class="text-xs text-gray-500">Urgentes</div>
+        </div>
       </div>
     </div>
-  </header>
-
-  <!-- Barra superior única y funcional -->
-  <div class="w-full flex justify-end items-center p-4 space-x-4 bg-white border-b border-gray-200">
-    <div class="flex items-center space-x-2">
-      <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-        <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-        En línea
-      </span>
-      <span class="flex items-center space-x-2 ml-2">
-        <span class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xl">👤</span>
-        <span class="font-medium text-gray-700">{{usuarioNombre}} - Agente TI</span>
-      </span>
-      <button (click)="logout()" class="ml-4 flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors" title="Cerrar sesión">
-        <span class="mr-1 text-lg">🔒</span>
-        <span class="font-semibold">Salir</span>
-      </button>
+    <!-- Filtros -->
+    <div class="p-4 border-b border-gray-200">
+      <div class="relative mb-3">
+        <input type="text" placeholder="Buscar tickets..." class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" [(ngModel)]="filtroBusqueda" name="filtroBusqueda">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="text-gray-400 text-sm">🔍</span>
+        </div>
+      </div>
+      <div class="flex space-x-2 mb-2">
+        <select class="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500" [(ngModel)]="filtroEstado" name="filtroEstado">
+          <option value="">Todos</option>
+          <option value="1">Abiertos</option>
+          <option value="2">En Progreso</option>
+          <option value="3">Urgentes</option>
+        </select>
+        <select class="flex-1 text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500" [(ngModel)]="filtroPrioridad" name="filtroPrioridad">
+          <option value="">Prioridad</option>
+          <option value="urgente">Urgente</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="baja">Baja</option>
+        </select>
+      </div>
+      <select class="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500" [(ngModel)]="filtroCategoria" name="filtroCategoria">
+        <option value="">Todas las categorías</option>
+        <option value="hardware">🖥️ Hardware</option>
+        <option value="software">💾 Software</option>
+        <option value="network">🌐 Red</option>
+        <option value="email">📧 Email</option>
+        <option value="access">🔐 Accesos</option>
+      </select>
+    </div>
+    <!-- Lista de Tickets -->
+    <div class="flex-1 overflow-y-auto">
+      <ul>
+        <li *ngFor="let ticket of tickets | ticketFiltro:filtroBusqueda:filtroEstado:filtroPrioridad:filtroCategoria"
+            (click)="abrirChat(ticket)"
+            [ngClass]="{'ticket-item': true, 'selected': ticketSeleccionado?.idTicket === ticket.idTicket}"
+            class="p-4 border-b border-gray-200 cursor-pointer transition-colors">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="text-xs font-mono text-gray-500">#{{ticket.idTicket}}</span>
+              <span class="font-semibold ml-2">{{ticket.tituloTicket}}</span>
+            </div>
+            <span class="text-xs text-gray-500">{{ticket.prioridadTicket}}</span>
+          </div>
+          <div class="text-xs text-gray-500">
+            Estado: {{ticket.idEstadoTicket}} | Categoría: {{ticket.idCategoriaTicket}}
+          </div>
+          <div class="text-xs text-gray-500">
+            Departamento: {{ticket.departamentoTicket}} | Ubicación: {{ticket.ubicacionTicket}}
+          </div>
+          <div class="text-xs text-gray-500">
+            Fecha: {{ticket.fechaHoraCreacionTicket}}
+          </div>
+          <div class="text-xs text-gray-500">
+            Cliente: {{ticket.idCliente}}
+          </div>
+        </li>
+      </ul>
+      <div *ngIf="tickets.length === 0" class="text-gray-500 p-4">No tienes tickets asignados.</div>
     </div>
   </div>
 
-  <div class="flex h-screen bg-gray-50">
-    <!-- Sidebar -->
-    <div class="w-80 bg-white border-r border-gray-200 flex flex-col">
-      <div class="p-4 bg-gray-50 border-b border-gray-200">
-        <h2 class="text-lg font-bold mb-2">Tickets asignados</h2>
-        <div class="grid grid-cols-3 gap-3 text-center mb-4">
-          <div class="bg-white rounded-lg p-3">
-            <div class="text-lg font-bold text-blue-600">{{getTicketsCountByEstado(1)}}</div>
-            <div class="text-xs text-gray-500">Abiertos</div>
-          </div>
-          <div class="bg-white rounded-lg p-3">
-            <div class="text-lg font-bold text-yellow-600">{{getTicketsCountByEstado(2)}}</div>
-            <div class="text-xs text-gray-500">En Progreso</div>
-          </div>
-          <div class="bg-white rounded-lg p-3">
-            <div class="text-lg font-bold text-gray-600">{{getTicketsCountByEstado(4)}}</div>
-            <div class="text-xs text-gray-500">Cerrados</div>
-          </div>
-        </div>
-      </div>
-      <div class="flex-1 overflow-y-auto">
-        <ul>
-          <li *ngFor="let ticket of tickets"
-              (click)="abrirChat(ticket)"
-              [ngClass]="{'ticket-item': true, 'selected': ticketSeleccionado?.idTicket === ticket.idTicket}"
-              class="p-4 border-b border-gray-200 cursor-pointer transition-colors">
-            <div class="flex justify-between items-start mb-2">
-              <div>
-                <span class="text-xs font-mono text-gray-500">#{{ticket.idTicket}}</span>
-                <span class="font-semibold ml-2">{{ticket.tituloTicket}}</span>
-              </div>
-              <span class="text-xs text-gray-500">{{ticket.prioridadTicket}}</span>
-            </div>
-            <div class="text-xs text-gray-500">
-              Estado: {{ticket.idEstadoTicket}} | Categoría: {{ticket.idCategoriaTicket}}
-            </div>
-          </li>
-        </ul>
-        <div *ngIf="tickets.length === 0" class="text-gray-500 p-4">No tienes tickets asignados.</div>
-      </div>
-    </div>
-
-    <!-- Área principal de chat -->
-    <div class="flex-1 flex flex-col items-center justify-center">
-      <!-- Header superior derecha -->
-      <div class="w-full flex justify-end items-center p-4 space-x-4">
-        <div class="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full">
-          <div class="w-2 h-2 bg-green-400 rounded-full"></div>
-          <span>En línea</span>
-        </div>
-        <div class="flex items-center space-x-2 text-gray-600">
-          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-            <span>👨‍💻</span>
-          </div>
-          <span>{{usuarioNombre}} - Agente TI</span>
-        </div>
-        <button (click)="logout()" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Cerrar sesión">
-          🔒
-        </button>
-      </div>
-      <div *ngIf="!ticketSeleccionado" class="text-gray-500 text-center">
+  <!-- Área Principal - Chat y Detalles -->
+  <div class="flex-1 flex flex-col">
+    <div *ngIf="!ticketSeleccionado" class="flex-1 flex items-center justify-center text-gray-500">
+      <div class="text-center">
         <div class="text-6xl mb-4">💬</div>
         <h3 class="text-lg font-medium mb-2">Selecciona un ticket</h3>
         <p class="text-sm">Elige un ticket de la lista para comenzar a chatear con el usuario</p>
       </div>
-      <div *ngIf="ticketSeleccionado" class="w-full max-w-xl flex flex-col bg-white rounded shadow border">
-        <div class="border-b border-gray-200 p-4">
-          <h4 class="font-bold mb-2">Chat con cliente (Ticket: {{ticketSeleccionado.tituloTicket}})</h4>
-        </div>
-        <div class="flex-1 min-h-0 flex flex-col">
-          <div class="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-gray-50 border" style="max-height:400px;">
-            <div *ngFor="let mensaje of mensajes">
-              <div [ngClass]="{'text-right': mensaje.esAgente, 'text-left': !mensaje.esAgente}">
-                <span class="font-semibold">{{mensaje.remitente}}:</span>
-                <span>{{mensaje.texto}}</span>
+    </div>
+    <div *ngIf="ticketSeleccionado" class="flex-1 flex flex-col">
+      <div class="bg-white border-b border-gray-200 p-4">
+        <div class="flex justify-between items-start">
+          <div class="flex-1">
+            <div class="flex items-center space-x-3 mb-2">
+              <span class="text-lg">🖥️</span>
+              <span class="text-sm font-mono text-gray-500">#{{ticketSeleccionado.idTicket}}</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ticketSeleccionado.idEstadoTicket}}</span>
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">{{ticketSeleccionado.prioridadTicket}}</span>
+              <div class="flex items-center space-x-1 text-xs text-gray-500">
+                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>Usuario en línea</span>
               </div>
             </div>
-            <div *ngIf="mensajes.length === 0" class="text-gray-400 text-center">No hay mensajes aún.</div>
-          </div>
-          <form (ngSubmit)="enviarMensaje()" class="flex gap-2 p-4 border-t bg-white">
-            <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal de información del ticket -->
-  <div id="ticketInfoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full fade-in">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 class="text-lg font-semibold text-gray-900">Información del Ticket</h3>
-          <button onclick="closeTicketInfoModal()" class="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-        <div class="p-6" id="ticketInfoContent">
-          <!-- Contenido será cargado por JavaScript -->
-        </div>
-        <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
-          <button class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors" onclick="closeTicketInfoModal()">
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="container mx-auto p-6">
-    <h2 class="text-2xl font-bold mb-4">Tickets asignados</h2>
-
-    <!-- Filtros y búsqueda aquí -->
-
-    <!-- Lista de tickets -->
-    <ul *ngIf="tickets.length > 0" class="divide-y divide-gray-200 mb-8">
-      <li *ngFor="let ticket of tickets" class="py-4 flex justify-between items-center">
-        <div>
-          <div class="font-semibold">{{ticket.tituloTicket}}</div>
-          <div class="text-sm text-gray-500">
-            Estado: {{ticket.idEstadoTicket}} | Categoría: {{ticket.idCategoriaTicket}}
-          </div>
-          <div class="text-xs text-gray-400">
-            Prioridad: {{ticket.prioridadTicket}} | Cliente: {{ticket.idCliente}}
-          </div>
-        </div>
-        <button class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700" (click)="abrirChat(ticket)">Abrir chat</button>
-      </li>
-    </ul>
-
-    <div *ngIf="tickets.length === 0" class="text-gray-500 mb-4">No tienes tickets asignados.</div>
-
-    <!-- Área de chat -->
-    <div *ngIf="ticketSeleccionado" class="max-w-2xl mx-auto my-8 p-4 bg-white rounded shadow">
-      <h4 class="font-bold mb-2">Chat con cliente (Ticket: {{ticketSeleccionado.tituloTicket}})</h4>
-      <div class="h-64 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
-        <div *ngFor="let mensaje of mensajes">
-          <div [ngClass]="{'text-right': mensaje.esAgente, 'text-left': !mensaje.esAgente}">
-            <span class="font-semibold">{{mensaje.remitente}}:</span>
-            <span>{{mensaje.texto}}</span>
+            <h2 class="text-lg font-semibold text-gray-900 mb-1">{{ticketSeleccionado.tituloTicket}}</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600">
+              <span>👤 {{ticketSeleccionado.idCliente}}</span>
+              <span>🏢 {{ticketSeleccionado.departamentoTicket}}</span>
+              <span>📍 {{ticketSeleccionado.ubicacionTicket}}</span>
+              <span>📅 {{ticketSeleccionado.fechaHoraCreacionTicket}}</span>
+            </div>
           </div>
         </div>
       </div>
-      <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
-        <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
-      </form>
+      <div class="flex-1 flex flex-col">
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+          <div *ngFor="let mensaje of mensajes">
+            <div [ngClass]="{'text-right': mensaje.esAgente, 'text-left': !mensaje.esAgente}">
+              <span class="font-semibold">{{mensaje.remitente}}:</span>
+              <span>{{mensaje.texto}}</span>
+            </div>
+          </div>
+          <div *ngIf="mensajes.length === 0" class="text-gray-400 text-center">No hay mensajes aún.</div>
+        </div>
+        <form (ngSubmit)="enviarMensaje()" class="flex gap-2 p-4 border-t bg-white">
+          <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
+        </form>
+      </div>
     </div>
   </div>
-
-  <script>
-        // Datos de ejemplo
-        let tickets = [
-            {
-                id: 'TK-045',
-                category: 'hardware',
-                title: 'Computadora no enciende',
-                description: 'La computadora del usuario no enciende desde esta mañana.',
-                user: 'Carlos Mendoza',
-                department: 'Ventas',
-                location: 'Piso 2',
-                email: 'carlos.mendoza@empresa.com',
-                status: 'en-progreso',
-                priority: 'alta',
-                created: '2024-01-15',
-                lastUpdate: '2024-01-15 10:30',
-                unread: true,
-                userOnline: true,
-                messages: [
-                    {
-                        type: 'user',
-                        author: 'Carlos Mendoza',
-                        time: '09:15',
-                        content: 'Hola, mi computadora no enciende desde esta mañana. ¿Pueden ayudarme?'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '09:30',
-                        content: 'Hola Carlos, voy a revisar tu caso. ¿Podrías verificar si el cable de poder está bien conectado?'
-                    },
-                    {
-                        type: 'user',
-                        author: 'Carlos Mendoza',
-                        time: '09:35',
-                        content: 'Sí, está conectado. Las luces del monitor tampoco encienden.'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '10:15',
-                        content: 'Perfecto, voy a ir a tu escritorio en 15 minutos para revisar el equipo directamente.'
-                    }
-                ]
-            },
-            {
-                id: 'TK-044',
-                category: 'software',
-                title: 'Excel se cierra automáticamente',
-                description: 'Excel se cierra cuando el usuario intenta abrir archivos.',
-                user: 'María González',
-                department: 'Contabilidad',
-                location: 'Piso 3',
-                email: 'maria.gonzalez@empresa.com',
-                status: 'abierto',
-                priority: 'media',
-                created: '2024-01-15',
-                lastUpdate: '2024-01-15 08:45',
-                unread: true,
-                userOnline: false,
-                messages: [
-                    {
-                        type: 'user',
-                        author: 'María González',
-                        time: '08:45',
-                        content: 'Buenos días, tengo un problema con Excel. Se cierra automáticamente cuando trato de abrir cualquier archivo. ¿Pueden ayudarme?'
-                    }
-                ]
-            },
-            {
-                id: 'TK-043',
-                category: 'network',
-                title: 'Sin acceso a internet',
-                description: 'Usuario reporta que no puede acceder a internet desde su computadora.',
-                user: 'Roberto Silva',
-                department: 'Marketing',
-                location: 'Piso 1',
-                email: 'roberto.silva@empresa.com',
-                status: 'pendiente-usuario',
-                priority: 'alta',
-                created: '2024-01-14',
-                lastUpdate: '2024-01-14 16:20',
-                unread: false,
-                userOnline: true,
-                messages: [
-                    {
-                        type: 'user',
-                        author: 'Roberto Silva',
-                        time: '15:30',
-                        content: 'No tengo internet en mi computadora. Los demás equipos del área sí funcionan.'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '15:45',
-                        content: 'Hola Roberto, voy a revisar la configuración de red. ¿Podrías reiniciar tu computadora y confirmarme si aparece algún mensaje de error?'
-                    },
-                    {
-                        type: 'user',
-                        author: 'Roberto Silva',
-                        time: '16:20',
-                        content: 'Ya reinicié pero sigue igual. No aparece ningún mensaje de error específico.'
-                    }
-                ]
-            },
-            {
-                id: 'TK-042',
-                category: 'email',
-                title: 'No recibe emails',
-                description: 'Usuario no está recibiendo correos electrónicos.',
-                user: 'Ana Martínez',
-                department: 'Recursos Humanos',
-                location: 'Piso 4',
-                email: 'ana.martinez@empresa.com',
-                status: 'resuelto',
-                priority: 'media',
-                created: '2024-01-14',
-                lastUpdate: '2024-01-14 14:30',
-                unread: false,
-                userOnline: false,
-                messages: [
-                    {
-                        type: 'user',
-                        author: 'Ana Martínez',
-                        time: '10:15',
-                        content: 'Hola, no estoy recibiendo emails desde ayer. ¿Pueden revisar mi cuenta?'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '10:30',
-                        content: 'Hola Ana, voy a revisar la configuración de tu cuenta de correo. Dame unos minutos.'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '11:00',
-                        content: 'He encontrado el problema. Tu buzón estaba lleno. He liberado espacio y ya deberías recibir correos normalmente.'
-                    },
-                    {
-                        type: 'user',
-                        author: 'Ana Martínez',
-                        time: '14:30',
-                        content: '¡Perfecto! Ya estoy recibiendo emails. Muchas gracias por la ayuda.'
-                    }
-                ]
-            },
-            {
-                id: 'TK-041',
-                category: 'access',
-                title: 'Solicitud acceso VPN',
-                description: 'Usuario solicita acceso VPN para trabajo remoto.',
-                user: 'Luis Rodríguez',
-                department: 'Desarrollo',
-                location: 'Remoto',
-                email: 'luis.rodriguez@empresa.com',
-                status: 'en-progreso',
-                priority: 'baja',
-                created: '2024-01-13',
-                lastUpdate: '2024-01-13 11:45',
-                unread: false,
-                userOnline: true,
-                messages: [
-                    {
-                        type: 'user',
-                        author: 'Luis Rodríguez',
-                        time: '09:00',
-                        content: 'Necesito acceso VPN para trabajar desde casa. ¿Qué documentos necesito enviar?'
-                    },
-                    {
-                        type: 'agent',
-                        author: 'Ana López',
-                        time: '09:30',
-                        content: 'Hola Luis, necesito que envíes una copia de tu identificación y la autorización de tu supervisor para procesar la solicitud de VPN.'
-                    },
-                    {
-                        type: 'user',
-                        author: 'Luis Rodríguez',
-                        time: '11:45',
-                        content: 'Perfecto, ya envié los documentos por email. ¿Cuánto tiempo toma el proceso?'
-                    }
-                ]
-            }
-        ];
-
-        let selectedTicket = null;
-        let typingTimeout = null;
-
-        // Respuestas rápidas
-        const quickResponses = {
-            saludo: 'Hola {usuario}, gracias por contactar a soporte TI. Voy a revisar tu caso y te ayudo de inmediato.',
-            solucion: 'He implementado una solución para tu problema. ¿Podrías probar y confirmarme si ya funciona correctamente?',
-            informacion: '¿Podrías proporcionarme más información sobre el problema? Por ejemplo, cuándo comenzó y qué estabas haciendo cuando ocurrió.',
-            reiniciar: 'Como primer paso, ¿podrías reiniciar tu computadora y confirmarme si el problema persiste?',
-            escalacion: 'Voy a escalar tu caso a un especialista de nivel 2 que te contactará en breve para resolver este problema.',
-            despedida: 'Perfecto, me alegra haber podido ayudarte. Si tienes algún otro problema, no dudes en contactarnos. ¡Que tengas un buen día!'
-        };
-
-        function getCategoryIcon(category) {
-            const icons = {
-                'hardware': '🖥️',
-                'software': '💾',
-                'network': '🌐',
-                'email': '📧',
-                'phone': '📞',
-                'access': '🔐',
-                'other': '❓'
-            };
-            return icons[category] || '❓';
-        }
-
-        function getStatusBadge(status) {
-            const statusConfig = {
-                'abierto': { color: 'bg-blue-100 text-blue-800', text: 'Abierto', icon: '🔵' },
-                'en-progreso': { color: 'bg-yellow-100 text-yellow-800', text: 'En Progreso', icon: '🟡' },
-                'pendiente-usuario': { color: 'bg-purple-100 text-purple-800', text: 'Pendiente Usuario', icon: '🟣' },
-                'resuelto': { color: 'bg-green-100 text-green-800', text: 'Resuelto', icon: '✅' },
-                'cerrado': { color: 'bg-gray-100 text-gray-800', text: 'Cerrado', icon: '⚫' }
-            };
-            return statusConfig[status] || statusConfig['abierto'];
-        }
-
-        function getPriorityBadge(priority) {
-            const priorityConfig = {
-                'baja': { color: 'bg-gray-100 text-gray-800', text: 'Baja', icon: '🟢' },
-                'media': { color: 'bg-blue-100 text-blue-800', text: 'Media', icon: '🟡' },
-                'alta': { color: 'bg-orange-100 text-orange-800', text: 'Alta', icon: '🟠' },
-                'urgente': { color: 'bg-red-100 text-red-800', text: 'Urgente', icon: '🔴' }
-            };
-            return priorityConfig[priority] || priorityConfig['media'];
-        }
-
-        function renderTickets(ticketsToRender = tickets) {
-            const ticketsList = document.getElementById('ticketsList');
-
-            ticketsList.innerHTML = ticketsToRender.map(ticket => {
-                const statusConfig = getStatusBadge(ticket.status);
-                const priorityConfig = getPriorityBadge(ticket.priority);
-                const categoryIcon = getCategoryIcon(ticket.category);
-                const isSelected = selectedTicket && selectedTicket.id === ticket.id;
-
-                return `
-                    <div class="ticket-item p-4 border-b border-gray-200 cursor-pointer transition-colors ${isSelected ? 'selected' : ''} ${ticket.unread ? 'unread' : ''}" onclick="selectTicket('${ticket.id}')">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="text-lg">${categoryIcon}</span>
-                                <span class="text-xs font-mono text-gray-500">${ticket.id}</span>
-                                ${ticket.unread ? '<div class="w-2 h-2 bg-orange-400 rounded-full notification-dot"></div>' : ''}
+</div>

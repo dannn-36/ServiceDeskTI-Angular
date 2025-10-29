@@ -20,6 +20,10 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   mensajeTexto = '';
   usuarioNombre = '';
   usuarioId = 0;
+  filtroBusqueda: string = '';
+  filtroEstado: string = '';
+  filtroPrioridad: string = '';
+  filtroCategoria: string = '';
   @ViewChild('chatScroll') chatScroll!: ElementRef;
 
   constructor(

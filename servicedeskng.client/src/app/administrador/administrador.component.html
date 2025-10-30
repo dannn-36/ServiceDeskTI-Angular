@@ -223,97 +223,88 @@
       <div class="flex-1 overflow-y-auto">
         <!-- Dashboard Section -->
         <div *ngIf="currentSection === 'dashboard'" class="p-6">
-          <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">
-              Dashboard Ejecutivo
-            </h2>
-            <p class="text-gray-600">
-              Resumen general del sistema ServiceDesk TI
-            </p>
+          <div *ngIf="loadingTickets" class="text-center text-gray-500 py-8">
+            <span class="text-lg">Cargando datos...</span>
           </div>
-          <!-- Stats Cards -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-600">Total Tickets</p>
-                  <p class="text-3xl font-bold text-gray-900">{{tickets.length}}</p>
-                  <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
+          <div *ngIf="!loadingTickets">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-600">Total Tickets</p>
+                    <p class="text-3xl font-bold text-gray-900">{{tickets.length}}</p>
+                    <p class="text-sm text-green-600">↗ +12% vs mes anterior</p>
+                  </div>
+                  <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span class="text-2xl">🎫</span>
+                  </div>
                 </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span class="text-2xl">🎫</span>
+              </div>
+              <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
+                    <p class="text-3xl font-bold text-gray-900">{{totalClientes + totalAgentes + totalSupervisores + totalAdministradores}}</p>
+                    <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
+                  </div>
+                  <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <span class="text-2xl">👥</span>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
+                    <p class="text-3xl font-bold text-gray-900">2.4h</p>
+                    <p class="text-sm text-red-600">↗ +5% vs mes anterior</p>
+                  </div>
+                  <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <span class="text-2xl">⏱️</span>
+                  </div>
+                </div>
+              </div>
+              <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-600">Satisfacción</p>
+                    <p class="text-3xl font-bold text-gray-900">94%</p>
+                    <p class="text-sm text-green-600">↗ +2% vs mes anterior</p>
+                  </div>
+                  <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <span class="text-2xl">⭐</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-600">Usuarios Activos</p>
-                  <p class="text-3xl font-bold text-gray-900">{{totalClientes + totalAgentes + totalSupervisores + totalAdministradores}}</p>
-                  <p class="text-sm text-green-600">↗ +8% vs mes anterior</p>
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets por Estado</h3>
+                <div class="chart-container">
+                  <canvas id="statusChart"></canvas>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span class="text-2xl">👥</span>
+              </div>
+              <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Mensual</h3>
+                <div class="chart-container">
+                  <canvas id="trendChart"></canvas>
                 </div>
               </div>
             </div>
-            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
-                  <p class="text-3xl font-bold text-gray-900">2.4h</p>
-                  <p class="text-sm text-red-600">↗ +5% vs mes anterior</p>
-                </div>
-                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <span class="text-2xl">⏱️</span>
-                </div>
-              </div>
-            </div>
-            <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-gray-600">Satisfacción</p>
-                  <p class="text-3xl font-bold text-gray-900">94%</p>
-                  <p class="text-sm text-green-600">↗ +2% vs mes anterior</p>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <span class="text-2xl">⭐</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Charts Row -->
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Recent Activity -->
             <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                Tickets por Estado
-              </h3>
-              <div class="chart-container">
-                <canvas id="statusChart"></canvas>
-              </div>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                Tendencia Mensual
-              </h3>
-              <div class="chart-container">
-                <canvas id="trendChart"></canvas>
-              </div>
-            </div>
-          </div>
-          <!-- Recent Activity -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">
-              Actividad Reciente del Sistema
-            </h3>
-            <div class="space-y-4">
-              <div *ngFor="let ticket of tickets | slice:0:3" class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                <span class="text-2xl">🆕</span>
-                <div class="flex-1">
-                  <p class="font-medium text-gray-900">{{ticket.tituloTicket}}</p>
-                  <p class="text-sm text-gray-600">Ticket #{{ticket.idTicket}} - {{getCategoriaNombre(ticket.idCategoriaTicket)}}</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">Actividad Reciente del Sistema</h3>
+              <div class="space-y-4">
+                <div *ngFor="let ticket of tickets | slice:0:3" class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                  <span class="text-2xl">🆕</span>
+                  <div class="flex-1">
+                    <p class="font-medium text-gray-900">{{ticket.tituloTicket}}</p>
+                    <p class="text-sm text-gray-600">Ticket #{{ticket.idTicket}} - {{getCategoriaNombre(ticket.idCategoriaTicket)}}</p>
+                  </div>
+                  <span class="text-sm text-gray-500">{{ticket.fechaHoraCreacionTicket | date:'short'}}</span>
                 </div>
-                <span class="text-sm text-gray-500">{{ticket.fechaHoraCreacionTicket | date:'short'}}</span>
               </div>
             </div>
           </div>
@@ -471,7 +462,6 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {{user.tipoUsuario}}
-                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                       <span
                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"

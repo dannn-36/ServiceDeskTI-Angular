@@ -2,7 +2,7 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { UsuarioService, Usuario } from '../usuario/usuario.service';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { HttpClient } from '@angular/common/http';
-declare var Chart: any;
+import Chart from 'chart.js/auto';
 
 interface EstadoTicket {
   idEstado: number;
@@ -57,6 +57,10 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   totalResueltos = 0;
   totalUrgentes = 0;
 
+  // Gráficas
+  statusChart: any;
+  trendChart: any;
+
   constructor(
     private usuarioService: UsuarioService,
     private ticketsService: TicketsService,
@@ -73,15 +77,38 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     this.getTickets();
   }
 
-  ngAfterViewInit(): void {
-    this.initCharts();
+  ngAfterViewInit(): void { }
+
+  getMonthlyTicketStats() {
+    // Agrupa tickets por mes de creación
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const createdCounts = Array(12).fill(0);
+    const resolvedCounts = Array(12).fill(0);
+    this.tickets.forEach(ticket => {
+      if (ticket.fechaHoraCreacionTicket) {
+        const date = new Date(ticket.fechaHoraCreacionTicket);
+        const month = date.getMonth();
+        createdCounts[month]++;
+        if (this.getEstadoNombre(ticket.idEstadoTicket) === 'Resuelto') {
+          resolvedCounts[month]++;
+        }
+      }
+    });
+    return {
+      labels: months,
+      created: createdCounts,
+      resolved: resolvedCounts
+    };
   }
 
   initCharts() {
-    // Tickets por Estado
-    const statusChartEl = document.getElementById('statusChart');
+    if (!this.tickets || this.tickets.length === 0) return; // No inicializar si no hay datos
+    const statusChartEl = document.getElementById('statusChart') as HTMLCanvasElement;
     if (statusChartEl) {
-      new Chart(statusChartEl, {
+      if (this.statusChart) {
+        this.statusChart.destroy();
+      }
+      this.statusChart = new Chart(statusChartEl, {
         type: 'doughnut',
         data: {
           labels: ['Abiertos', 'En Progreso', 'Pendientes', 'Resueltos', 'Urgentes'],
@@ -108,24 +135,28 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
         }
       });
     }
-    // Tendencia Mensual (simulada)
-    const trendChartEl = document.getElementById('trendChart');
+    // Tendencia Mensual (real)
+    const trendChartEl = document.getElementById('trendChart') as HTMLCanvasElement;
     if (trendChartEl) {
-      new Chart(trendChartEl, {
+      if (this.trendChart) {
+        this.trendChart.destroy();
+      }
+      const stats = this.getMonthlyTicketStats();
+      this.trendChart = new Chart(trendChartEl, {
         type: 'line',
         data: {
-          labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+          labels: stats.labels,
           datasets: [
             {
               label: 'Tickets Creados',
-              data: [65, 78, 90, 81, 95, 102],
+              data: stats.created,
               borderColor: 'rgba(59, 130, 246, 1)',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
               tension: 0.4
             },
             {
               label: 'Tickets Resueltos',
-              data: [60, 75, 85, 85, 92, 98],
+              data: stats.resolved,
               borderColor: 'rgba(16, 185, 129, 1)',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
               tension: 0.4
@@ -154,6 +185,9 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
 
   showSection(section: string) {
     this.currentSection = section;
+    if (section === 'dashboard') {
+      this.getTickets(); // Recarga datos y gráficos al entrar al dashboard
+    }
     if (section === 'users') this.filterUsers();
     if (section === 'tickets') this.filterTickets();
   }
@@ -272,12 +306,20 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   // --- TICKETS ---
   getTickets() {
     this.loadingTickets = true;
+    // Primero cargar estados, luego tickets
+    this.cargarEstados();
     this.ticketsService.getAll().subscribe({
       next: (data) => {
         this.tickets = data;
-        this.updateTicketCounts();
-        this.filterTickets();
-        this.loadingTickets = false;
+        // Espera a que los estados estén cargados antes de calcular contadores
+        setTimeout(() => {
+          console.log('Estados en tickets:', this.tickets.map(t => t.idEstadoTicket));
+          console.log('Estados cargados:', this.estados);
+          this.updateTicketCounts();
+          this.filterTickets();
+          this.loadingTickets = false;
+          setTimeout(() => this.initCharts(), 0);
+        }, 200); // Espera breve para asegurar que los estados estén cargados
       },
       error: () => { this.ticketError = 'Error al cargar tickets'; this.loadingTickets = false; }
     });
@@ -314,7 +356,6 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   getEstadoNombre(idEstado: number): string {
     const estado = this.estados.find(e => e.idEstado === idEstado);
     if (!estado) return idEstado.toString();
-    // Normaliza el nombre para los contadores
     switch (estado.nombreEstado.trim().toLowerCase()) {
       case 'abierto': return 'Abierto';
       case 'en progreso': return 'En Progreso';

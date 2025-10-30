@@ -93,7 +93,6 @@ namespace ServiceDeskNg.Server.Services
             entity.EstadoUsuario ??= "activo";
             entity.FechaHoraCreacionUsuario = DateTime.UtcNow;
 
-            // Si quisieras hash de contraseñas, aquí podrías integrarlo:
             entity.ContrasenaUsuario = BCrypt.Net.BCrypt.HashPassword(entity.ContrasenaUsuario);
 
             _usuarioRepo.Add(entity);

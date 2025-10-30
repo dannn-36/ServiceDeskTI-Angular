@@ -576,9 +576,7 @@
                     class="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   >
                     <option value="">Todas las categorías</option>
-                    <option value="hardware">Hardware</option>
-                    <option value="software">Software</option>
-                    <option value="red">Red</option>
+                    <option *ngFor="let cat of categorias" [value]="cat.nombreCategoria.toLowerCase()">{{cat.nombreCategoria}}</option>
                   </select>
                 </div>
               </div>

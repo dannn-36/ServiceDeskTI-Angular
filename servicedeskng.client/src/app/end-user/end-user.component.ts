@@ -27,7 +27,6 @@ export class EndUserComponent implements OnInit, OnDestroy {
   categoriaSeleccionada = '';
   private chatSub: Subscription | null = null;
 
-  // Nuevos: para IDs de categorías y estados
   categorias: any[] = [];
   estados: any[] = [];
 
@@ -55,7 +54,6 @@ export class EndUserComponent implements OnInit, OnDestroy {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket!.toString());
     }
   }
-
 
   cargarCategorias() {
     this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
@@ -100,19 +98,20 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   crearTicket() {
-    // Buscar el ID de la categoría seleccionada
-    const categoriaObj = this.categorias.find(c => c.nombreCategoria === this.nuevoTicket.categoria);
-    // Buscar el ID del estado "abierto"
-    const estadoObj = this.estados.find(e => e.nombreEstado === 'abierto');
-    // Log para depuración
-    console.log('usuarioId:', this.usuarioId, 'asunto:', this.nuevoTicket.asunto, 'descripcion:', this.nuevoTicket.descripcion, 'categoria:', this.nuevoTicket.categoria, 'categoriaObj:', categoriaObj, 'estadoObj:', estadoObj);
-    if (!categoriaObj || !estadoObj) {
-      alert('No se pudo encontrar la categoría o el estado.');
+    if (!this.nuevoTicket.categoria) {
+      alert('Debes seleccionar una categoría.');
       return;
     }
-    // Validar campos requeridos
-    if (!this.usuarioId || !this.nuevoTicket.asunto || !this.nuevoTicket.descripcion) {
-      alert('Faltan campos requeridos.');
+    console.log('Categorias cargadas:', this.categorias);
+    console.log('Valor seleccionado:', this.nuevoTicket.categoria);
+    // Buscar el ID de la categoría seleccionada (normalizado)
+    const categoriaObj = this.categorias.find(
+      c => c.nombreCategoria.trim().toLowerCase() === this.nuevoTicket.categoria.trim().toLowerCase()
+    );
+    // Buscar el ID del estado "abierto"
+    const estadoObj = this.estados.find(e => e.nombreEstado.trim().toLowerCase() === 'abierto');
+    if (!categoriaObj || !estadoObj) {
+      alert('No se pudo encontrar la categoría o el estado.');
       return;
     }
     const clienteId = +(localStorage.getItem('clienteId') || 0);
@@ -126,16 +125,13 @@ export class EndUserComponent implements OnInit, OnDestroy {
       ubicacionTicket: '',
       departamentoTicket: ''
     };
-    // Solo enviar los campos primitivos, sin propiedades de navegación
-    console.log('Datos enviados al backend:', ticketData);
     this.ticketService.createTicket(ticketData).subscribe({
       next: ticket => {
         this.tickets.unshift(ticket);
         this.cerrarModalTicket();
-        this.abrirChat(ticket); // Abrir el chat automáticamente al crear el ticket
+        this.abrirChat(ticket);
       },
       error: err => {
-        console.error('Error al crear ticket:', err.error);
         alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
       }
     });
@@ -206,6 +202,16 @@ export class EndUserComponent implements OnInit, OnDestroy {
     console.log('Cerrar sesión');
     localStorage.clear();
     window.location.href = '/'; // o usar el router: this.router.navigate(['/login']);
+  }
+
+  getCategoriaNombre(idCategoria: number): string {
+    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
+    return categoria ? categoria.nombreCategoria : 'Otro';
+  }
+
+  getEstadoNombre(idEstado: number): string {
+    const estado = this.estados.find(e => e.idEstado === idEstado);
+    return estado ? estado.nombreEstado : idEstado.toString();
   }
 
 }

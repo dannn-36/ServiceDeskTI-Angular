@@ -30,6 +30,7 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   filtroEstado: string = '';
   filtroPrioridad: string = '';
   filtroCategoria: string = '';
+  categorias: any[] = [];
   estados: EstadoTicket[] = [];
   @ViewChild('chatScroll') chatScroll!: ElementRef;
 
@@ -42,20 +43,21 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit() {
     this.usuarioNombre = localStorage.getItem('usuario') || 'Agente';
     this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
+    this.cargarCategorias();
     this.cargarEstados();
     this.cargarTicketsAsignados();
+  }
+
+  cargarCategorias() {
+    this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
+      this.categorias = data;
+    });
   }
 
   cargarEstados() {
     this.http.get<EstadoTicket[]>('/api/tickets/estados').subscribe(estados => {
       this.estados = estados;
     });
-  }
-
-  ngOnDestroy() {
-    if (this.ticketSeleccionado) {
-      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
-    }
   }
 
   cargarTicketsAsignados() {
@@ -184,5 +186,47 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: (err) => { /* Manejo de error */ }
     });
+  }
+
+  getCategoriaNombre(idCategoria: number): string {
+    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
+    return categoria ? categoria.nombreCategoria : 'Otro';
+  }
+
+  crearTicket(ticketData: { categoria: string, estado: string, asunto: string, descripcion: string }) {
+    console.log('Categorias cargadas:', this.categorias);
+    console.log('Valor seleccionado:', ticketData.categoria);
+    // Buscar el ID de la categoría seleccionada (normalizado)
+    const categoriaObj = this.categorias.find(
+      c => c.nombreCategoria.trim().toLowerCase() === ticketData.categoria.trim().toLowerCase()
+    );
+    // Buscar el ID del estado
+    const estadoObj = this.estados.find(e => e.nombreEstado.trim().toLowerCase() === ticketData.estado.trim().toLowerCase());
+    if (!categoriaObj || !estadoObj) {
+      alert('No se pudo encontrar la categoría o el estado.');
+      return;
+    }
+    const ticket = {
+      idCategoriaTicket: categoriaObj.idCategoria,
+      idEstadoTicket: estadoObj.idEstado,
+      tituloTicket: ticketData.asunto,
+      descripcionTicket: ticketData.descripcion,
+      prioridadTicket: 'media',
+      ubicacionTicket: '',
+      departamentoTicket: ''
+      // ...otros campos necesarios
+    };
+    this.ticketsService.createTicket(ticket).subscribe({
+      next: () => {
+        this.cargarTicketsAsignados();
+      },
+      error: err => {
+        alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    // Limpieza de recursos si es necesario
   }
 }

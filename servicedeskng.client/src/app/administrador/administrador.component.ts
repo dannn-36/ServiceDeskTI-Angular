@@ -48,6 +48,7 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   loadingTickets = false;
   ticketError = '';
   estados: EstadoTicket[] = [];
+  categorias: any[] = [];
 
   // Contadores por estado
   totalAbiertos = 0;
@@ -68,6 +69,7 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     this.getUsers();
     this.filterUsers();
     this.cargarEstados();
+    this.cargarCategorias();
     this.getTickets();
   }
 
@@ -141,6 +143,12 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   cargarEstados() {
     this.http.get<EstadoTicket[]>('/api/tickets/estados').subscribe(estados => {
       this.estados = estados;
+    });
+  }
+
+  cargarCategorias() {
+    this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
+      this.categorias = data;
     });
   }
 
@@ -318,12 +326,8 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     }
   }
   getCategoriaNombre(idCategoria: number): string {
-    switch (idCategoria) {
-      case 1: return 'Hardware';
-      case 2: return 'Software';
-      case 3: return 'Red';
-      default: return 'Otro';
-    }
+    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
+    return categoria ? categoria.nombreCategoria : 'Otro';
   }
 
   cambiarEstadoTicket(ticket: Ticket, estado: string) {
@@ -386,5 +390,38 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   }
   ponerEnProgreso(ticket: Ticket) {
     this.cambiarEstadoTicket(ticket, 'En Progreso');
+  }
+
+  crearTicket(ticketData: { categoria: string, estado: string, asunto: string, descripcion: string }) {
+    console.log('Categorias cargadas:', this.categorias);
+    console.log('Valor seleccionado:', ticketData.categoria);
+    // Buscar el ID de la categoría seleccionada (normalizado)
+    const categoriaObj = this.categorias.find(
+      c => c.nombreCategoria.trim().toLowerCase() === ticketData.categoria.trim().toLowerCase()
+    );
+    // Buscar el ID del estado
+    const estadoObj = this.estados.find(e => e.nombreEstado.trim().toLowerCase() === ticketData.estado.trim().toLowerCase());
+    if (!categoriaObj || !estadoObj) {
+      alert('No se pudo encontrar la categoría o el estado.');
+      return;
+    }
+    const ticket = {
+      idCategoriaTicket: categoriaObj.idCategoria,
+      idEstadoTicket: estadoObj.idEstado,
+      tituloTicket: ticketData.asunto,
+      descripcionTicket: ticketData.descripcion,
+      prioridadTicket: 'media',
+      ubicacionTicket: '',
+      departamentoTicket: ''
+      // ...otros campos necesarios
+    };
+    this.ticketsService.createTicket(ticket).subscribe({
+      next: () => {
+        this.getTickets();
+      },
+      error: err => {
+        alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
+      }
+    });
   }
 }

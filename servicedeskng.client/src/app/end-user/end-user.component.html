@@ -85,74 +85,67 @@
       <h3 class="text-lg font-semibold mb-4">Reportar Problema de TI</h3>
       <form (ngSubmit)="crearTicket()">
         <div class="mb-3">
-          <label class="block mb-1 font-medium">Categoría</label>
-          <select class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.categoria" name="categoria" required>
+          <label for="categoria" class="block text-sm font-medium text-gray-700">Categoría</label>
+          <select [(ngModel)]="nuevoTicket.categoria" name="categoria" required class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <option value="">Selecciona una categoría</option>
-            <option value="hardware">Hardware</option>
-            <option value="software">Software</option>
-            <option value="network">Red</option>
-            <option value="email">Email</option>
-            <option value="phone">Teléfono</option>
-            <option value="access">Accesos</option>
-            <option value="other">Otro</option>
+            <option *ngFor="let cat of categorias" [value]="cat.nombreCategoria">{{cat.nombreCategoria | titlecase}}</option>
           </select>
         </div>
         <div class="mb-3">
-          <label class="block mb-1 font-medium">Asunto</label>
-          <input class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.asunto" name="asunto" required>
+          <label for="asunto" class="block text-sm font-medium text-gray-700">Asunto</label>
+          <input [(ngModel)]="nuevoTicket.asunto" name="asunto" required class="w-full border border-gray-300 rounded-lg px-3 py-2" />
         </div>
         <div class="mb-3">
-          <label class="block mb-1 font-medium">Descripción</label>
-          <textarea class="w-full border rounded px-3 py-2" [(ngModel)]="nuevoTicket.descripcion" name="descripcion" required></textarea>
+          <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+          <textarea [(ngModel)]="nuevoTicket.descripcion" name="descripcion" required class="w-full border border-gray-300 rounded-lg px-3 py-2"></textarea>
         </div>
-        <div class="flex justify-end gap-2">
-          <button type="button" class="px-4 py-2 text-gray-600 hover:text-gray-800" (click)="cerrarModalTicket()">Cancelar</button>
-          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700">Crear Ticket</button>
+        <div class="flex justify-end space-x-2 mt-5">
+          <button type="button" (click)="cerrarModalTicket()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Crear Ticket</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Lista de tickets -->
+  <!-- Listado de tickets y chat -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-      <h2 class="text-lg font-semibold text-gray-900">Mis Tickets</h2>
-      <div class="flex items-center space-x-2">
-        <select class="text-sm border border-gray-300 rounded-lg px-3 py-1.5" [(ngModel)]="filtroEstado" (change)="filtrarTickets()">
-          <option value="">Todos</option>
-          <option value="abierto">Abiertos</option>
-          <option value="en-progreso">En Progreso</option>
-          <option value="resuelto">Resueltos</option>
-        </select>
+    <div class="px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-gray-900">Mis Tickets</h2>
       </div>
     </div>
-    <ul class="divide-y divide-gray-200 px-6">
-      <li *ngFor="let ticket of ticketsFiltrados" class="py-4 flex justify-between items-center">
-        <div>
-          <div class="font-semibold">{{ticket.tituloTicket}}</div>
-          <div class="text-sm text-gray-500">
-            Estado: {{getNombreEstado(ticket.idEstadoTicket)}} | Categoría: {{getNombreCategoria(ticket.idCategoriaTicket)}}
+    <div>
+      <div *ngFor="let ticket of tickets" class="p-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class="font-mono text-gray-500">#{{ticket.idTicket}}</span>
+            <span class="ml-2 font-semibold">{{ticket.tituloTicket}}</span>
+            <span class="ml-2 text-xs text-gray-500">Categoría: {{getCategoriaNombre(ticket.idCategoriaTicket)}}</span>
           </div>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded" (click)="abrirChat(ticket)">Chat</button>
         </div>
-        <button class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700" (click)="abrirChat(ticket)">Chat</button>
-      </li>
-    </ul>
+        <div class="text-xs text-gray-500">Estado: {{getEstadoNombre(ticket.idEstadoTicket)}}</div>
+      </div>
+      <div *ngIf="tickets.length === 0" class="text-gray-500 p-4">No tienes tickets reportados.</div>
+    </div>
   </div>
 
-  <!-- Área de chat -->
-  <div *ngIf="ticketSeleccionado" class="max-w-2xl mx-auto my-8 p-4 bg-white rounded shadow">
-    <h4 class="font-bold mb-2">Chat con agente asignado (Ticket: {{ticketSeleccionado.tituloTicket}})</h4>
-    <div class="h-64 overflow-y-auto border rounded p-2 mb-2 bg-gray-50">
+  <!-- Chat -->
+  <div *ngIf="ticketSeleccionado" class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-900">Chat Ticket #{{ticketSeleccionado.idTicket}}</h2>
+    </div>
+    <div class="p-6">
       <div *ngFor="let mensaje of mensajes">
         <div [ngClass]="{'text-right': mensaje.esCliente, 'text-left': !mensaje.esCliente}">
           <span class="font-semibold">{{mensaje.remitente}}:</span>
           <span>{{mensaje.texto}}</span>
         </div>
       </div>
+      <form (ngSubmit)="enviarMensaje()" class="flex gap-2 mt-4">
+        <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
+        <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
+      </form>
     </div>
-    <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
-      <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
-      <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
-    </form>
   </div>
 </main>

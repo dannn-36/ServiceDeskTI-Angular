@@ -58,19 +58,15 @@
           <option value="baja">Baja</option>
         </select>
       </div>
-      <select class="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500" [(ngModel)]="filtroCategoria" name="filtroCategoria">
+      <select [(ngModel)]="filtroCategoria" name="filtroCategoria" class="w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500">
         <option value="">Todas las categorías</option>
-        <option value="hardware">🖥️ Hardware</option>
-        <option value="software">💾 Software</option>
-        <option value="network">🌐 Red</option>
-        <option value="email">📧 Email</option>
-        <option value="access">🔐 Accesos</option>
+        <option *ngFor="let cat of categorias" [value]="cat.nombreCategoria">{{cat.nombreCategoria | titlecase}}</option>
       </select>
     </div>
     <!-- Lista de Tickets -->
     <div class="flex-1 overflow-y-auto">
       <ul>
-        <li *ngFor="let ticket of tickets | ticketFiltro:filtroBusqueda:filtroEstado:filtroPrioridad:filtroCategoria"
+        <li *ngFor="let ticket of tickets | ticketFiltro:filtroBusqueda:filtroEstado:filtroPrioridad:filtroCategoria:categorias"
             (click)="abrirChat(ticket)"
             [ngClass]="{'ticket-item': true, 'selected': ticketSeleccionado?.idTicket === ticket.idTicket}"
             class="p-4 border-b border-gray-200 cursor-pointer transition-colors">
@@ -82,7 +78,7 @@
             <span class="text-xs text-gray-500">{{ticket.prioridadTicket}}</span>
           </div>
           <div class="text-xs text-gray-500">
-            Estado: {{ticket.idEstadoTicket}} | Categoría: {{ticket.idCategoriaTicket}}
+            Estado: {{ticket.idEstadoTicket}} | Categoría: {{getCategoriaNombre(ticket.idCategoriaTicket)}}
           </div>
           <div class="text-xs text-gray-500">
             Departamento: {{ticket.departamentoTicket}} | Ubicación: {{ticket.ubicacionTicket}}

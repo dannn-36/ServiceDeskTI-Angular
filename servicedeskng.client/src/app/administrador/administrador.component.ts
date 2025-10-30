@@ -60,6 +60,8 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   // Gráficas
   statusChart: any;
   trendChart: any;
+  agentPerformanceChart: any;
+  categoryChart: any;
 
   constructor(
     private usuarioService: UsuarioService,
@@ -188,29 +190,92 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     if (section === 'dashboard') {
       this.getTickets(); // Recarga datos y gráficos al entrar al dashboard
     }
+    if (section === 'reports') {
+      setTimeout(() => this.initReportCharts(), 0);
+    }
     if (section === 'users') this.filterUsers();
     if (section === 'tickets') this.filterTickets();
   }
 
+  initReportCharts() {
+    // Gráfica de rendimiento por agente
+    const agentChartEl = document.getElementById('agentPerformanceChart') as HTMLCanvasElement;
+    if (agentChartEl) {
+      if (this.agentPerformanceChart) this.agentPerformanceChart.destroy();
+      const agentes = [...new Set(this.tickets.map(t => t.idAgenteAsignado))].filter(a => a);
+      const agentesLabels = agentes.map(aid => `Agente ${aid}`);
+      const agentesData = agentes.map(aid =>
+        this.tickets.filter(t => t.idAgenteAsignado === aid && this.getEstadoNombre(t.idEstadoTicket) === 'Resuelto').length
+      );
+      this.agentPerformanceChart = new Chart(agentChartEl, {
+        type: 'bar',
+        data: {
+          labels: agentesLabels,
+          datasets: [{
+            label: 'Tickets Resueltos',
+            data: agentesData,
+            backgroundColor: 'rgba(59, 130, 246, 0.8)'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+
+    // Gráfica de tickets por categoría
+    const categoryChartEl = document.getElementById('categoryChart') as HTMLCanvasElement;
+    if (categoryChartEl) {
+      if (this.categoryChart) this.categoryChart.destroy();
+      const categoriasLabels = this.categorias.map(c => c.nombreCategoria);
+      const categoriasData = this.categorias.map(c =>
+        this.tickets.filter(t => t.idCategoriaTicket === c.idCategoria).length
+      );
+      this.categoryChart = new Chart(categoryChartEl, {
+        type: 'doughnut',
+        data: {
+          labels: categoriasLabels,
+          datasets: [{
+            data: categoriasData,
+            backgroundColor: [
+              'rgba(239, 68, 68, 0.8)',
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(139, 92, 246, 0.8)',
+              'rgba(245, 245, 245, 0.8)',
+              'rgba(100, 100, 100, 0.8)'
+            ]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+    }
+  }
+
   // --- USUARIOS ---
+  openProfile() { this.showProfile = true; }
+  closeProfile() { this.showProfile = false; }
+
+  openUserModal() { this.showUserModal = true; }
+  closeUserModal() { this.showUserModal = false; }
+
   getUsers() {
     this.loadingUsers = true;
     this.usuarioService.getAll().subscribe({
-      next: (data) => {
-        this.users = data;
-        this.updateRoleCounts();
+      next: (users) => {
+        this.users = users;
         this.filterUsers();
         this.loadingUsers = false;
+        // Actualiza contadores de roles
+        this.totalClientes = users.filter(u => u.tipoUsuario.toLowerCase() === 'cliente').length;
+        this.totalAgentes = users.filter(u => u.tipoUsuario.toLowerCase() === 'agente').length;
+        this.totalSupervisores = users.filter(u => u.tipoUsuario.toLowerCase() === 'supervisor').length;
+        this.totalAdministradores = users.filter(u => u.tipoUsuario.toLowerCase() === 'administrador').length;
       },
-      error: () => { this.userError = 'Error al cargar usuarios'; this.loadingUsers = false; }
+      error: () => {
+        this.userError = 'Error al cargar usuarios';
+        this.loadingUsers = false;
+      }
     });
-  }
-
-  updateRoleCounts() {
-    this.totalClientes = this.users.filter(u => u.tipoUsuario === 'Cliente').length;
-    this.totalAgentes = this.users.filter(u => u.tipoUsuario === 'Agente').length;
-    this.totalSupervisores = this.users.filter(u => u.tipoUsuario === 'Supervisor').length;
-    this.totalAdministradores = this.users.filter(u => u.tipoUsuario === 'Administrador').length;
   }
 
   filterUsers() {
@@ -218,81 +283,79 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     const role = this.userRoleFilter.toLowerCase();
     this.filteredUsers = this.users.filter(user => {
       const matchesSearch = user.nombreUsuario.toLowerCase().includes(search) || user.correoUsuario.toLowerCase().includes(search);
-      const matchesRole = !role || (user.tipoUsuario && user.tipoUsuario.toLowerCase() === role);
+      const matchesRole = !role || user.tipoUsuario.toLowerCase() === role;
       return matchesSearch && matchesRole;
     });
   }
 
-  openUserModal() {
-    this.userEditMode = false;
-    this.selectedUser = null;
-    this.formUser = { tipoUsuario: 'Cliente' };
-    this.showUserModal = true;
-  }
-  closeUserModal() {
-    this.userEditMode = false;
-    this.selectedUser = null;
-    this.showUserModal = false;
-  }
-
-  createUser() {
-    const usuario: Usuario = {
-      nombreUsuario: this.formUser.nombreUsuario!,
-      correoUsuario: this.formUser.correoUsuario!,
-      contrasenaUsuario: this.formUser.contrasenaUsuario!,
-      tipoUsuario: this.formUser.tipoUsuario!,
-      departamentoUsuario: this.formUser.departamentoUsuario || undefined,
-      estadoUsuario: this.formUser.estadoUsuario || undefined
-    };
-    this.usuarioService.create(usuario).subscribe({
-      next: () => { this.getUsers(); this.formUser = { tipoUsuario: 'Cliente' }; this.showUserModal = false; },
-      error: (err) => {
-        this.userError = err?.error?.message || 'Error al crear usuario';
-      }
-    });
-  }
-
   startEditUser(user: Usuario) {
-    this.selectedUser = { ...user };
+    this.selectedUser = user;
     this.formUser = { ...user };
     this.userEditMode = true;
-    this.showUserModal = true;
-  }
-
-  saveUserEdit() {
-    if (!this.selectedUser) return;
-    const usuario: Usuario = {
-      nombreUsuario: this.formUser.nombreUsuario!,
-      correoUsuario: this.formUser.correoUsuario!,
-      contrasenaUsuario: this.formUser.contrasenaUsuario!,
-      tipoUsuario: this.formUser.tipoUsuario!,
-      departamentoUsuario: this.formUser.departamentoUsuario || undefined,
-      estadoUsuario: this.formUser.estadoUsuario || undefined
-    };
-    this.usuarioService.update((this.selectedUser as any).idUsuario, usuario).subscribe({
-      next: () => { this.getUsers(); this.userEditMode = false; this.selectedUser = null; this.showUserModal = false; },
-      error: (err) => {
-        this.userError = err?.error?.message || 'Error al actualizar usuario';
-      }
-    });
+    this.openUserModal();
   }
 
   deleteUser(user: Usuario) {
-    if (!confirm('¿Eliminar este usuario?')) return;
-    this.usuarioService.delete((user as any).idUsuario).subscribe({
-      next: () => this.getUsers(),
-      error: (err) => { this.userError = err?.error?.message || 'Error al eliminar usuario'; }
+    this.loadingUsers = true;
+    this.usuarioService.delete(user.idUsuario!).subscribe({
+      next: () => {
+        this.getUsers();
+      },
+      error: err => {
+        this.userError = 'Error al eliminar usuario';
+        this.loadingUsers = false;
+      }
+    });
+  }
+
+  saveUserEdit() {
+    if (this.selectedUser) {
+      this.loadingUsers = true;
+      const updatedUser: Usuario = {
+        ...this.selectedUser,
+        ...this.formUser
+      };
+      this.usuarioService.update(updatedUser.idUsuario!, updatedUser).subscribe({
+        next: () => {
+          this.userEditMode = false;
+          this.closeUserModal();
+          this.getUsers();
+        },
+        error: err => {
+          this.userError = 'Error al editar usuario';
+          this.loadingUsers = false;
+        }
+      });
+    }
+  }
+
+  createUser() {
+    this.loadingUsers = true;
+    const newUser: Usuario = {
+      ...this.formUser,
+      nombreUsuario: this.formUser.nombreUsuario || '',
+      correoUsuario: this.formUser.correoUsuario || '',
+      tipoUsuario: this.formUser.tipoUsuario || 'Cliente',
+      departamentoUsuario: this.formUser.departamentoUsuario || '',
+      estadoUsuario: 'activo',
+      contrasenaUsuario: this.formUser.contrasenaUsuario || ''
+    } as Usuario;
+    this.usuarioService.create(newUser).subscribe({
+      next: () => {
+        this.closeUserModal();
+        this.getUsers();
+      },
+      error: err => {
+        this.userError = 'Error al crear usuario';
+        this.loadingUsers = false;
+      }
     });
   }
 
   onRoleChange(event: any) {
-    if (event.target.value === 'Cliente') {
-      this.formUser.tipoUsuario = 'Cliente';
-    }
+    this.userRoleFilter = event.target.value;
+    this.filterUsers();
   }
-
-  openProfile() { this.showProfile = true; }
-  closeProfile() { this.showProfile = false; }
 
   logout() {
     localStorage.clear();
@@ -411,7 +474,7 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   ponerUrgente(ticket: Ticket) {
     const actualizado = {
       ...ticket,
-      prioridadTicket: 'urgente',
+      prioridadesTicket: 'urgente',
       idEstadoTicket: ticket.idEstadoTicket,
       tituloTicket: ticket.tituloTicket || '',
       descripcionTicket: ticket.descripcionTicket || '',
@@ -464,5 +527,14 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
         alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
       }
     });
+  }
+
+  getRecentTickets(): Ticket[] {
+    return [...this.tickets]
+      .sort((a, b) =>
+        new Date(b.fechaHoraCreacionTicket ?? 0).getTime() -
+        new Date(a.fechaHoraCreacionTicket ?? 0).getTime()
+      )
+      .slice(0, 3);
   }
 }

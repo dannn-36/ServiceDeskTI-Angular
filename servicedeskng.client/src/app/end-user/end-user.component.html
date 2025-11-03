@@ -32,48 +32,48 @@
 <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Welcome Section y acciones rápidas -->
   <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-8 mb-8 text-white">
-    <div class="flex items-center justify-between">
-      <div>
+    <div class="flex items-center">
+      <div class="text-left">
         <h2 class="text-2xl font-bold mb-2">¡Hola {{usuarioNombre}}! 👋</h2>
         <p class="text-blue-100 mb-4">¿Necesitas ayuda con algún problema de tecnología? Estamos aquí para ayudarte.</p>
         <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors" (click)="abrirModalTicket()">
           🎫 Reportar Problema
         </button>
       </div>
-      <div class="hidden md:block text-6xl opacity-20">💻</div>
+      <div class="hidden md:block text-6xl opacity-20 ml-auto">💻</div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('hardware')">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-            <span class="text-2xl">🖥️</span>
-          </div>
-          <div>
-            <h3 class="font-semibold text-gray-900">Problemas de Hardware</h3>
-            <p class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</p>
-          </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 mb-8">
+    <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('hardware')">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+          <span class="text-2xl">🖥️</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Problemas de Hardware</h3>
+          <p class="text-sm text-gray-600">Computadora, impresora, mouse, teclado</p>
         </div>
       </div>
-      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('software')">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <span class="text-2xl">💾</span>
-          </div>
-          <div>
-            <h3 class="font-semibold text-gray-900">Problemas de Software</h3>
-            <p class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</p>
-          </div>
+    </div>
+    <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('software')">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span class="text-2xl">💾</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Problemas de Software</h3>
+          <p class="text-sm text-gray-600">Aplicaciones, programas, actualizaciones</p>
         </div>
       </div>
-      <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('network')">
-        <div class="flex items-center space-x-4">
-          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-            <span class="text-2xl">🌐</span>
-          </div>
-          <div>
-            <h3 class="font-semibold text-gray-900">Problemas de Red</h3>
-            <p class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</p>
-          </div>
+    </div>
+    <div class="category-card bg-white rounded-lg shadow-sm border border-gray-200 p-6 cursor-pointer hover:shadow-md transition-all" (click)="abrirModalTicket('red')">
+      <div class="flex items-center space-x-4">
+        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+          <span class="text-2xl">🌐</span>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-900">Problemas de Red</h3>
+          <p class="text-sm text-gray-600">Internet, WiFi, acceso a sistemas</p>
         </div>
       </div>
     </div>
@@ -107,6 +107,52 @@
     </div>
   </div>
 
+  <!-- Modal para chat -->
+  <div *ngIf="mostrarChatModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-gray-900">Chat Ticket #{{ticketSeleccionado?.idTicket}}</h2>
+        <button (click)="cerrarChatModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div class="p-6">
+        <div class="h-64 overflow-y-auto space-y-2 mb-4">
+          <div *ngFor="let mensaje of mensajes" [ngClass]="{'text-right': mensaje.esCliente, 'text-left': !mensaje.esCliente}">
+            <span class="font-semibold">{{mensaje.remitente}}:</span>
+            <span>{{mensaje.texto}}</span>
+          </div>
+        </div>
+        <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
+          <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para perfil -->
+  <div *ngIf="mostrarProfileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+        <button (click)="closeProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <form class="p-6 space-y-4" (ngSubmit)="updateProfile()">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+          <input [(ngModel)]="profileName" name="profileName" required class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+          <input [(ngModel)]="profileEmail" name="profileEmail" type="email" required class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" (click)="closeProfileModal()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancelar</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Listado de tickets y chat -->
   <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
     <div class="px-6 py-4 border-b border-gray-200">
@@ -130,22 +176,4 @@
     </div>
   </div>
 
-  <!-- Chat -->
-  <div *ngIf="ticketSeleccionado" class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-    <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-lg font-semibold text-gray-900">Chat Ticket #{{ticketSeleccionado.idTicket}}</h2>
-    </div>
-    <div class="p-6">
-      <div *ngFor="let mensaje of mensajes">
-        <div [ngClass]="{'text-right': mensaje.esCliente, 'text-left': !mensaje.esCliente}">
-          <span class="font-semibold">{{mensaje.remitente}}:</span>
-          <span>{{mensaje.texto}}</span>
-        </div>
-      </div>
-      <form (ngSubmit)="enviarMensaje()" class="flex gap-2 mt-4">
-        <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>
-      </form>
-    </div>
-  </div>
 </main>

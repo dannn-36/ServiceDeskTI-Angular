@@ -34,6 +34,12 @@ export class EndUserComponent implements OnInit, OnDestroy {
   filtroEstado: string = '';
   ticketsFiltrados: Ticket[] = [];
 
+  mostrarChatModal = false;
+
+  mostrarProfileModal = false;
+  profileName = '';
+  profileEmail = '';
+
   constructor(
     private ticketService: TicketsService,
     private chatService: ChatService,
@@ -43,15 +49,16 @@ export class EndUserComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.usuarioNombre = localStorage.getItem('usuario') || 'Cliente';
     this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
+    this.profileName = this.usuarioNombre;
+    this.profileEmail = localStorage.getItem('usuarioEmail') || 'usuario@empresa.com';
     this.cargarCategorias();
     this.cargarEstados();
     this.cargarTickets();
   }
 
   ngOnDestroy() {
-    if (this.chatSub) this.chatSub.unsubscribe();
-    if (this.ticketSeleccionado) {
-      this.chatService.disconnect(this.ticketSeleccionado.idTicket!.toString());
+    if (this.mostrarChatModal) {
+      this.cerrarChatModal();
     }
   }
 
@@ -152,6 +159,7 @@ export class EndUserComponent implements OnInit, OnDestroy {
       this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
     }
     this.ticketSeleccionado = ticket;
+    this.mostrarChatModal = true;
     this.mensajes = [];
     // Cargar mensajes históricos
     this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
@@ -193,8 +201,20 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   showProfileModal() {
-    // TODO: aquí puedes abrir un modal o mostrar el perfil del usuario
-    console.log('Abrir modal de perfil');
+    this.mostrarProfileModal = true;
+  }
+
+  closeProfileModal() {
+    this.mostrarProfileModal = false;
+  }
+
+  updateProfile() {
+    this.usuarioNombre = this.profileName;
+    localStorage.setItem('usuario', this.usuarioNombre);
+    localStorage.setItem('usuarioEmail', this.profileEmail);
+    this.closeProfileModal();
+    // Optionally show a notification
+    alert('Perfil actualizado.');
   }
 
   confirmLogout() {
@@ -214,4 +234,15 @@ export class EndUserComponent implements OnInit, OnDestroy {
     return estado ? estado.nombreEstado : idEstado.toString();
   }
 
+  cerrarChatModal() {
+    this.mostrarChatModal = false;
+    if (this.ticketSeleccionado) {
+      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
+    }
+    this.ticketSeleccionado = null;
+    if (this.chatSub) {
+      this.chatSub.unsubscribe();
+      this.chatSub = null;
+    }
+  }
 }

@@ -113,7 +113,7 @@
       <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-4 text-sm">
           <div class="relative">
-            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="showNotifications()">
+            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" (click)="showNotifications()">
               🔔
             </button>
             <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
@@ -122,10 +122,10 @@
             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
               <span>👨‍💼</span>
             </div>
-            <span>Roberto Silva</span>
+            <span>{{ supervisorName }}</span>
           </div>
         </div>
-        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" onclick="logout()">
+        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" (click)="logout()">
           🚪
         </button>
       </div>
@@ -136,55 +136,22 @@
     <!-- Sidebar -->
     <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
       <nav class="flex-1 p-4 space-y-2">
-        <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('dashboard')">
+        <div *ngFor="let item of sidebarItems" 
+             class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
+             [ngClass]="{ 'active': currentSection === item.section }"
+             (click)="showSection(item.section)">
           <div class="flex items-center space-x-3">
-            <span class="text-lg">📊</span>
-            <span class="font-medium">Dashboard</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('team')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">👥</span>
-            <span class="font-medium">Mi Equipo</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('tickets')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">🎫</span>
-            <span class="font-medium">Supervisión Tickets</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('workload')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">⚖️</span>
-            <span class="font-medium">Carga de Trabajo</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('performance')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">📈</span>
-            <span class="font-medium">Rendimiento</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('escalations')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">🚨</span>
-            <span class="font-medium">Escalaciones</span>
-          </div>
-        </div>
-        <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors" onclick="showSection('reports')">
-          <div class="flex items-center space-x-3">
-            <span class="text-lg">📋</span>
-            <span class="font-medium">Reportes</span>
+            <span class="text-lg">{{ item.icon }}</span>
+            <span class="font-medium">{{ item.label }}</span>
           </div>
         </div>
       </nav>
     </div>
 
-    <!-- Contenido Principal -->
+    <!-- Main Content -->
     <div class="flex-1 overflow-y-auto">
       <!-- Dashboard Section -->
-      <div id="dashboard-section" class="p-6">
+      <div *ngIf="currentSection === 'dashboard'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Dashboard Supervisor</h2>
           <p class="text-gray-600">Resumen del rendimiento de tu equipo y tickets asignados</p>
@@ -192,54 +159,15 @@
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200" *ngFor="let stat of dashboardStats">
             <div class="flex items-center justify-between">
               <div>
-                <p class="text-sm font-medium text-gray-600">Tickets Activos</p>
-                <p class="text-3xl font-bold text-gray-900">47</p>
-                <p class="text-sm text-blue-600">↗ +5 desde ayer</p>
+                <p class="text-sm font-medium text-gray-600">{{ stat.label }}</p>
+                <p class="text-3xl font-bold text-gray-900">{{ stat.value }}</p>
+                <p class="text-sm" [ngClass]="stat.trendClass">{{ stat.trend }}</p>
               </div>
-              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">🎫</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Agentes Activos</p>
-                <p class="text-3xl font-bold text-gray-900">8</p>
-                <p class="text-sm text-green-600">100% disponibles</p>
-              </div>
-              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">👨‍💻</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">Tiempo Promedio</p>
-                <p class="text-3xl font-bold text-gray-900">2.1h</p>
-                <p class="text-sm text-green-600">↘ -15min vs ayer</p>
-              </div>
-              <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">⏱️</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="stat-card bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <p class="text-sm font-medium text-gray-600">SLA Cumplimiento</p>
-                <p class="text-3xl font-bold text-gray-900">96%</p>
-                <p class="text-sm text-green-600">↗ +2% vs semana</p>
-              </div>
-              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <span class="text-2xl">🎯</span>
+              <div class="w-12 h-12 rounded-lg flex items-center justify-center" [ngClass]="stat.bgClass">
+                <span class="text-2xl">{{ stat.icon }}</span>
               </div>
             </div>
           </div>
@@ -253,26 +181,35 @@
               <canvas id="ticketDistributionChart"></canvas>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets Prioritarios</h3>
-            <div class="space-y-3" id="priorityTickets">
-              <!-- Priority tickets will be loaded here -->
+            <div class="space-y-3">
+              <div *ngFor="let ticket of priorityTickets"
+                   class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                   [ngClass]="getPriorityClass(ticket.priority)">
+                <div class="flex items-center space-x-3">
+                  <span class="text-lg">{{ getPriorityIcon(ticket.priority) }}</span>
+                  <div>
+                    <p class="font-medium text-gray-900">{{ ticket.title }}</p>
+                    <p class="text-sm text-gray-600">{{ ticket.id }} • {{ ticket.agent }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="getPriorityBadgeClass(ticket.priority)">
+                    {{ ticket.priority }}
+                  </span>
+                  <p class="text-xs text-gray-500 mt-1">{{ ticket.time }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Team Performance Overview -->
-        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Rendimiento del Equipo - Hoy</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="teamPerformance">
-            <!-- Team performance will be loaded here -->
-          </div>
-        </div>
       </div>
 
       <!-- Team Section -->
-      <div id="team-section" class="p-6 hidden">
+      <div *ngIf="currentSection === 'team'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Mi Equipo</h2>
           <p class="text-gray-600">Gestiona y supervisa a los agentes de tu equipo</p>
@@ -288,15 +225,15 @@
             <div class="space-y-3">
               <div class="flex justify-between items-center">
                 <span class="text-sm text-gray-600">Disponibles</span>
-                <span class="text-sm font-medium text-green-600">6 agentes</span>
+                <span class="text-sm font-medium text-green-600">{{ getTeamStatus('available') }} agentes</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-sm text-gray-600">Ocupados</span>
-                <span class="text-sm font-medium text-yellow-600">2 agentes</span>
+                <span class="text-sm font-medium text-yellow-600">{{ getTeamStatus('busy') }} agentes</span>
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-sm text-gray-600">Ausentes</span>
-                <span class="text-sm font-medium text-red-600">0 agentes</span>
+                <span class="text-sm font-medium text-red-600">{{ getTeamStatus('away') }} agentes</span>
               </div>
             </div>
           </div>
@@ -351,14 +288,54 @@
           </div>
           <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="teamMembers">
-              <!-- Team members will be loaded here -->
+              <div *ngFor="let member of teamMembers" class="bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span>👤</span>
+                    </div>
+                    <div>
+                      <h4 class="font-medium text-gray-900">{{ member.name }}</h4>
+                      <p class="text-sm text-gray-600">Agente de Soporte</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="w-3 h-3 rounded-full" [ngClass]="getStatusColor(member.status)"></span>
+                    <span class="text-sm text-gray-600 capitalize">{{ member.status }}</span>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <p class="text-lg font-bold text-blue-600">{{ member.tickets }}</p>
+                    <p class="text-xs text-gray-600">Tickets</p>
+                  </div>
+                  <div>
+                    <p class="text-lg font-bold text-green-600">{{ member.avgTime }}</p>
+                    <p class="text-xs text-gray-600">Promedio</p>
+                  </div>
+                  <div>
+                    <p class="text-lg font-bold text-yellow-600">{{ member.satisfaction }}</p>
+                    <p class="text-xs text-gray-600">Rating</p>
+                  </div>
+                </div>
+                <div class="mt-3 flex space-x-2">
+                  <button class="flex-1 bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors"
+                          [disabled]="!selectedTicketId"
+                          (click)="assignTicket(selectedTicketId!, member.idAgente)">
+                    Asignar Ticket
+                  </button>
+                  <button class="flex-1 bg-gray-600 text-white py-1 px-2 rounded text-xs hover:bg-gray-700 transition-colors">
+                    Ver Detalles
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Tickets Section -->
-      <div id="tickets-section" class="p-6 hidden">
+      <div *ngIf="currentSection === 'tickets'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Supervisión de Tickets</h2>
           <p class="text-gray-600">Monitorea y gestiona todos los tickets de tu equipo</p>
@@ -394,26 +371,47 @@
           </div>
         </div>
 
-        <!-- Tickets List -->
+        <!-- Tickets Activos -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200">
           <div class="p-6 border-b border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900">Tickets Activos</h3>
           </div>
           <div class="p-6">
-            <div class="space-y-4" id="supervisorTicketsList">
-              <!-- Tickets will be loaded here -->
+            <div class="space-y-4">
+              <div *ngFor="let ticket of activeTickets" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-{{ ticket.priority }}">
+                <div class="flex items-center space-x-4">
+                  <span class="text-lg">{{ getCategoryIcon(ticket.category) }}</span>
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ ticket.title }}</h4>
+                    <p class="text-sm text-gray-600">{{ ticket.id }} • {{ ticket.user }} → {{ ticket.agent }}</p>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="getStatusBadgeClass(ticket.status)">
+                    {{ ticket.status }}
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="getPriorityBadgeClass(ticket.priority)">
+                    {{ ticket.priority }}
+                  </span>
+                  <span class="text-sm text-gray-500">{{ ticket.time }}</span>
+                  <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    Supervisar
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Workload Section -->
-      <div id="workload-section" class="p-6 hidden">
+      <div *ngIf="currentSection === 'workload'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Carga de Trabajo</h2>
           <p class="text-gray-600">Distribuye y equilibra la carga de trabajo del equipo</p>
         </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución Actual</h3>
@@ -421,7 +419,6 @@
               <canvas id="workloadChart"></canvas>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
             <div class="space-y-4">
@@ -443,12 +440,11 @@
       </div>
 
       <!-- Performance Section -->
-      <div id="performance-section" class="p-6 hidden">
+      <div *ngIf="currentSection === 'performance'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Análisis de Rendimiento</h2>
           <p class="text-gray-600">Métricas detalladas del rendimiento del equipo</p>
         </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Tendencia Semanal</h3>
@@ -456,7 +452,6 @@
               <canvas id="weeklyTrendChart"></canvas>
             </div>
           </div>
-
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Comparativa Agentes</h3>
             <div class="chart-container">
@@ -464,7 +459,6 @@
             </div>
           </div>
         </div>
-
         <!-- Performance Metrics -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Métricas Clave</h3>
@@ -498,7 +492,7 @@
               <span class="text-2xl">🚨</span>
               <h3 class="font-semibold text-red-900">Críticas</h3>
             </div>
-            <p class="text-3xl font-bold text-red-600">3</p>
+            <p class="text-3xl font-bold text-red-600">{{ getEscalationCount('critical') }}</p>
             <p class="text-sm text-red-600">Requieren atención inmediata</p>
           </div>
 
@@ -507,7 +501,7 @@
               <span class="text-2xl">⚠️</span>
               <h3 class="font-semibold text-yellow-900">Pendientes</h3>
             </div>
-            <p class="text-3xl font-bold text-yellow-600">7</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ getEscalationCount('pending') }}</p>
             <p class="text-sm text-yellow-600">En proceso de escalación</p>
           </div>
 
@@ -516,7 +510,7 @@
               <span class="text-2xl">📋</span>
               <h3 class="font-semibold text-blue-900">Resueltas</h3>
             </div>
-            <p class="text-3xl font-bold text-blue-600">24</p>
+            <p class="text-3xl font-bold text-blue-600">{{ getEscalationCount('resolved') }}</p>
             <p class="text-sm text-blue-600">Esta semana</p>
           </div>
         </div>
@@ -527,7 +521,24 @@
           </div>
           <div class="p-6">
             <div class="space-y-4" id="escalationsList">
-              <!-- Escalations will be loaded here -->
+              <div *ngFor="let escalation of escalations" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                   [ngClass]="{'bg-red-50 border-red-200': escalation.status === 'critical', 'bg-yellow-50 border-yellow-200': escalation.status === 'pending'}">
+                <div class="flex items-center space-x-4">
+                  <span class="text-lg">{{ escalation.status === 'critical' ? '🚨' : '⚠️' }}</span>
+                  <div>
+                    <h4 class="font-medium text-gray-900">{{ escalation.title }}</h4>
+                    <p class="text-sm text-gray-600">{{ escalation.id }} • Escalado a: {{ escalation.escalatedTo }}</p>
+                    <p class="text-xs text-gray-500">Razón: {{ escalation.reason }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                        [ngClass]="escalation.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'">
+                    {{ escalation.status === 'critical' ? 'Crítico' : 'Pendiente' }}
+                  </span>
+                  <p class="text-sm text-gray-500 mt-1">{{ escalation.time }}</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -577,379 +588,5 @@
       </div>
     </div>
   </div>
-
-  <script>
-        // Sample data for supervisor view
-        const supervisorData = {
-            priorityTickets: [
-                { id: 'TK-1250', title: 'Servidor principal caído', priority: 'urgent', agent: 'Ana López', time: '45 min' },
-                { id: 'TK-1249', title: 'Base de datos lenta', priority: 'high', agent: 'Juan Pérez', time: '1.2h' },
-                { id: 'TK-1248', title: 'Error en aplicación', priority: 'high', agent: 'Sofía Martínez', time: '2.1h' },
-                { id: 'TK-1247', title: 'Problema de red', priority: 'medium', agent: 'Carlos Ruiz', time: '30 min' }
-            ],
-            teamMembers: [
-                { name: 'Ana López', status: 'available', tickets: 6, avgTime: '1.8h', satisfaction: 4.9 },
-                { name: 'Juan Pérez', status: 'busy', tickets: 8, avgTime: '2.1h', satisfaction: 4.7 },
-                { name: 'Sofía Martínez', status: 'available', tickets: 5, avgTime: '1.5h', satisfaction: 4.8 },
-                { name: 'Carlos Ruiz', status: 'available', tickets: 7, avgTime: '2.3h', satisfaction: 4.6 }
-            ],
-            tickets: [
-                { id: 'TK-1250', title: 'Servidor principal caído', user: 'Sistema Automático', agent: 'Ana López', status: 'en-progreso', priority: 'urgent', category: 'Infraestructura', time: '45 min' },
-                { id: 'TK-1249', title: 'Base de datos responde lento', user: 'María González', agent: 'Juan Pérez', status: 'abierto', priority: 'high', category: 'Base de Datos', time: '1.2h' },
-                { id: 'TK-1248', title: 'Error en módulo contable', user: 'Roberto Silva', agent: 'Sofía Martínez', status: 'pendiente', priority: 'medium', category: 'Software', time: '2.1h' }
-            ],
-            escalations: [
-                { id: 'TK-1245', title: 'Falla crítica en producción', escalatedTo: 'Gerencia TI', reason: 'Impacto alto', time: '3h 15min', status: 'critical' },
-                { id: 'TK-1243', title: 'Pérdida de datos cliente', escalatedTo: 'Director Técnico', reason: 'Datos sensibles', time: '5h 30min', status: 'critical' },
-                { id: 'TK-1240', title: 'Caída de servicios web', escalatedTo: 'Equipo DevOps', reason: 'SLA vencido', time: '2h 45min', status: 'pending' }
-            ]
-        };
-
-        let currentSection = 'dashboard';
-
-        function showSection(section) {
-            // Hide all sections
-            document.querySelectorAll('[id$="-section"]').forEach(el => el.classList.add('hidden'));
-
-            // Show selected section
-            document.getElementById(section + '-section').classList.remove('hidden');
-
-            // Update sidebar
-            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.sidebar-item').classList.add('active');
-
-            currentSection = section;
-
-            // Load section-specific data
-            if (section === 'dashboard') loadDashboard();
-            if (section === 'team') loadTeam();
-            if (section === 'tickets') loadTickets();
-            if (section === 'workload') loadWorkload();
-            if (section === 'performance') loadPerformance();
-            if (section === 'escalations') loadEscalations();
-        }
-
-        function loadDashboard() {
-            // Load priority tickets
-            const priorityContainer = document.getElementById('priorityTickets');
-            priorityContainer.innerHTML = supervisorData.priorityTickets.map(ticket => `
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg priority-${ticket.priority}">
-                    <div class="flex items-center space-x-3">
-                        <span class="text-lg">${getPriorityIcon(ticket.priority)}</span>
-                        <div>
-                            <p class="font-medium text-gray-900">${ticket.title}</p>
-                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.agent}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.priority)}">
-                            ${ticket.priority}
-                        </span>
-                        <p class="text-xs text-gray-500 mt-1">${ticket.time}</p>
-                    </div>
-                </div>
-            `).join('');
-
-            // Load team performance
-            const teamContainer = document.getElementById('teamPerformance');
-            teamContainer.innerHTML = supervisorData.teamMembers.map(member => `
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-medium text-gray-900">${member.name}</h4>
-                        <span class="w-3 h-3 rounded-full ${getStatusColor(member.status)}"></span>
-                    </div>
-                    <div class="space-y-1 text-sm">
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tickets:</span>
-                            <span class="font-medium">${member.tickets}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Tiempo:</span>
-                            <span class="font-medium">${member.avgTime}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-gray-600">Rating:</span>
-                            <span class="font-medium text-yellow-600">⭐ ${member.satisfaction}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadTeam() {
-            const teamContainer = document.getElementById('teamMembers');
-            teamContainer.innerHTML = supervisorData.teamMembers.map(member => `
-                <div class="bg-gray-50 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                <span>👤</span>
-                            </div>
-                            <div>
-                                <h4 class="font-medium text-gray-900">${member.name}</h4>
-                                <p class="text-sm text-gray-600">Agente de Soporte</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <span class="w-3 h-3 rounded-full ${getStatusColor(member.status)}"></span>
-                            <span class="text-sm text-gray-600 capitalize">${member.status}</span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 text-center">
-                        <div>
-                            <p class="text-lg font-bold text-blue-600">${member.tickets}</p>
-                            <p class="text-xs text-gray-600">Tickets</p>
-                        </div>
-                        <div>
-                            <p class="text-lg font-bold text-green-600">${member.avgTime}</p>
-                            <p class="text-xs text-gray-600">Promedio</p>
-                        </div>
-                        <div>
-                            <p class="text-lg font-bold text-yellow-600">${member.satisfaction}</p>
-                            <p class="text-xs text-gray-600">Rating</p>
-                        </div>
-                    </div>
-                    <div class="mt-3 flex space-x-2">
-                        <button class="flex-1 bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors">
-                            Asignar Ticket
-                        </button>
-                        <button class="flex-1 bg-gray-600 text-white py-1 px-2 rounded text-xs hover:bg-gray-700 transition-colors">
-                            Ver Detalles
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadTickets() {
-            const ticketsContainer = document.getElementById('supervisorTicketsList');
-            ticketsContainer.innerHTML = supervisorData.tickets.map(ticket => `
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-${ticket.priority}">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-lg">${getCategoryIcon(ticket.category)}</span>
-                        <div>
-                            <h4 class="font-medium text-gray-900">${ticket.title}</h4>
-                            <p class="text-sm text-gray-600">${ticket.id} • ${ticket.user} → ${ticket.agent}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(ticket.status)}">
-                            ${ticket.status}
-                        </span>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.priority)}">
-                            ${ticket.priority}
-                        </span>
-                        <span class="text-sm text-gray-500">${ticket.time}</span>
-                        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            Supervisar
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadEscalations() {
-            const escalationsContainer = document.getElementById('escalationsList');
-            escalationsContainer.innerHTML = supervisorData.escalations.map(escalation => `
-                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg ${escalation.status === 'critical' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-lg">${escalation.status === 'critical' ? '🚨' : '⚠️'}</span>
-                        <div>
-                            <h4 class="font-medium text-gray-900">${escalation.title}</h4>
-                            <p class="text-sm text-gray-600">${escalation.id} • Escalado a: ${escalation.escalatedTo}</p>
-                            <p class="text-xs text-gray-500">Razón: ${escalation.reason}</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${escalation.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
-                            ${escalation.status === 'critical' ? 'Crítico' : 'Pendiente'}
-                        </span>
-                        <p class="text-sm text-gray-500 mt-1">${escalation.time}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function loadWorkload() {
-            const workloadCtx = document.getElementById('workloadChart').getContext('2d');
-            new Chart(workloadCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Ana López', 'Juan Pérez', 'Sofía Martínez', 'Carlos Ruiz'],
-                    datasets: [{
-                        label: 'Tickets Asignados',
-                        data: [6, 8, 5, 7],
-                        backgroundColor: 'rgba(59, 130, 246, 0.8)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        }
-
-        function loadPerformance() {
-            // Weekly Trend Chart
-            const weeklyCtx = document.getElementById('weeklyTrendChart').getContext('2d');
-            new Chart(weeklyCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
-                    datasets: [{
-                        label: 'Tickets Resueltos',
-                        data: [12, 15, 18, 14, 16, 8, 5],
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        tension: 0.4
-                    }, {
-                        label: 'Tickets Creados',
-                        data: [10, 16, 20, 15, 18, 10, 7],
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-
-            // Agent Comparison Chart
-            const agentCtx = document.getElementById('agentComparisonChart').getContext('2d');
-            new Chart(agentCtx, {
-                type: 'radar',
-                data: {
-                    labels: ['Velocidad', 'Calidad', 'Satisfacción', 'Comunicación', 'Proactividad'],
-                    datasets: [{
-                        label: 'Ana López',
-                        data: [9, 8, 9, 8, 7],
-                        borderColor: 'rgba(59, 130, 246, 1)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.2)'
-                    }, {
-                        label: 'Juan Pérez',
-                        data: [7, 9, 8, 9, 8],
-                        borderColor: 'rgba(16, 185, 129, 1)',
-                        backgroundColor: 'rgba(16, 185, 129, 0.2)'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        r: {
-                            beginAtZero: true,
-                            max: 10
-                        }
-                    }
-                }
-            });
-        }
-
-        // Utility functions
-        function getPriorityIcon(priority) {
-            const icons = { urgent: '🚨', high: '⚠️', medium: '📋', low: '📝' };
-            return icons[priority] || '📋';
-        }
-
-        function getPriorityBadgeClass(priority) {
-            const classes = {
-                urgent: 'bg-red-100 text-red-800',
-                high: 'bg-orange-100 text-orange-800',
-                medium: 'bg-yellow-100 text-yellow-800',
-                low: 'bg-green-100 text-green-800'
-            };
-            return classes[priority] || 'bg-gray-100 text-gray-800';
-        }
-
-        function getStatusBadgeClass(status) {
-            const classes = {
-                'abierto': 'bg-blue-100 text-blue-800',
-                'en-progreso': 'bg-yellow-100 text-yellow-800',
-                'pendiente': 'bg-purple-100 text-purple-800',
-                'resuelto': 'bg-green-100 text-green-800'
-            };
-            return classes[status] || 'bg-gray-100 text-gray-800';
-        }
-
-        function getStatusColor(status) {
-            const colors = {
-                available: 'bg-green-500',
-                busy: 'bg-yellow-500',
-                away: 'bg-red-500'
-            };
-            return colors[status] || 'bg-gray-500';
-        }
-
-        function getCategoryIcon(category) {
-            const icons = {
-                'Infraestructura': '🏗️',
-                'Base de Datos': '🗄️',
-                'Software': '💾',
-                'Hardware': '🖥️',
-                'Red': '🌐'
-            };
-            return icons[category] || '❓';
-        }
-
-        function showNotifications() {
-            showNotification('Panel de notificaciones en desarrollo', 'info');
-        }
-
-        function logout() {
-            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                showNotification('Cerrando sesión...', 'info');
-                setTimeout(() => {
-                    console.log('Redirect to login');
-                }, 1500);
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
-            const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500', warning: 'bg-yellow-500' };
-
-            notification.className = `fixed top-4 right-4 flex items-center space-x-2 px-4 py-3 rounded-lg text-white shadow-lg z-50 fade-in ${colors[type]}`;
-            notification.innerHTML = `<span>${icons[type]}</span><span class="text-sm font-medium">${message}</span>`;
-
-            document.body.appendChild(notification);
-            setTimeout(() => notification.remove(), 4000);
-        }
-
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboard();
-
-            // Ticket Distribution Chart
-            const distributionCtx = document.getElementById('ticketDistributionChart').getContext('2d');
-            new Chart(distributionCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Ana López', 'Juan Pérez', 'Sofía Martínez', 'Carlos Ruiz'],
-                    datasets: [{
-                        data: [6, 8, 5, 7],
-                        backgroundColor: [
-                            'rgba(59, 130, 246, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(139, 92, 246, 0.8)'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false
-                }
-            });
-        });
-  </script>
-  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989206ebc77bf776',t:'MTc1OTU1MzA5Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

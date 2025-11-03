@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using ServiceDeskNg.Server.Data;
 using System.Linq;
 using System;
@@ -6,23 +6,20 @@ using System;
 namespace ServiceDeskNg.Server.Controllers
 {
     [ApiController]
-    [Route("api/tickets")]
-    public class TicketsController : ControllerBase
+    [Route("api/priority-tickets")]
+    public class PriorityTicketsController : ControllerBase
     {
         private readonly ServiceDeskContext _context;
-        public TicketsController(ServiceDeskContext context)
+        public PriorityTicketsController(ServiceDeskContext context)
         {
             _context = context;
         }
 
-        // ===========================================================
-        // 🔹 OBTENER TICKETS PARA EL DASHBOARD
-        // GET: api/tickets/dashboard
-        // ===========================================================
-        [HttpGet("dashboard")]
-        public IActionResult GetDashboardTickets()
+        [HttpGet]
+        public IActionResult GetPriorityTickets()
         {
             var tickets = _context.Tickets
+                .Where(t => t.PrioridadTicket == "urgent" || t.PrioridadTicket == "high")
                 .Select(t => new {
                     id = t.IdTicket,
                     title = t.TituloTicket,
@@ -47,7 +44,6 @@ namespace ServiceDeskNg.Server.Controllers
                     time = t.fechaCreacion.HasValue ? (DateTime.Now - t.fechaCreacion.Value).TotalMinutes.ToString("0") + " min" : "-"
                 })
                 .ToList();
-
             return Ok(tickets);
         }
     }

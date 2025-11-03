@@ -255,8 +255,22 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   openProfile() { this.showProfile = true; }
   closeProfile() { this.showProfile = false; }
 
-  openUserModal() { this.showUserModal = true; }
-  closeUserModal() { this.showUserModal = false; }
+  // Updated to accept mode so "Nuevo Usuario" always opens in new mode
+  openUserModal(mode: 'new' | 'edit' = 'new') {
+    this.showUserModal = true;
+    if (mode === 'new') {
+      this.userEditMode = false;
+      this.selectedUser = null;
+      this.formUser = { tipoUsuario: 'Cliente' };
+    }
+  }
+  // Ensure closing modal resets edit state so subsequent opens are predictable
+  closeUserModal() {
+    this.showUserModal = false;
+    this.userEditMode = false;
+    this.selectedUser = null;
+    this.formUser = { tipoUsuario: 'Cliente' };
+  }
 
   getUsers() {
     this.loadingUsers = true;
@@ -292,7 +306,7 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     this.selectedUser = user;
     this.formUser = { ...user };
     this.userEditMode = true;
-    this.openUserModal();
+    this.openUserModal('edit');
   }
 
   deleteUser(user: Usuario) {

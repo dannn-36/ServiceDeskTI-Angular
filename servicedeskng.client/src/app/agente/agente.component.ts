@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef }
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
 import { HttpClient } from '@angular/common/http';
+import { UsuarioService } from '../usuario/usuario.service';
 
 interface MensajeChat {
   remitente: string;
@@ -32,12 +33,16 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   filtroCategoria: string = '';
   categorias: any[] = [];
   estados: EstadoTicket[] = [];
+  mostrarProfileModal: boolean = false;
+  profileName: string = '';
+  profileEmail: string = '';
   @ViewChild('chatScroll') chatScroll!: ElementRef;
 
   constructor(
     private ticketsService: TicketsService,
     private chatService: ChatService,
-    private http: HttpClient
+    private http: HttpClient,
+    private usuarioService: UsuarioService
   ) {}
 
   ngOnInit() {
@@ -163,6 +168,12 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
     window.location.href = '/';
   }
 
+  confirmLogout() {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      this.logout();
+    }
+  }
+
   ponerUrgente(ticket: Ticket) {
     const actualizado = {
       ...ticket,
@@ -222,6 +233,33 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
       },
       error: err => {
         alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
+      }
+    });
+  }
+
+  showProfileModal() {
+    this.profileName = this.usuarioNombre;
+    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
+    this.mostrarProfileModal = true;
+  }
+
+  closeProfileModal() {
+    this.mostrarProfileModal = false;
+  }
+
+  updateProfile() {
+    if (this.profileName.trim() === '') {
+      this.profileName = this.usuarioNombre;
+    }
+    this.usuarioService.updateProfile(this.profileName, this.profileEmail).subscribe({
+      next: () => {
+        this.usuarioNombre = this.profileName;
+        localStorage.setItem('usuario', this.profileName);
+        localStorage.setItem('usuarioEmail', this.profileEmail);
+        this.closeProfileModal();
+      },
+      error: (err) => {
+        console.error('Error updating profile:', err);
       }
     });
   }

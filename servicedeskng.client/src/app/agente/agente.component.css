@@ -18,7 +18,8 @@ li { margin-bottom: 8px; }
   min-height: 0;
 }
 
-form {
+/* Scope chat form styles so modal/profile forms are not affected */
+.chat-form {
   display: flex;
   gap: 0.5rem;
   padding: 1rem;
@@ -26,14 +27,14 @@ form {
   background: #fff;
 }
 
-input[name="mensajeTexto"] {
+.chat-form input[name="mensajeTexto"] {
   flex: 1;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
 }
 
-button[type="submit"] {
+.chat-form button[type="submit"] {
   background: #2563eb;
   color: #fff;
   border-radius: 0.375rem;
@@ -43,7 +44,7 @@ button[type="submit"] {
   transition: background 0.2s;
 }
 
-button[type="submit"]:hover {
+.chat-form button[type="submit"]:hover {
   background: #1d4ed8;
 }
 

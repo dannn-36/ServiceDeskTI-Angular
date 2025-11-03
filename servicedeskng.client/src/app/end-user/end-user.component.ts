@@ -3,6 +3,7 @@ import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
 import { Subscription } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
+import { UsuarioService } from '../usuario/usuario.service';
 
 interface MensajeChat {
   remitente: string;
@@ -43,7 +44,8 @@ export class EndUserComponent implements OnInit, OnDestroy {
   constructor(
     private ticketService: TicketsService,
     private chatService: ChatService,
-    private http: HttpClient
+    private http: HttpClient,
+    private usuarioService: UsuarioService // Inyectar el servicio de Usuario
   ) {}
 
   ngOnInit() {
@@ -201,6 +203,8 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   showProfileModal() {
+    this.profileName = this.usuarioNombre;
+    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
     this.mostrarProfileModal = true;
   }
 
@@ -209,12 +213,22 @@ export class EndUserComponent implements OnInit, OnDestroy {
   }
 
   updateProfile() {
-    this.usuarioNombre = this.profileName;
-    localStorage.setItem('usuario', this.usuarioNombre);
-    localStorage.setItem('usuarioEmail', this.profileEmail);
-    this.closeProfileModal();
-    // Optionally show a notification
-    alert('Perfil actualizado.');
+    if (this.profileName.trim() === '') {
+      this.profileName = this.usuarioNombre;
+    }
+    this.usuarioService.updateProfile(this.profileName, this.profileEmail).subscribe({
+      next: () => {
+        this.usuarioNombre = this.profileName;
+        localStorage.setItem('usuario', this.profileName);
+        localStorage.setItem('usuarioEmail', this.profileEmail);
+        this.closeProfileModal();
+        alert('Perfil actualizado.');
+      },
+      error: (err) => {
+        console.error('Error updating profile:', err);
+        alert('Error al actualizar el perfil.');
+      }
+    });
   }
 
   confirmLogout() {

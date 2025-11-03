@@ -1,20 +1,34 @@
 <!-- Barra superior única y funcional -->
-<div class="w-full flex justify-end items-center p-4 space-x-4 bg-white border-b border-gray-200">
-  <div class="flex items-center space-x-2">
-    <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-      <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-      En línea
-    </span>
-    <span class="flex items-center space-x-2 ml-2">
-      <span class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xl">👤</span>
-      <span class="font-medium text-gray-700">{{usuarioNombre}} - Agente TI</span>
-    </span>
-    <button (click)="logout()" class="ml-4 flex items-center px-3 py-1 bg-red-50 text-red-600 rounded-lg border border-red-100 hover:bg-red-100 transition-colors" title="Cerrar sesión">
-      <span class="mr-1 text-lg">🔒</span>
-      <span class="font-semibold">Salir</span>
-    </button>
+<header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0">
+  <div class="h-full px-6 flex justify-between items-center">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <span class="text-white font-bold text-sm">IT</span>
+        </div>
+        <h1 class="text-xl font-bold text-gray-900">ServiceDesk TI</h1>
+      </div>
+      <span class="text-gray-400">|</span>
+      <span class="text-sm text-gray-600">Vista Agente</span>
+    </div>
+    <!-- Usuario en la parte superior derecha (similar a EndUser) -->
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" (click)="showProfileModal()">
+        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+          <span>👤</span>
+        </div>
+        <span>{{usuarioNombre}}</span>
+      </div>
+      <button class="text-gray-400 hover:text-gray-600 transition-colors" (click)="showProfileModal()">⚙️</button>
+      <button class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors" (click)="confirmLogout()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+        </svg>
+        <span class="text-sm font-medium">Salir</span>
+      </button>
+    </div>
   </div>
-</div>
+</header>
 
 <div class="flex h-full">
   <!-- Sidebar - Lista de Tickets -->
@@ -151,5 +165,29 @@
         </form>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Modal para perfil (igual que EndUser, usa credenciales del agente) -->
+<div *ngIf="mostrarProfileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+      <button (click)="closeProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+    </div>
+    <form class="p-6 space-y-4" (ngSubmit)="updateProfile()">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+        <input [(ngModel)]="profileName" name="profileName" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+        <input [(ngModel)]="profileEmail" name="profileEmail" type="email" required class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+      </div>
+      <div class="flex justify-end space-x-3 pt-4">
+        <button type="button" (click)="closeProfileModal()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancelar</button>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-medium">Guardar</button>
+      </div>
+    </form>
   </div>
 </div>

@@ -538,3 +538,5 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
       .slice(0, 3);
   }
 }
+//hola que putas
+

@@ -86,4 +86,24 @@ export class SupervisorService {
   getDashboardTickets(): Observable<Ticket[]> {
     return this.http.get<Ticket[]>('/api/tickets/dashboard');
   }
+
+  getWeeklyPerformance(): Observable<any> {
+    return this.http.get<any>('/api/tickets/weekly-performance');
+  }
+
+  getAgentComparison(): Observable<any> {
+    return this.http.get<any>('/api/team/comparison');
+  }
+
+  generateWeeklyReport(format: string) {
+    return this.http.get(`/api/tickets/reporte-semanal?format=${format}`, { responseType: 'blob' });
+  }
+
+  generateIndividualReport(agente: string, format: string) {
+    return this.http.get(`/api/tickets/reporte-individual?agente=${agente}&format=${format}`, { responseType: 'blob' });
+  }
+
+  generateSlaReport(format: string) {
+    return this.http.get(`/api/tickets/reporte-sla?format=${format}`, { responseType: 'blob' });
+  }
 }

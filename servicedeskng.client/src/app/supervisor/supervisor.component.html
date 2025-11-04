@@ -344,30 +344,24 @@
         <!-- Ticket Filters -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
           <div class="flex flex-wrap gap-4 items-center">
-            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-              <option>Todos los estados</option>
-              <option>Abiertos</option>
-              <option>En progreso</option>
-              <option>Pendientes</option>
-              <option>Resueltos</option>
+            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" (change)="onEstadoChange($event)">
+              <option value="">Todos los estados</option>
+              <option value="abierto">Abiertos</option>
+              <option value="en-progreso">En progreso</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="resuelto">Resueltos</option>
             </select>
-            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-              <option>Todas las prioridades</option>
-              <option>Urgente</option>
-              <option>Alta</option>
-              <option>Media</option>
-              <option>Baja</option>
+            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" (change)="onPrioridadChange($event)">
+              <option value="">Todas las prioridades</option>
+              <option value="urgente">Urgente</option>
+              <option value="alta">Alta</option>
+              <option value="media">Media</option>
+              <option value="baja">Baja</option>
             </select>
-            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-              <option>Todos los agentes</option>
-              <option>Ana López</option>
-              <option>Juan Pérez</option>
-              <option>Sofía Martínez</option>
+            <select class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500" (change)="onAgenteChange($event)">
+              <option value="">Todos los agentes</option>
+              <option *ngFor="let member of teamMembers" [value]="member.name">{{ member.name }}</option>
             </select>
-            <input type="text" placeholder="Buscar tickets..." class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
-              🔍 Filtrar
-            </button>
           </div>
         </div>
 
@@ -378,7 +372,7 @@
           </div>
           <div class="p-6">
             <div class="space-y-4">
-              <div *ngFor="let ticket of activeTickets" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-{{ ticket.priority }}">
+              <div *ngFor="let ticket of filteredTickets" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-{{ ticket.priority }}">
                 <div class="flex items-center space-x-4">
                   <span class="text-lg">{{ getCategoryIcon(ticket.category) }}</span>
                   <div>
@@ -396,12 +390,60 @@
                     {{ ticket.priority }}
                   </span>
                   <span class="text-sm text-gray-500">{{ ticket.time }}</span>
-                  <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-800 text-sm font-medium" (click)="abrirSupervision(ticket)">
                     Supervisar
                   </button>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Modal/PANEL de Supervisión de Ticket -->
+        <div *ngIf="supervisandoTicket" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-2xl relative">
+            <h2 class="text-xl font-bold mb-2">Supervisar Ticket</h2>
+            <div class="mb-2">
+              <strong>{{supervisandoTicket.id}} - {{supervisandoTicket.title}}</strong>
+            </div>
+            <div class="mb-4 border rounded p-4 bg-gray-50">
+              <div class="mb-2 text-xs text-gray-500">Chat</div>
+              <div class="space-y-2 max-h-48 overflow-y-auto mb-2">
+                <div *ngFor="let msg of mensajes">
+                  <div class="flex items-center mb-1">
+                    <span class="font-semibold text-xs text-gray-700 mr-2">{{msg.remitente}}</span>
+                    <!-- Si tienes fecha, puedes mostrarla aquí -->
+                  </div>
+                  <div [ngClass]="{'bg-blue-100 text-blue-900 p-2 rounded-lg': msg.esSupervisor, 'bg-gray-100 text-gray-700 p-2 rounded-lg': !msg.esSupervisor}">
+                    {{msg.texto}}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <input class="flex-1 border rounded px-2 py-1 text-sm" [disabled]="chatBloqueado" [(ngModel)]="mensajeIntervencion" placeholder="Escribe tu mensaje..." />
+                <button class="bg-blue-600 text-white px-3 py-1 rounded" (click)="enviarMensaje()" [disabled]="chatBloqueado">Enviar</button>
+                <button class="bg-orange-600 text-white px-3 py-1 rounded" (click)="intervenirChat()" *ngIf="chatBloqueado">Intervenir</button>
+              </div>
+              <div *ngIf="chatBloqueado" class="text-xs text-gray-400 mt-1">Chat bloqueado - Haz clic en 'Intervenir' para escribir</div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">Reasignar a otro agente:</label>
+                <select class="w-full border rounded px-2 py-1" [(ngModel)]="agenteReasignado">
+                  <option *ngFor="let agente of teamMembers" [value]="agente.idAgente">{{agente.name}}</option>
+                </select>
+                <button class="w-full bg-blue-600 text-white mt-2 py-1 rounded" (click)="reasignarAgente()">Reasignar</button>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-1">Escalar a categoría:</label>
+                <select class="w-full border rounded px-2 py-1" [(ngModel)]="categoriaEscalada">
+                  <option value="">Selecciona una categoría</option>
+                  <option *ngFor="let cat of ['Red', 'Software', 'Hardware', 'Base de Datos', 'Infraestructura']" [value]="cat">{{cat}}</option>
+                </select>
+                <button class="w-full bg-yellow-600 text-white mt-2 py-1 rounded" (click)="escalarTicket()">Escalar Ticket</button>
+              </div>
+            </div>
+            <button class="absolute top-2 right-2 text-gray-500 hover:text-gray-700" (click)="cerrarSupervision()">Cerrar</button>
           </div>
         </div>
       </div>
@@ -412,28 +454,27 @@
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Carga de Trabajo</h2>
           <p class="text-gray-600">Distribuye y equilibra la carga de trabajo del equipo</p>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución Actual</h3>
             <div class="chart-container">
               <canvas id="workloadChart"></canvas>
             </div>
+            <div *ngIf="teamMembers.length === 0" class="text-center text-gray-500 mt-4">
+              No hay datos para mostrar la carga de trabajo.
+            </div>
           </div>
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-            <div class="space-y-4">
-              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg transition-colors text-left">
-                🔄 Redistribuir tickets automáticamente
-              </button>
-              <button class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg transition-colors text-left">
-                ➕ Asignar tickets sin asignar
-              </button>
-              <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-lg transition-colors text-left">
-                ⚠️ Revisar tickets vencidos
-              </button>
-              <button class="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg transition-colors text-left">
-                📊 Generar reporte de carga
-              </button>
+            <div class="space-y-3">
+              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded transition-colors"
+                      (click)="redistribuirTickets()">Redistribuir tickets automáticamente</button>
+              <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded transition-colors"
+                      (click)="asignarSinAsignar()">Asignar tickets sin agente</button>
+              <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded transition-colors"
+                      (click)="revisarVencidos()">Revisar tickets vencidos</button>
+              <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded transition-colors"
+                      (click)="generarReporteCarga()">Generar reporte de carga</button>
             </div>
           </div>
         </div>
@@ -459,7 +500,6 @@
             </div>
           </div>
         </div>
-        <!-- Performance Metrics -->
         <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Métricas Clave</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -480,12 +520,11 @@
       </div>
 
       <!-- Escalations Section -->
-      <div id="escalations-section" class="p-6 hidden">
+      <div *ngIf="currentSection === 'escalations'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Escalaciones</h2>
           <p class="text-gray-600">Gestiona tickets escalados y situaciones críticas</p>
         </div>
-
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div class="bg-red-50 border border-red-200 rounded-xl p-6">
             <div class="flex items-center space-x-3 mb-3">
@@ -495,7 +534,6 @@
             <p class="text-3xl font-bold text-red-600">{{ getEscalationCount('critical') }}</p>
             <p class="text-sm text-red-600">Requieren atención inmediata</p>
           </div>
-
           <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
             <div class="flex items-center space-x-3 mb-3">
               <span class="text-2xl">⚠️</span>
@@ -504,7 +542,6 @@
             <p class="text-3xl font-bold text-yellow-600">{{ getEscalationCount('pending') }}</p>
             <p class="text-sm text-yellow-600">En proceso de escalación</p>
           </div>
-
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
             <div class="flex items-center space-x-3 mb-3">
               <span class="text-2xl">📋</span>
@@ -514,75 +551,102 @@
             <p class="text-sm text-blue-600">Esta semana</p>
           </div>
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Escalaciones Activas</h3>
-          </div>
-          <div class="p-6">
-            <div class="space-y-4" id="escalationsList">
-              <div *ngFor="let escalation of escalations" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                   [ngClass]="{'bg-red-50 border-red-200': escalation.status === 'critical', 'bg-yellow-50 border-yellow-200': escalation.status === 'pending'}">
-                <div class="flex items-center space-x-4">
-                  <span class="text-lg">{{ escalation.status === 'critical' ? '🚨' : '⚠️' }}</span>
-                  <div>
-                    <h4 class="font-medium text-gray-900">{{ escalation.title }}</h4>
-                    <p class="text-sm text-gray-600">{{ escalation.id }} • Escalado a: {{ escalation.escalatedTo }}</p>
-                    <p class="text-xs text-gray-500">Razón: {{ escalation.reason }}</p>
-                  </div>
-                </div>
-                <div class="text-right">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                        [ngClass]="escalation.status === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'">
-                    {{ escalation.status === 'critical' ? 'Crítico' : 'Pendiente' }}
-                  </span>
-                  <p class="text-sm text-gray-500 mt-1">{{ escalation.time }}</p>
-                </div>
+        <!-- Escalaciones Activas -->
+        <div class="p-6">
+          <div class="space-y-4">
+            <div *ngFor="let esc of escalacionesActivas" [ngClass]="{
+              'bg-red-50 border-red-200': esc.status === 'critical',
+              'bg-yellow-50 border-yellow-200': esc.status === 'pending'
+            }" class="p-4 border rounded-xl">
+              <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
+              <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
+              <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
+              <div class="flex justify-between items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="{
+                        'bg-red-100 text-red-800': esc.status === 'critical',
+                        'bg-yellow-100 text-yellow-800': esc.status === 'pending'
+                      }">
+                  {{ esc.status === 'critical' ? 'Crítico' : 'Pendiente' }}
+                </span>
+                <span class="text-sm text-gray-500">{{ esc.time }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Reports Section -->
-      <div id="reports-section" class="p-6 hidden">
+      <!-- Reportes Section -->
+      <div *ngIf="currentSection === 'reports'" class="p-6">
         <div class="mb-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-2">Reportes</h2>
           <p class="text-gray-600">Genera reportes detallados para la gerencia</p>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center space-x-3 mb-4">
-              <span class="text-2xl">📊</span>
-              <h3 class="font-semibold text-gray-900">Reporte Semanal</h3>
+        <div class="max-w-5xl mx-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Reporte Semanal -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center space-x-3 mb-4">
+                <span class="text-2xl">📅</span>
+                <h3 class="font-semibold text-gray-900">Reporte semanal</h3>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">Resumen de la última semana.</p>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                <select [(ngModel)]="reporteSemanalFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel</option>
+                </select>
+              </div>
+              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
+                      (click)="generarReporteSemanal(reporteSemanalFormato)">
+                Generar Reporte
+              </button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Resumen de actividades y métricas de la semana</p>
-            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors">
-              Generar Reporte
-            </button>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center space-x-3 mb-4">
-              <span class="text-2xl">👥</span>
-              <h3 class="font-semibold text-gray-900">Rendimiento Equipo</h3>
+            <!-- Rendimiento individual -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center space-x-3 mb-4">
+                <span class="text-2xl">👥</span>
+                <h3 class="font-semibold text-gray-900">Rendimiento individual</h3>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Agente:</label>
+                <select [(ngModel)]="reporteIndividualAgente" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option *ngFor="let member of teamMembers" [value]="member.name">{{ member.name }}</option>
+                </select>
+              </div>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                <select [(ngModel)]="reporteIndividualFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel</option>
+                </select>
+              </div>
+              <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
+                      (click)="generarReporteIndividual(reporteIndividualAgente, reporteIndividualFormato)">
+                Generar Reporte
+              </button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
-            <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors">
-              Generar Reporte
-            </button>
-          </div>
-
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <div class="flex items-center space-x-3 mb-4">
-              <span class="text-2xl">🎯</span>
-              <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
+            <!-- SLA Compliance -->
+            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+              <div class="flex items-center space-x-3 mb-4">
+                <span class="text-2xl">🎯</span>
+                <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
+              </div>
+              <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
+              <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
+                <select [(ngModel)]="reporteSlaFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel</option>
+                </select>
+              </div>
+              <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
+                      (click)="generarReporteSla(reporteSlaFormato)">
+                Generar Reporte
+              </button>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
-            <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors">
-              Generar Reporte
-            </button>
           </div>
         </div>
       </div>

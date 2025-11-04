@@ -97,8 +97,8 @@
   </style>
 </head>
 <body class="bg-gray-50 h-screen overflow-hidden">
-  <!-- Header -->
-  <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0 z-10">
+  <!-- Header (adapted from agent) -->
+  <header class="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0">
     <div class="h-full px-6 flex justify-between items-center">
       <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-3">
@@ -110,23 +110,25 @@
         <span class="text-gray-400">|</span>
         <span class="text-sm text-gray-600">Panel Supervisor</span>
       </div>
+      <!-- Usuario y acciones (no bell) -->
       <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-4 text-sm">
-          <div class="relative">
-            <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" (click)="showNotifications()">
-              🔔
-            </button>
-            <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full notification-dot"></div>
+        <!-- Avatar + name + small gear (stopPropagation to avoid parent click duplication) -->
+        <div class="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer" (click)="showProfileModal()">
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+            <span>👨‍💼</span>
           </div>
-          <div class="flex items-center space-x-2 text-gray-600">
-            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-              <span>👨‍💼</span>
-            </div>
-            <span>{{ supervisorName }}</span>
-          </div>
+          <span>{{ supervisorName }}</span>
+          <button class="ml-2 text-gray-500 hover:text-gray-700" title="Ajustes" aria-label="Ajustes" (click)="showProfileModal(); $event.stopPropagation();">⚙️</button>
         </div>
-        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors" (click)="logout()">
-          🚪
+
+        
+
+        <!-- Logout -->
+        <button class="ml-2 flex items-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-md border border-red-100 shadow-sm transition-colors" (click)="confirmLogout()">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5v10z" />
+          </svg>
+          <span class="text-sm font-medium">Salir</span>
         </button>
       </div>
     </div>
@@ -407,23 +409,18 @@
               <strong>{{supervisandoTicket.id}} - {{supervisandoTicket.title}}</strong>
             </div>
             <div class="mb-4 border rounded p-4 bg-gray-50">
-              <div class="mb-2 text-xs text-gray-500">Chat</div>
-              <div class="space-y-2 max-h-48 overflow-y-auto mb-2">
-                <div *ngFor="let msg of mensajes">
-                  <div class="flex items-center mb-1">
-                    <span class="font-semibold text-xs text-gray-700 mr-2">{{msg.remitente}}</span>
-                    <!-- Si tienes fecha, puedes mostrarla aquí -->
-                  </div>
-                  <div [ngClass]="{'bg-blue-100 text-blue-900 p-2 rounded-lg': msg.esSupervisor, 'bg-gray-100 text-gray-700 p-2 rounded-lg': !msg.esSupervisor}">
-                    {{msg.texto}}
-                  </div>
+              <div class="text-xs text-gray-500 mb-2">Chat</div>
+              <div class="h-64 overflow-y-auto space-y-2 mb-4">
+                <div *ngFor="let msg of mensajes" [ngClass]="{'text-right': msg.esSupervisor, 'text-left': !msg.esSupervisor}">
+                    <span class="font-semibold">{{msg.remitente}}:</span>
+                    <span>{{msg.texto}}</span>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <input class="flex-1 border rounded px-2 py-1 text-sm" [disabled]="chatBloqueado" [(ngModel)]="mensajeIntervencion" placeholder="Escribe tu mensaje..." />
-                <button class="bg-blue-600 text-white px-3 py-1 rounded" (click)="enviarMensaje()" [disabled]="chatBloqueado">Enviar</button>
-                <button class="bg-orange-600 text-white px-3 py-1 rounded" (click)="intervenirChat()" *ngIf="chatBloqueado">Intervenir</button>
-              </div>
+              <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
+                  <input class="flex-1 border rounded px-2 py-1" [disabled]="chatBloqueado" [(ngModel)]="mensajeIntervencion" name="mensajeIntervencion" placeholder="Escribe tu mensaje..." />
+                  <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded" [disabled]="chatBloqueado">Enviar</button>
+                  <button type="button" class="bg-orange-600 text-white px-3 py-1 rounded" (click)="intervenirChat()" *ngIf="chatBloqueado">Intervenir</button>
+              </form>
               <div *ngIf="chatBloqueado" class="text-xs text-gray-400 mt-1">Chat bloqueado - Haz clic en 'Intervenir' para escribir</div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -652,5 +649,31 @@
       </div>
     </div>
   </div>
+
+  <!-- Profile modal (agent-style) -->
+  <div *ngIf="mostrarProfileModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+      <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="text-lg font-semibold text-gray-900">Editar Perfil</h3>
+        <button (click)="closeProfileModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <form class="p-6 space-y-4" (ngSubmit)="updateProfile()">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+          <input [(ngModel)]="profileName" name="profileName" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Correo</label>
+          <input [(ngModel)]="profileEmail" name="profileEmail" type="email" required class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+        </div>
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" (click)="closeProfileModal()" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">Cancelar</button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- End of component template -->
 </body>
 </html>

@@ -12,6 +12,10 @@ import Chart from 'chart.js/auto';
 export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   supervisorName = '';
   supervisorId = 0;
+  // Profile modal state and fields (used by template)
+  mostrarProfileModal: boolean = false;
+  profileName: string = '';
+  profileEmail: string = '';
   currentSection = 'dashboard';
 
   sidebarItems = [
@@ -80,6 +84,9 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
         this.reporteIndividualAgente = data[0].name;
       }
     });
+    // Initialize profile fields
+    this.profileName = this.supervisorName;
+    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
   }
 
   ngAfterViewInit() {
@@ -114,6 +121,11 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
       alert('Cerrando sesión...');
     }
+  }
+
+  // Template calls confirmLogout(); provide wrapper to keep naming in template
+  confirmLogout() {
+    this.logout();
   }
 
   loadAllData() {
@@ -557,5 +569,26 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
 
   get escalacionesActivas() {
     return this.escalations.filter(e => e.status === 'critical' || e.status === 'pending');
+  }
+
+  // Show profile modal (called from template gears)
+  showProfileModal() {
+    this.profileName = this.supervisorName;
+    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
+    this.mostrarProfileModal = true;
+  }
+
+  closeProfileModal() {
+    this.mostrarProfileModal = false;
+  }
+
+  updateProfile() {
+    // Persist profile changes locally (adapt to API if available)
+    this.supervisorName = this.profileName;
+    if (this.profileEmail) {
+      localStorage.setItem('usuarioEmail', this.profileEmail);
+    }
+    localStorage.setItem('usuario', this.supervisorName);
+    this.closeProfileModal();
   }
 }

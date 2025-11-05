@@ -166,7 +166,7 @@ export class EndUserComponent implements OnInit, OnDestroy {
     // Cargar mensajes históricos
     this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
       this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.usuario, // Asegura que el nombre del usuario aparezca
+        remitente: m.usuarioNombre || m.nombreUsuario || m.usuario, // Siempre usar el nombre guardado
         texto: m.mensajeTicket,
         esCliente: m.idUsuario === this.usuarioId
       }));
@@ -175,7 +175,7 @@ export class EndUserComponent implements OnInit, OnDestroy {
     this.chatService.connect(ticket.idTicket.toString());
     this.chatService.onReceiveMessage((user, message, fecha) => {
       this.mensajes.push({
-        remitente: user, // El nombre del usuario que envía el mensaje
+        remitente: user, // Usar siempre el nombre recibido
         texto: message,
         esCliente: user === this.usuarioNombre
       });
@@ -192,12 +192,6 @@ export class EndUserComponent implements OnInit, OnDestroy {
       this.mensajeTexto,
       this.usuarioId
     );
-
-    this.mensajes.push({
-      remitente: this.usuarioNombre,
-      texto: this.mensajeTexto,
-      esCliente: true
-    });
 
     this.mensajeTexto = '';
   }

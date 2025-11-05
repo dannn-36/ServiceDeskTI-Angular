@@ -402,7 +402,7 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     // Cargar mensajes históricos
     this.chatService.getMensajesPorTicket(Number(ticket.id)).subscribe(mensajes => {
       this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.usuario,
+        remitente: m.usuarioNombre || m.nombreUsuario || m.usuario, // Siempre usar el nombre guardado
         texto: m.mensajeTicket,
         esSupervisor: m.idUsuario === this.supervisorId
       }));
@@ -411,7 +411,7 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     this.chatService.connect(ticket.id.toString());
     this.chatService.onReceiveMessage((user, message, fecha) => {
       this.mensajes.push({
-        remitente: user,
+        remitente: user, // Usar siempre el nombre recibido
         texto: message,
         esSupervisor: user === this.supervisorName
       });
@@ -430,11 +430,6 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
       this.mensajeIntervencion,
       this.supervisorId
     );
-    this.mensajes.push({
-      remitente: this.supervisorName,
-      texto: this.mensajeIntervencion,
-      esSupervisor: true
-    });
     this.mensajeIntervencion = '';
   }
 

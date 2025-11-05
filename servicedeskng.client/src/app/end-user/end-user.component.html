@@ -117,7 +117,7 @@
       <div class="p-6">
         <div class="h-64 overflow-y-auto space-y-2 mb-4">
           <div *ngFor="let mensaje of mensajes" [ngClass]="{'text-right': mensaje.esCliente, 'text-left': !mensaje.esCliente}">
-            <span class="font-semibold">{{mensaje.remitente}}:</span>
+            <span class="font-semibold">{{mensaje.remitente || 'Desconocido'}}:</span>
             <span>{{mensaje.texto}}</span>
           </div>
         </div>

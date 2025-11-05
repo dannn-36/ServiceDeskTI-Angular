@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Services;
+using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
@@ -9,10 +10,12 @@ namespace ServiceDeskNg.Server.Controllers
     public class TicketMensajeController : ControllerBase
     {
         private readonly TicketMensajeService _ticketMensajeService;
+        private readonly ServiceDeskNg.Server.Data.ServiceDeskContext _context;
 
-        public TicketMensajeController(TicketMensajeService ticketMensajeService)
+        public TicketMensajeController(TicketMensajeService ticketMensajeService, ServiceDeskNg.Server.Data.ServiceDeskContext context)
         {
             _ticketMensajeService = ticketMensajeService;
+            _context = context;
         }
 
         // ===========================================================
@@ -64,8 +67,17 @@ namespace ServiceDeskNg.Server.Controllers
         {
             try
             {
-                var mensajes = _ticketMensajeService.GetMensajesByTicketId(ticketId, includeRelations);
-                return Ok(mensajes);
+                var mensajes = _ticketMensajeService.GetMensajesByTicketId(ticketId, true);
+                var mensajesDto = mensajes.Select(m => new TicketMensajeDto
+                {
+                    IdMensaje = m.IdMensaje,
+                    IdTicket = m.IdTicket,
+                    IdUsuario = m.IdUsuario,
+                    MensajeTicket = m.MensajeTicket,
+                    FechaHoraCreacionMensaje = m.FechaHoraCreacionMensaje,
+                    UsuarioNombre = m.IdUsuarioNavigation != null ? m.IdUsuarioNavigation.NombreUsuario : "Desconocido"
+                }).ToList();
+                return Ok(mensajesDto);
             }
             catch (KeyNotFoundException ex)
             {

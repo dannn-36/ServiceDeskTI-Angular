@@ -24,8 +24,8 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     { section: 'tickets', icon: '🎫', label: 'Supervisión Tickets' },
     { section: 'workload', icon: '⚖️', label: 'Carga de Trabajo' },
     { section: 'performance', icon: '📈', label: 'Rendimiento' },
-    { section: 'escalations', icon: '🚨', label: 'Escalaciones' },
-    { section: 'reports', icon: '📋', label: 'Reportes' }
+    { section: 'escalations', icon: '🚨', label: 'Escalaciones' }
+    // No incluir sección de reportes
   ];
 
   dashboardStats = [
@@ -46,6 +46,7 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   private weeklyTrendChartInstance: any;
   private agentComparisonChartInstance: any;
   selectedTicketId: number | null = null;
+  selectedTicketIdPerAgent: { [idAgente: number]: string | null } = {};
 
   // Filtros para supervisión de tickets
   filterEstado: string = '';
@@ -59,12 +60,6 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   chatBloqueado: boolean = true;
   categoriaEscalada: string = '';
   agenteReasignado: string = '';
-
-  // Variables para reportes
-  reporteSemanalFormato: string = 'pdf';
-  reporteIndividualAgente: string = '';
-  reporteIndividualFormato: string = 'pdf';
-  reporteSlaFormato: string = 'pdf';
 
   private chatSub: any;
 
@@ -81,7 +76,7 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     this.supervisorService.getTeamMembers().subscribe(data => {
       this.teamMembers = data;
       if (data.length > 0) {
-        this.reporteIndividualAgente = data[0].name;
+        // Eliminar: this.reporteIndividualAgente = data[0].name;
       }
     });
     // Initialize profile fields
@@ -343,11 +338,13 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     }
   }
 
-  assignTicket(ticketId: number, agenteId: number) {
-    this.http.post('/api/tickets/assign', { idTicket: ticketId, idAgente: agenteId }).subscribe({
+  assignTicket(ticketId: string | null, agenteId: number) {
+    if (!ticketId) return;
+    this.http.post('/api/tickets/assign', { idTicket: Number(ticketId), idAgente: agenteId }).subscribe({
       next: () => {
         alert('Ticket asignado correctamente');
-        this.loadAllData(); // Recargar datos
+        this.loadAllData();
+        this.selectedTicketIdPerAgent[agenteId] = null;
       },
       error: () => {
         alert('Error al asignar el ticket');
@@ -518,50 +515,6 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     });
   }
 
-  generarReporteCarga() {
-    this.http.get('/api/tickets/reporte-carga', { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'reporte-carga.pdf';
-        a.click();
-        window.URL.revokeObjectURL(url);
-        alert('Reporte de carga generado');
-      },
-      error: () => {
-        alert('Error al generar el reporte de carga');
-      }
-    });
-  }
-
-  descargarReporte(blob: Blob, nombre: string) {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nombre;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  generarReporteSemanal(format: string) {
-    this.supervisorService.generateWeeklyReport(format).subscribe(blob => {
-      this.descargarReporte(blob, `reporte-semanal.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
-    });
-  }
-
-  generarReporteIndividual(agente: string, format: string) {
-    this.supervisorService.generateIndividualReport(agente, format).subscribe(blob => {
-      this.descargarReporte(blob, `reporte-individual-${agente}.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
-    });
-  }
-
-  generarReporteSla(format: string) {
-    this.supervisorService.generateSlaReport(format).subscribe(blob => {
-      this.descargarReporte(blob, `reporte-sla.${format === 'pdf' ? 'pdf' : 'xlsx'}`);
-    });
-  }
-
   get escalacionesActivas() {
     return this.escalations.filter(e => e.status === 'critical' || e.status === 'pending');
   }
@@ -585,5 +538,16 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     }
     localStorage.setItem('usuario', this.supervisorName);
     this.closeProfileModal();
+  }
+
+  generarReporteCarga() {
+    this.http.get('/api/tickets/reporte-carga', { responseType: 'blob' }).subscribe(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reporte-carga.pdf';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   }
 }

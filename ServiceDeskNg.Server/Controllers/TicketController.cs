@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using ServiceDeskNg.Server.Data;
 using ServiceDeskNg.Server.Models;
 using ServiceDeskNg.Server.Services;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
@@ -337,9 +341,50 @@ namespace ServiceDeskNg.Server.Controllers
         [HttpGet("reporte-carga")]
         public IActionResult GenerarReporteCarga()
         {
-            // Simula un PDF con información de carga de trabajo
-            var pdfBytes = System.Text.Encoding.UTF8.GetBytes("Reporte de carga de trabajo generado.");
-            return File(pdfBytes, "application/pdf", "reporte-carga.pdf");
+            // Obtener agentes y tickets
+            var agentes = _context.Agentes.Include(a => a.IdUsuarioNavigation).ToList();
+            var tickets = _context.Tickets.Include(t => t.IdAgenteAsignadoNavigation).ToList();
+            var agentesCarga = agentes.Select(a => new
+            {
+                Nombre = a.IdUsuarioNavigation?.NombreUsuario ?? "Desconocido",
+                Tickets = tickets.Count(t => t.IdAgenteAsignado == a.IdAgente)
+            }).ToList();
+
+            // Generar PDF con QuestPDF
+            var pdf = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Margin(30);
+                    page.Header().Text("Reporte de Carga de Trabajo").FontSize(20).Bold();
+                    page.Content().Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.RelativeColumn();
+                            columns.ConstantColumn(80);
+                        });
+                        table.Header(header =>
+                        {
+                            header.Cell().Element(CellStyle).Text("Agente").Bold();
+                            header.Cell().Element(CellStyle).Text("Tickets").Bold();
+                        });
+                        foreach (var agente in agentesCarga)
+                        {
+                            table.Cell().Element(CellStyle).Text(agente.Nombre);
+                            table.Cell().Element(CellStyle).Text(agente.Tickets.ToString());
+                        }
+                        static IContainer CellStyle(IContainer container) => container.PaddingVertical(5).PaddingHorizontal(2);
+                    });
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Generado: ");
+                        x.Span(DateTime.Now.ToString("g")).SemiBold();
+                    });
+                });
+            }).GeneratePdf();
+
+            return File(pdf, "application/pdf", "reporte-carga.pdf");
         }
 
         // GET: api/tickets/weekly-performance
@@ -429,16 +474,60 @@ namespace ServiceDeskNg.Server.Controllers
             return File(content, mime, fileName);
         }
 
-        // GET: api/tickets/reporte-individual
-        [HttpGet("reporte-individual")]
+        // POST: api/tickets/reporte-individual
+        [HttpPost("reporte-individual")]
         public IActionResult GenerarReporteIndividual([FromQuery] string agente, [FromQuery] string format = "pdf")
         {
-            var content = format == "pdf"
-                ? System.Text.Encoding.UTF8.GetBytes($"Reporte individual generado para {agente}.")
-                : System.Text.Encoding.UTF8.GetBytes($"Reporte individual generado en Excel para {agente}.");
-            var mime = format == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = format == "pdf" ? $"reporte-individual-{agente}.pdf" : $"reporte-individual-{agente}.xlsx";
-            return File(content, mime, fileName);
+            var agenteDb = _context.Agentes.Include(a => a.IdUsuarioNavigation)
+                .FirstOrDefault(a => a.IdUsuarioNavigation.NombreUsuario == agente);
+            if (agenteDb == null)
+                return NotFound(new { message = "Agente no encontrado." });
+            var tickets = _context.Tickets.Include(t => t.IdEstadoTicketNavigation)
+                .Where(t => t.IdAgenteAsignado == agenteDb.IdAgente).ToList();
+
+            var pdf = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Margin(30);
+                    page.Header().Text($"Reporte Individual de {agente}").FontSize(20).Bold();
+                    page.Content().Column(col =>
+                    {
+                        col.Item().Text($"Agente: {agente}").FontSize(14).Bold();
+                        col.Item().Text($"Total de tickets asignados: {tickets.Count}").FontSize(12);
+                        col.Item().Text(" ");
+                        col.Item().Table(table =>
+                        {
+                            table.ColumnsDefinition(columns =>
+                            {
+                                columns.RelativeColumn();
+                                columns.RelativeColumn();
+                                columns.ConstantColumn(80);
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Element(CellStyle).Text("Título").Bold();
+                                header.Cell().Element(CellStyle).Text("Estado").Bold();
+                                header.Cell().Element(CellStyle).Text("Fecha").Bold();
+                            });
+                            foreach (var t in tickets)
+                            {
+                                table.Cell().Element(CellStyle).Text(t.TituloTicket);
+                                table.Cell().Element(CellStyle).Text(t.IdEstadoTicketNavigation?.NombreEstado ?? "-");
+                                table.Cell().Element(CellStyle).Text(t.FechaHoraCreacionTicket?.ToString("g") ?? "-");
+                            }
+                            static IContainer CellStyle(IContainer container) => container.PaddingVertical(3).PaddingHorizontal(2);
+                        });
+                    });
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Generado: ");
+                        x.Span(DateTime.Now.ToString("g")).SemiBold();
+                    });
+                });
+            }).GeneratePdf();
+
+            return File(pdf, "application/pdf", $"reporte-individual-{agente}.pdf");
         }
 
         // GET: api/tickets/reporte-sla

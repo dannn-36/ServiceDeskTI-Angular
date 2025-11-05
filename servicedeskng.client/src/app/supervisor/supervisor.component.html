@@ -138,7 +138,7 @@
     <!-- Sidebar -->
     <div class="w-64 bg-white border-r border-gray-200 flex flex-col">
       <nav class="flex-1 p-4 space-y-2">
-        <div *ngFor="let item of sidebarItems" 
+        <div *ngFor="let item of sidebarItems"
              class="sidebar-item px-3 py-2 rounded-lg cursor-pointer transition-colors"
              [ngClass]="{ 'active': currentSection === item.section }"
              (click)="showSection(item.section)">
@@ -320,15 +320,19 @@
                     <p class="text-xs text-gray-600">Rating</p>
                   </div>
                 </div>
-                <div class="mt-3 flex space-x-2">
-                  <button class="flex-1 bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors"
-                          [disabled]="!selectedTicketId"
-                          (click)="assignTicket(selectedTicketId!, member.idAgente)">
-                    Asignar Ticket
-                  </button>
-                  <button class="flex-1 bg-gray-600 text-white py-1 px-2 rounded text-xs hover:bg-gray-700 transition-colors">
-                    Ver Detalles
-                  </button>
+                <div class="mt-3">
+                  <label class="block text-xs text-gray-600 mb-1">Asignar ticket:</label>
+                  <div class="flex space-x-2">
+                    <select class="flex-1 border rounded px-2 py-1 text-xs" [(ngModel)]="selectedTicketIdPerAgent[member.idAgente]" name="ticketSelect-{{member.idAgente}}">
+                      <option [ngValue]="null">Selecciona un ticket</option>
+                      <option *ngFor="let ticket of tickets" [ngValue]="ticket.id">{{ ticket.title }} ({{ ticket.id }})</option>
+                    </select>
+                    <button class="bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors"
+                            [disabled]="!selectedTicketIdPerAgent[member.idAgente]"
+                            (click)="assignTicket(selectedTicketIdPerAgent[member.idAgente], member.idAgente)">
+                      Asignar Ticket
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -568,81 +572,6 @@
                 </span>
                 <span class="text-sm text-gray-500">{{ esc.time }}</span>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Reportes Section -->
-      <div *ngIf="currentSection === 'reports'" class="p-6">
-        <div class="mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 mb-2">Reportes</h2>
-          <p class="text-gray-600">Genera reportes detallados para la gerencia</p>
-        </div>
-        <div class="max-w-5xl mx-auto">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Reporte Semanal -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center space-x-3 mb-4">
-                <span class="text-2xl">📅</span>
-                <h3 class="font-semibold text-gray-900">Reporte semanal</h3>
-              </div>
-              <p class="text-sm text-gray-600 mb-4">Resumen de la última semana.</p>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                <select [(ngModel)]="reporteSemanalFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                  <option value="pdf">PDF</option>
-                  <option value="excel">Excel</option>
-                </select>
-              </div>
-              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors"
-                      (click)="generarReporteSemanal(reporteSemanalFormato)">
-                Generar Reporte
-              </button>
-            </div>
-            <!-- Rendimiento individual -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center space-x-3 mb-4">
-                <span class="text-2xl">👥</span>
-                <h3 class="font-semibold text-gray-900">Rendimiento individual</h3>
-              </div>
-              <p class="text-sm text-gray-600 mb-4">Análisis detallado del rendimiento individual</p>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Agente:</label>
-                <select [(ngModel)]="reporteIndividualAgente" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                  <option *ngFor="let member of teamMembers" [value]="member.name">{{ member.name }}</option>
-                </select>
-              </div>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                <select [(ngModel)]="reporteIndividualFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                  <option value="pdf">PDF</option>
-                  <option value="excel">Excel</option>
-                </select>
-              </div>
-              <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg transition-colors"
-                      (click)="generarReporteIndividual(reporteIndividualAgente, reporteIndividualFormato)">
-                Generar Reporte
-              </button>
-            </div>
-            <!-- SLA Compliance -->
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-              <div class="flex items-center space-x-3 mb-4">
-                <span class="text-2xl">🎯</span>
-                <h3 class="font-semibold text-gray-900">SLA Compliance</h3>
-              </div>
-              <p class="text-sm text-gray-600 mb-4">Cumplimiento de acuerdos de nivel de servicio</p>
-              <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Formato:</label>
-                <select [(ngModel)]="reporteSlaFormato" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                  <option value="pdf">PDF</option>
-                  <option value="excel">Excel</option>
-                </select>
-              </div>
-              <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg transition-colors"
-                      (click)="generarReporteSla(reporteSlaFormato)">
-                Generar Reporte
-              </button>
             </div>
           </div>
         </div>

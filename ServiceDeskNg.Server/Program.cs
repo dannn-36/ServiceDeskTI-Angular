@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 using ServiceDeskNg.Server.Data;
 using ServiceDeskNg.Server.Hubs;
 using ServiceDeskNg.Server.Models;
@@ -13,6 +14,9 @@ namespace ServiceDeskNg.Server
     {
         public static void Main(string[] args)
         {
+            // Set QuestPDF license type before any PDF generation
+            QuestPDF.Settings.License = LicenseType.Community;
+
             var builder = WebApplication.CreateBuilder(args);
 
             // ======================================================

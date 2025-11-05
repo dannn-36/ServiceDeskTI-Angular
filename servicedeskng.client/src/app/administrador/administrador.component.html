@@ -773,7 +773,8 @@
                   </div>
                   <button
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center space-x-1"
-                    onclick="backupSystem()"
+                    [disabled]="backupCargando"
+                    (click)="crearRespaldo()"
                   >
                     💾 Crear respaldo
                   </button>
@@ -786,7 +787,7 @@
                     Restaura los datos desde un archivo de respaldo.
                   </p>
                   <div class="flex items-center space-x-2">
-                    <input type="file" id="restoreFile" class="hidden" />
+                    <input type="file" id="restoreFile" class="hidden" (change)="onArchivoSeleccionado($event)" />
                     <label
                       for="restoreFile"
                       class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 text-sm transition-colors cursor-pointer rounded-lg border border-gray-300 whitespace-nowrap"
@@ -797,11 +798,12 @@
                       id="fileName"
                       class="text-sm text-gray-500 flex-1 whitespace-nowrap"
                     >
-                      Sin archivos seleccionados
+                      {{ restaurarMensaje || 'Sin archivos seleccionados' }}
                     </span>
                     <button
                       class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors whitespace-nowrap flex items-center space-x-1 ml-auto"
-                      onclick="restoreSystem()"
+                      [disabled]="backupCargando"
+                      (click)="restaurarRespaldo()"
                     >
                       ♻️ Restaurar
                     </button>

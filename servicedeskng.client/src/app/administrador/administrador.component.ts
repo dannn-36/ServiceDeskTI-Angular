@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { UsuarioService, Usuario } from '../usuario/usuario.service';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { HttpClient } from '@angular/common/http';
+import { BackupService } from '../backup/backup.service';
 import Chart from 'chart.js/auto';
 
 interface EstadoTicket {
@@ -63,10 +64,16 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
   agentPerformanceChart: any;
   categoryChart: any;
 
+  // Respaldo y restauración
+  restaurarArchivo: File | null = null;
+  restaurarMensaje: string = '';
+  backupCargando = false;
+
   constructor(
     private usuarioService: UsuarioService,
     private ticketsService: TicketsService,
-    private http: HttpClient
+    private http: HttpClient,
+    private backupService: BackupService
   ) { }
 
   ngOnInit(): void {
@@ -551,6 +558,63 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
         new Date(a.fechaHoraCreacionTicket ?? 0).getTime()
       )
       .slice(0, 3);
+  }
+
+  // Descargar respaldo
+  crearRespaldo() {
+    this.backupCargando = true;
+    this.backupService.descargarRespaldo().subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'backup_servicedesk.sql';
+        a.click();
+        window.URL.revokeObjectURL(url);
+        this.backupCargando = false;
+      },
+      error: (err) => {
+        alert('Error al crear respaldo: ' + (err.error || err.message));
+        this.backupCargando = false;
+      }
+    });
+  }
+
+  // Seleccionar archivo para restaurar
+  onArchivoSeleccionado(event: any) {
+    const file = event.target.files[0];
+    this.restaurarArchivo = file;
+    this.restaurarMensaje = file ? file.name : 'Sin archivos seleccionados';
+  }
+
+  // Restaurar respaldo
+  restaurarRespaldo() {
+    if (!this.restaurarArchivo) {
+      alert('Selecciona un archivo de respaldo.');
+      return;
+    }
+    this.backupCargando = true;
+    this.backupService.restaurarRespaldo(this.restaurarArchivo).subscribe({
+      next: (event) => {
+        if (event.type === 4) { // HttpResponse
+          alert('Restauración completada correctamente.');
+          this.backupCargando = false;
+        }
+      },
+      error: (err) => {
+        // Manejo de error mejorado para mostrar el mensaje real desde JSON
+        if (err.error && err.error.message) {
+          alert(err.error.message);
+        } else if (typeof err.error === 'string') {
+          alert(err.error);
+        } else if (err.message) {
+          alert('Error al restaurar respaldo: ' + err.message);
+        } else {
+          alert('Error al restaurar respaldo.');
+        }
+        this.backupCargando = false;
+      }
+    });
   }
 }
 //hola que putas

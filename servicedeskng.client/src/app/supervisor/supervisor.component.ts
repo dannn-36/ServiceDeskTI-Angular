@@ -31,13 +31,13 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   dashboardStats = [
     { label: 'Tickets Activos', value: 0, trend: '', trendClass: 'text-blue-600', icon: '🎫', bgClass: 'bg-blue-100' },
     { label: 'Agentes Activos', value: 0, trend: '', trendClass: 'text-green-600', icon: '👨‍💻', bgClass: 'bg-green-100' },
-    { label: 'Tiempo Promedio', value: '', trend: '', trendClass: 'text-green-600', icon: '⏱️', bgClass: 'bg-yellow-100' },
-    { label: 'SLA Cumplimiento', value: '', trend: '', trendClass: 'text-green-600', icon: '🎯', bgClass: 'bg-purple-100' }
+    { label: 'Tiempo Promedio', value: '', trend: '', trendClass: 'text-green-600', icon: '⏱️', bgClass: 'bg-yellow-100' }
   ];
 
   priorityTickets: Ticket[] = [];
   teamMembers: TeamMember[] = [];
   tickets: Ticket[] = [];
+  tiempoResolucionPromedio: string = '';
   escalations: Escalation[] = [];
   weeklyPerformance: any = null;
   agentComparison: any = null;
@@ -52,6 +52,32 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   filterEstado: string = '';
   filterPrioridad: string = '';
   filterAgente: string = '';
+  filteredTickets: Ticket[] = [];
+
+  // Nueva función para aplicar todos los filtros
+  aplicarFiltros() {
+    let baseTickets = this.tickets;
+    // Si hay filtro de agente, usa los tickets filtrados por agente
+    if (this.filterAgente) {
+      const agente = this.teamMembers.find(a => a.name === this.filterAgente);
+      if (agente) {
+        this.supervisorService.getTicketsByAgente(agente.idAgente).subscribe(tickets => {
+          this.filteredTickets = tickets.filter(ticket => {
+            const estadoMatch = !this.filterEstado || ticket.status?.toLowerCase() === this.filterEstado.toLowerCase();
+            const prioridadMatch = !this.filterPrioridad || ticket.priority?.toLowerCase() === this.filterPrioridad.toLowerCase();
+            return estadoMatch && prioridadMatch;
+          });
+        });
+        return; // Espera la respuesta del backend
+      }
+    }
+    // Si no hay filtro de agente, filtra sobre todos los tickets
+    this.filteredTickets = baseTickets.filter(ticket => {
+      const estadoMatch = !this.filterEstado || ticket.status?.toLowerCase() === this.filterEstado.toLowerCase();
+      const prioridadMatch = !this.filterPrioridad || ticket.priority?.toLowerCase() === this.filterPrioridad.toLowerCase();
+      return estadoMatch && prioridadMatch;
+    });
+  }
 
   // Supervisión de ticket y chat
   supervisandoTicket: Ticket | null = null;
@@ -82,6 +108,8 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     // Initialize profile fields
     this.profileName = this.supervisorName;
     this.profileEmail = localStorage.getItem('usuarioEmail') || '';
+    // Inicializa los tickets filtrados
+    this.filteredTickets = this.tickets;
   }
 
   ngAfterViewInit() {
@@ -114,7 +142,8 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
 
   logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-      alert('Cerrando sesión...');
+      localStorage.clear();
+      window.location.href = '/'; // Redirige al home/login
     }
   }
 
@@ -124,9 +153,9 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   loadAllData() {
-    let teamLoaded = false, priorityLoaded = false, ticketsLoaded = false, weeklyLoaded = false, agentCompLoaded = false;
+    let teamLoaded = false, ticketsLoaded = false, weeklyLoaded = false, agentCompLoaded = false;
     const checkAndLoadCharts = () => {
-      if (teamLoaded && priorityLoaded && ticketsLoaded && weeklyLoaded && agentCompLoaded) {
+      if (teamLoaded && ticketsLoaded && weeklyLoaded && agentCompLoaded) {
         console.log('Datos para rendimiento:', {
           weeklyPerformance: this.weeklyPerformance,
           agentComparison: this.agentComparison
@@ -141,15 +170,11 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
       teamLoaded = true;
       checkAndLoadCharts();
     });
-    this.supervisorService.getPriorityTickets().subscribe(data => {
-      this.priorityTickets = data;
-      this.dashboardStats[0].value = data.length;
-      priorityLoaded = true;
-      checkAndLoadCharts();
-    });
     this.supervisorService.getDashboardTickets().subscribe(data => {
       this.tickets = data;
+      this.filteredTickets = data;
       this.dashboardStats[0].value = data.filter(t => t.status === 'Abierto' || t.status === 'en-progreso').length;
+      this.tiempoResolucionPromedio = this.getTiempoResolucionPromedio();
       ticketsLoaded = true;
       checkAndLoadCharts();
     });
@@ -173,6 +198,34 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
     const times = this.teamMembers.map(m => parseFloat(m.avgTime));
     const avg = times.reduce((a, b) => a + b, 0) / times.length;
     return avg.toFixed(1) + 'h';
+  }
+
+  getTicketsPorDiaPromedio() {
+    // Simulación: tickets cerrados en los últimos 7 días / 7
+    const ahora = new Date();
+    const hace7 = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const cerrados = this.tickets.filter(t => (t.status?.toLowerCase() === 'resuelto' || t.status?.toLowerCase() === 'cerrado'));
+    // Si tu backend tiene fecha de cierre, úsala aquí
+    return (cerrados.length / 7).toFixed(1);
+  }
+
+  // Calcula el tiempo promedio real de resolución de tickets cerrados/resueltos
+  getTiempoResolucionPromedio() {
+    // Filtra tickets resueltos/cerrados
+    const cerrados = this.tickets.filter(t =>
+      (t.status?.toLowerCase() === 'resuelto' || t.status?.toLowerCase() === 'cerrado') &&
+      t.fechaHoraCreacionTicket && t.fechaHoraActualizacionTicket
+    );
+    if (!cerrados.length) return '0h';
+    let totalHoras = 0;
+    cerrados.forEach(t => {
+      const inicio = new Date(t.fechaHoraCreacionTicket as string).getTime();
+      const fin = new Date(t.fechaHoraActualizacionTicket as string).getTime();
+      const diffHoras = (fin - inicio) / (1000 * 60 * 60);
+      totalHoras += diffHoras > 0 ? diffHoras : 0;
+    });
+    const promedio = totalHoras / cerrados.length;
+    return promedio.toFixed(1) + 'h';
   }
 
   getTeamStatus(status: string): number {
@@ -365,25 +418,19 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   onEstadoChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.filterEstado = select.value;
+    this.aplicarFiltros();
   }
 
   onPrioridadChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.filterPrioridad = select.value;
+    this.aplicarFiltros();
   }
 
   onAgenteChange(event: Event) {
     const select = event.target as HTMLSelectElement;
     this.filterAgente = select.value;
-  }
-
-  get filteredTickets() {
-    return this.tickets.filter(ticket => {
-      const estadoMatch = !this.filterEstado || ticket.status?.toLowerCase() === this.filterEstado.toLowerCase();
-      const prioridadMatch = !this.filterPrioridad || ticket.priority?.toLowerCase() === this.filterPrioridad.toLowerCase();
-      const agenteMatch = !this.filterAgente || ticket.agent?.toLowerCase() === this.filterAgente.toLowerCase();
-      return estadoMatch && prioridadMatch && agenteMatch;
-    });
+    this.aplicarFiltros();
   }
 
   abrirSupervision(ticket: Ticket) {

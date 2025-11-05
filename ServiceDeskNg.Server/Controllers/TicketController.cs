@@ -213,12 +213,16 @@ namespace ServiceDeskNg.Server.Controllers
         {
             try
             {
+                // Obtener todos los agentes con sus usuarios
+                var agentes = _context.Agentes.Include(a => a.IdUsuarioNavigation).ToList();
                 var tickets = _ticketService.GetAll(true)
                     .Select(t => new {
                         id = t.IdTicket,
                         title = t.TituloTicket,
                         user = t.IdClienteNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Desconocido",
-                        agent = t.IdAgenteAsignadoNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Sin asignar",
+                        agent = t.IdAgenteAsignadoNavigation != null && t.IdAgenteAsignadoNavigation.IdUsuarioNavigation != null
+                            ? t.IdAgenteAsignadoNavigation.IdUsuarioNavigation.NombreUsuario
+                            : (t.IdAgenteAsignado != null ? (agentes.FirstOrDefault(a => a.IdAgente == t.IdAgenteAsignado)?.IdUsuarioNavigation?.NombreUsuario ?? $"Agente #{t.IdAgenteAsignado}") : "Sin asignar"),
                         status = t.IdEstadoTicketNavigation?.NombreEstado ?? "",
                         priority = t.PrioridadTicket,
                         category = t.IdCategoriaTicketNavigation?.NombreCategoria ?? "",

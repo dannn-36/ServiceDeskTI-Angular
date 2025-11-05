@@ -26,6 +26,8 @@ export interface Ticket {
   priority: string;
   category: string;
   time: string;
+  fechaHoraCreacionTicket?: string;
+  fechaHoraActualizacionTicket?: string;
 }
 
 export interface Escalation {
@@ -105,5 +107,9 @@ export class SupervisorService {
 
   generateSlaReport(format: string) {
     return this.http.get(`/api/tickets/reporte-sla?format=${format}`, { responseType: 'blob' });
+  }
+
+  getTicketsByAgente(agenteId: number): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>(`/api/tickets/agente/${agenteId}`);
   }
 }

@@ -151,7 +151,7 @@ namespace ServiceDeskNg.Server.Services
             if (string.IsNullOrWhiteSpace(entity.DescripcionTicket))
                 throw new ArgumentException("La descripción del ticket es obligatoria.");
 
-            // Actualiza solo los campos primitivos
+            // Solo actualiza los campos primitivos
             existing.TituloTicket = entity.TituloTicket;
             existing.DescripcionTicket = entity.DescripcionTicket;
             existing.IdEstadoTicket = entity.IdEstadoTicket;

@@ -486,9 +486,10 @@ export class AdministradorComponent implements OnInit, AfterViewInit {
     this.cambiarEstadoTicket(ticket, 'Pendiente');
   }
   ponerUrgente(ticket: Ticket) {
+    // Cambia la prioridad a 'urgente' y mantiene el estado actual
     const actualizado = {
       ...ticket,
-      prioridadesTicket: 'urgente',
+      prioridadTicket: 'urgente',
       idEstadoTicket: ticket.idEstadoTicket,
       tituloTicket: ticket.tituloTicket || '',
       descripcionTicket: ticket.descripcionTicket || '',

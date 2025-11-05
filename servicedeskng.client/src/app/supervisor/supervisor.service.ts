@@ -28,6 +28,7 @@ export interface Ticket {
   time: string;
   fechaHoraCreacionTicket?: string;
   fechaHoraActualizacionTicket?: string;
+  descripcion?: string;
 }
 
 export interface Escalation {

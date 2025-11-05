@@ -565,6 +565,18 @@ export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
   get escalacionesActivas() {
     return this.escalations.filter(e => e.status === 'critical' || e.status === 'pending');
   }
+  get escalacionesCriticas() {
+    return this.escalations.filter(e => e.status === 'critical');
+  }
+  get escalacionesPendientes() {
+    return this.escalations.filter(e => e.status === 'pending');
+  }
+  get escalacionesResueltas() {
+    return this.escalations.filter(e => e.status === 'resolved');
+  }
+  get escalacionesEscaladas() {
+    return this.escalations.filter(e => e.status === 'escalated');
+  }
 
   // Show profile modal (called from template gears)
   showProfileModal() {

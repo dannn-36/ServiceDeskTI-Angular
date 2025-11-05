@@ -119,6 +119,12 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
   cambiarEstadoTicket(ticket: Ticket, estado: string) {
     const estadoObj = this.estados.find(e => e.nombreEstado.toLowerCase() === estado.toLowerCase());
     if (!estadoObj) return;
+    // Si el estado es 'Urgente', también cambia la prioridad a 'urgente'
+    // Si el estado es 'En Progreso', mantiene la prioridad actual
+    let nuevaPrioridad = ticket.prioridadTicket || 'media';
+    if (estado.toLowerCase() === 'urgente') {
+      nuevaPrioridad = 'urgente';
+    }
     const actualizado = {
       ...ticket,
       idEstadoTicket: estadoObj.idEstado,
@@ -126,7 +132,7 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
       descripcionTicket: ticket.descripcionTicket || '',
       idCliente: ticket.idCliente,
       idCategoriaTicket: ticket.idCategoriaTicket,
-      prioridadTicket: ticket.prioridadTicket || 'media',
+      prioridadTicket: nuevaPrioridad,
       ubicacionTicket: ticket.ubicacionTicket || '',
       departamentoTicket: ticket.departamentoTicket || '',
       fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
@@ -138,6 +144,32 @@ export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
         // Actualiza el ticket seleccionado si corresponde
         if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
           this.ticketSeleccionado.idEstadoTicket = estadoObj.idEstado;
+          this.ticketSeleccionado.prioridadTicket = nuevaPrioridad;
+        }
+      },
+      error: (err) => { /* Manejo de error */ }
+    });
+  }
+
+  cambiarPrioridad(ticket: Ticket, nuevaPrioridad: string) {
+    const actualizado = {
+      ...ticket,
+      prioridadTicket: nuevaPrioridad,
+      idEstadoTicket: ticket.idEstadoTicket,
+      tituloTicket: ticket.tituloTicket || '',
+      descripcionTicket: ticket.descripcionTicket || '',
+      idCliente: ticket.idCliente,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      ubicacionTicket: ticket.ubicacionTicket || '',
+      departamentoTicket: ticket.departamentoTicket || '',
+      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
+      fechaHoraActualizacionTicket: new Date().toISOString()
+    };
+    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
+      next: () => {
+        this.cargarTicketsAsignados();
+        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
+          this.ticketSeleccionado.prioridadTicket = nuevaPrioridad;
         }
       },
       error: (err) => { /* Manejo de error */ }

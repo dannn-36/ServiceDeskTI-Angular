@@ -219,6 +219,7 @@ namespace ServiceDeskNg.Server.Controllers
                     .Select(t => new {
                         id = t.IdTicket,
                         title = t.TituloTicket,
+                        descripcion = t.DescripcionTicket, // <-- Asegura que la descripción se incluya
                         user = t.IdClienteNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Desconocido",
                         agent = t.IdAgenteAsignadoNavigation != null && t.IdAgenteAsignadoNavigation.IdUsuarioNavigation != null
                             ? t.IdAgenteAsignadoNavigation.IdUsuarioNavigation.NombreUsuario
@@ -438,23 +439,23 @@ namespace ServiceDeskNg.Server.Controllers
             try
             {
                 var escalations = _ticketService.GetAll(true)
-                    .Where(t => t.IdEstadoTicketNavigation != null &&
-                                (
-                                    t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("escalado") ||
-                                    t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente") ||
-                                    t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("crítico") ||
-                                    t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("critico")
-                                ))
+                    .Where(t =>
+                        (t.PrioridadTicket != null && t.PrioridadTicket.ToLower() == "urgente") ||
+                        (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente")) ||
+                        (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("resuelto"))
+                    )
                     .Select(t => new {
                         id = t.IdTicket,
                         title = t.TituloTicket,
                         escalatedTo = t.IdAgenteAsignadoNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Sin asignar",
                         reason = t.PrioridadTicket ?? "-",
                         time = t.FechaHoraCreacionTicket.HasValue ? (DateTime.Now - t.FechaHoraCreacionTicket.Value).TotalMinutes.ToString("0") + " min" : "-",
-                        status = t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("crítico") || t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("critico") ? "critical"
-                                : t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente") ? "pending"
-                                : "escalated"
+                        status = (t.PrioridadTicket != null && t.PrioridadTicket.ToLower() == "urgente") ? "critical"
+                                : (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente")) ? "pending"
+                                : (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("resuelto")) ? "resolved"
+                                : null
                     })
+                    .Where(t => t.status != null)
                     .ToList();
 
                 return Ok(escalations);

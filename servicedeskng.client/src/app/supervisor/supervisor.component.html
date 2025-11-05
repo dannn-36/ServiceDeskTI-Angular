@@ -336,14 +336,18 @@
             <div class="space-y-4">
               <div *ngFor="let ticket of filteredTickets" class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 priority-{{ ticket.priority }}">
                 <div class="flex items-center space-x-4">
-                  <span class="text-lg">{{ getCategoryIcon(ticket.category) }}</span>
+                  <span class="text-lg">🎫</span>
                   <div>
                     <h4 class="font-medium text-gray-900">{{ ticket.title }}</h4>
-                    <p class="text-sm text-gray-600">
-                      {{ ticket.id }} • {{ ticket.user }} →
-                      <span *ngIf="ticket.agent && ticket.agent !== 'Sin asignar'">{{ ticket.agent }}</span>
-                      <span *ngIf="!ticket.agent || ticket.agent === 'Sin asignar'" class="italic text-gray-400">Sin asignar</span>
-                    </p>
+                    <div class="flex flex-row flex-wrap gap-2 items-center">
+                      <span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">{{ ticket.category || 'Sin categoría' }}</span>
+                      <span class="text-xs text-gray-500" *ngIf="ticket.descripcion && ticket.descripcion !== 'Desconocido'">{{ ticket.descripcion }}</span>
+                      <span class="text-xs text-gray-500">{{ ticket.id }}
+                        <ng-container *ngIf="ticket.user && ticket.user !== 'Desconocido'">• {{ ticket.user }}</ng-container>
+                        <ng-container *ngIf="ticket.agent && ticket.agent !== 'Sin asignar'"> → {{ ticket.agent }}</ng-container>
+                        <ng-container *ngIf="!ticket.agent || ticket.agent === 'Sin asignar'" class="italic text-gray-400"> → Sin asignar</ng-container>
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div class="flex items-center space-x-3">
@@ -492,7 +496,7 @@
               <span class="text-2xl">🚨</span>
               <h3 class="font-semibold text-red-900">Críticas</h3>
             </div>
-            <p class="text-3xl font-bold text-red-600">{{ getEscalationCount('critical') }}</p>
+            <p class="text-3xl font-bold text-red-600">{{ escalacionesCriticas.length }}</p>
             <p class="text-sm text-red-600">Requieren atención inmediata</p>
           </div>
           <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
@@ -500,7 +504,7 @@
               <span class="text-2xl">⚠️</span>
               <h3 class="font-semibold text-yellow-900">Pendientes</h3>
             </div>
-            <p class="text-3xl font-bold text-yellow-600">{{ getEscalationCount('pending') }}</p>
+            <p class="text-3xl font-bold text-yellow-600">{{ escalacionesPendientes.length }}</p>
             <p class="text-sm text-yellow-600">En proceso de escalación</p>
           </div>
           <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
@@ -508,28 +512,61 @@
               <span class="text-2xl">📋</span>
               <h3 class="font-semibold text-blue-900">Resueltas</h3>
             </div>
-            <p class="text-3xl font-bold text-blue-600">{{ getEscalationCount('resolved') }}</p>
+            <p class="text-3xl font-bold text-blue-600">{{ escalacionesResueltas.length }}</p>
             <p class="text-sm text-blue-600">Esta semana</p>
           </div>
         </div>
-        <!-- Escalaciones Activas -->
-        <div class="p-6">
+        <!-- Escalaciones Críticas -->
+        <div class="p-6" *ngIf="escalacionesCriticas.length">
           <div class="space-y-4">
-            <div *ngFor="let esc of escalacionesActivas" [ngClass]="{
-              'bg-red-50 border-red-200': esc.status === 'critical',
-              'bg-yellow-50 border-yellow-200': esc.status === 'pending'
-            }" class="p-4 border rounded-xl">
+            <div *ngFor="let esc of escalacionesCriticas" class="p-4 border rounded-xl bg-red-50 border-red-200">
               <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
               <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
               <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
               <div class="flex justify-between items-center">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                      [ngClass]="{
-                        'bg-red-100 text-red-800': esc.status === 'critical',
-                        'bg-yellow-100 text-yellow-800': esc.status === 'pending'
-                      }">
-                  {{ esc.status === 'critical' ? 'Crítico' : 'Pendiente' }}
-                </span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Crítico</span>
+                <span class="text-sm text-gray-500">{{ esc.time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Escalaciones Pendientes -->
+        <div class="p-6" *ngIf="escalacionesPendientes.length">
+          <div class="space-y-4">
+            <div *ngFor="let esc of escalacionesPendientes" class="p-4 border rounded-xl bg-yellow-50 border-yellow-200">
+              <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
+              <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
+              <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
+              <div class="flex justify-between items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pendiente</span>
+                <span class="text-sm text-gray-500">{{ esc.time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Escalaciones Resueltas -->
+        <div class="p-6" *ngIf="escalacionesResueltas.length">
+          <div class="space-y-4">
+            <div *ngFor="let esc of escalacionesResueltas" class="p-4 border rounded-xl bg-blue-50 border-blue-200">
+              <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
+              <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
+              <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
+              <div class="flex justify-between items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Resuelto</span>
+                <span class="text-sm text-gray-500">{{ esc.time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Escalaciones Escaladas (opcional, si quieres mostrar aparte) -->
+        <div class="p-6" *ngIf="escalacionesEscaladas.length">
+          <div class="space-y-4">
+            <div *ngFor="let esc of escalacionesEscaladas" class="p-4 border rounded-xl bg-purple-50 border-purple-200">
+              <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
+              <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
+              <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
+              <div class="flex justify-between items-center">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Escalado</span>
                 <span class="text-sm text-gray-500">{{ esc.time }}</span>
               </div>
             </div>

@@ -82,4 +82,6 @@ namespace ServiceDeskNg.Server.Controllers
             }
         }
     }
+
+    //nota del ultimo commit jeje, sacamos muy buena nota y el profe dijo que muy buen trabajo, bendecido dia
 }

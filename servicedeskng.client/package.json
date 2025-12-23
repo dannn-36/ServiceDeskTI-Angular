@@ -22,6 +22,7 @@
     "@angular/platform-browser-dynamic": "^18.2.0",
     "@angular/router": "^18.2.0",
     "@microsoft/signalr": "^9.0.6",
+    "chart.js": "^4.5.1",
     "jest-editor-support": "*",
     "run-script-os": "*",
     "rxjs": "~7.8.0",

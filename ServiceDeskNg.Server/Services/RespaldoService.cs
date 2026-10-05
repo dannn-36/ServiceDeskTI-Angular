@@ -40,6 +40,9 @@ namespace ServiceDeskNg.Server.Services
 
             var proceso = CrearProceso(_opciones.MySqlDumpPath, conexion, redirigirEntrada: false);
             proceso.StartInfo.ArgumentList.Add("--single-transaction");
+            // Sin esto, MySQL 8 exige el privilegio global PROCESS, que un usuario
+            // limitado a la base de la aplicación no tiene (ni debe tener).
+            proceso.StartInfo.ArgumentList.Add("--no-tablespaces");
             proceso.StartInfo.ArgumentList.Add("--routines");
             proceso.StartInfo.ArgumentList.Add("--triggers");
             proceso.StartInfo.ArgumentList.Add(conexion.Database);

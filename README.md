@@ -4,7 +4,7 @@
 ![.NET 9](https://img.shields.io/badge/.NET-9-512BD4)
 ![Angular 18](https://img.shields.io/badge/Angular-18-DD0031)
 ![MySQL 8](https://img.shields.io/badge/MySQL-8-4479A1)
-![Pruebas](https://img.shields.io/badge/pruebas-98%20en%20verde-2ea44f)
+![Pruebas](https://img.shields.io/badge/pruebas-102%20en%20verde-2ea44f)
 
 Mesa de servicio de TI con cuatro roles (cliente, agente, supervisor y administrador),
 asignación automática de tickets por carga de trabajo, chat en tiempo real por ticket,
@@ -88,17 +88,56 @@ Reglas que sigue el código:
 
 ## Puesta en marcha
 
-### Requisitos
+### Opción A — Docker (recomendada)
+
+Solo hace falta [Docker Desktop](https://www.docker.com/products/docker-desktop/). Desde la raíz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+y abre **http://localhost:8080**. Se levantan tres contenedores:
+
+| Contenedor | Qué hace |
+|---|---|
+| `db` | MySQL 8. La primera vez ejecuta `Database/DatabaseScript.txt` (tablas y catálogos). Los datos se guardan en un volumen. |
+| `api` | La API .NET 9, con un usuario de MySQL limitado a su base (no root) y las herramientas para el respaldo. |
+| `web` | Angular compilado y servido por nginx, que además reenvía `/api` y el WebSocket del chat a la API. |
+
+Al arrancar sobre una base vacía se crean el administrador inicial y un **escenario de demostración** (16 tickets, conversaciones, un agente no disponible, tickets vencidos y urgentes sin asignar) para que todos los paneles tengan contenido:
+
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Administrador | `admin@servicedesk.local` | `Admin12345!` |
+| Supervisor | `supervisor@servicedesk.local` | `Demo12345!` |
+| Agentes | `agente1@servicedesk.local` … `agente3@` | `Demo12345!` |
+| Clientes | `cliente1@servicedesk.local` … `cliente4@` | `Demo12345!` |
+
+Para cambiar las contraseñas, el puerto o desactivar la demo, copia `.env.example` a `.env` y edítalo.
+Comandos útiles:
+
+```bash
+docker compose logs -f api         # ver los registros de la API
+docker compose down                # parar (los datos se conservan)
+docker compose down -v             # parar y BORRAR la base de datos para empezar de cero
+curl http://localhost:8080/health  # estado de la API y de su conexión con MySQL
+```
+
+MySQL queda accesible en `localhost:3307` para usarlo con MySQL Workbench.
+
+### Opción B — Sin Docker (desarrollo con Visual Studio)
+
+#### Requisitos
 
 - .NET SDK 9
 - Node.js 20 o superior
 - MySQL 8 (y sus herramientas `mysqldump` y `mysql` si se usa el respaldo)
 
-### 1. Base de datos
+#### 1. Base de datos
 
 Ejecuta `Database/DatabaseScript.txt` en MySQL. Crea las tablas y los catálogos (niveles de acceso, estados y categorías).
 
-### 2. Cadena de conexión (fuera del repositorio)
+#### 2. Cadena de conexión (fuera del repositorio)
 
 ```bash
 cd ServiceDeskNg.Server
@@ -108,7 +147,7 @@ dotnet user-secrets set "ConnectionStrings:ServiceDeskDB" "Server=localhost;Port
 En producción usa la variable de entorno `ConnectionStrings__ServiceDeskDB`.
 Las rutas de `mysqldump`/`mysql`, las horas de SLA y el límite de intentos de login están en `appsettings.json`.
 
-### 3. Ejecutar
+#### 3. Ejecutar
 
 Desde Visual Studio, inicia `ServiceDeskNg.Server` (el proxy de SPA arranca Angular solo). O bien, en dos terminales:
 
@@ -128,7 +167,7 @@ npm start
 ## Pruebas
 
 ```bash
-# Backend: 71 pruebas (unitarias de servicios + integración de la API completa)
+# Backend: 75 pruebas (unitarias de servicios + integración de la API completa)
 dotnet test ServiceDeskNg.Tests
 
 # Frontend: 27 pruebas (sesión, guards, interceptor, chat, filtros, utilidades)

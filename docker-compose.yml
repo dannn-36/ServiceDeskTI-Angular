@@ -1,0 +1,81 @@
+# ServiceDesk TI completo con un solo comando:
+#
+#   docker compose up --build
+#
+# y abrir http://localhost:8080
+#
+# Las claves de abajo tienen valores por defecto para que funcione sin configurar nada.
+# Para cambiarlas, copia .env.example a .env y edítalo (el .env no se sube al repositorio).
+
+services:
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-local-cambiar}
+      MYSQL_DATABASE: servicedesk
+      # La API usa un usuario con permisos solo sobre su base, no root.
+      MYSQL_USER: ${MYSQL_USER:-servicedesk}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-servicedesk-local-cambiar}
+      TZ: UTC
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes:
+      - datos-mysql:/var/lib/mysql
+      # El script del proyecto crea las tablas y los catálogos la primera vez.
+      - ./Database/DatabaseScript.txt:/docker-entrypoint-initdb.d/01-esquema.sql:ro
+    ports:
+      # Para conectarse con MySQL Workbench u otra herramienta (puerto 3307 para no chocar con un MySQL local).
+      - "${MYSQL_PUERTO_LOCAL:-3307}:3306"
+    healthcheck:
+      # Por TCP: durante la carga inicial MySQL solo escucha por socket, así que esto
+      # no da "sano" hasta que el script terminó y el servidor está listo de verdad.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  api:
+    build: ./ServiceDeskNg.Server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ServiceDeskDB: "Server=db;Port=3306;Database=servicedesk;User=${MYSQL_USER:-servicedesk};Password=${MYSQL_PASSWORD:-servicedesk-local-cambiar};"
+
+      # Detrás de nginx: IP real del cliente para el límite de intentos de login.
+      Proxy__UsarEncabezadosReenviados: "true"
+      # En local se sirve por http. En un servidor con HTTPS, poner "true".
+      Seguridad__SoloHttps: "${SOLO_HTTPS:-false}"
+
+      # Claves de la cookie de sesión en un volumen: las sesiones sobreviven a reinicios.
+      DataProtection__RutaClaves: /app/claves
+
+      # Herramientas de MySQL dentro de la imagen, para respaldar y restaurar desde el panel.
+      Respaldo__MySqlDumpPath: /usr/bin/mysqldump
+      Respaldo__MySqlPath: /usr/bin/mysql
+
+      # Primer administrador (solo se crea si no existe ninguno).
+      Inicializacion__AdminNombre: "${ADMIN_NOMBRE:-Administrador}"
+      Inicializacion__AdminCorreo: "${ADMIN_CORREO:-admin@servicedesk.local}"
+      Inicializacion__AdminContrasena: "${ADMIN_CONTRASENA:-Admin12345!}"
+      # Usuarios, tickets y conversaciones de ejemplo (solo si la base no tiene tickets).
+      Inicializacion__SembrarDatosDemo: "${DATOS_DEMO:-true}"
+      Inicializacion__ContrasenaDemo: "${CONTRASENA_DEMO:-Demo12345!}"
+    volumes:
+      - claves-sesion:/app/claves
+
+  web:
+    build: ./servicedeskng.client
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PUERTO:-8080}:80"
+
+volumes:
+  datos-mysql:
+  claves-sesion:

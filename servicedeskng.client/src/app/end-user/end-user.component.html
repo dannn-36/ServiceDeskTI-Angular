@@ -101,7 +101,9 @@
         </div>
         <div class="flex justify-end space-x-2 mt-5">
           <button type="button" (click)="cerrarModalTicket()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Crear Ticket</button>
+          <button type="submit" [disabled]="creandoTicket" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-md">
+            {{ creandoTicket ? 'Creando...' : 'Crear Ticket' }}
+          </button>
         </div>
       </form>
     </div>
@@ -120,7 +122,9 @@
             <span class="font-semibold">{{mensaje.remitente || 'Desconocido'}}:</span>
             <span>{{mensaje.texto}}</span>
           </div>
+          <div *ngIf="mensajes.length === 0" class="text-sm text-gray-400">Todavía no hay mensajes en este ticket.</div>
         </div>
+        <div *ngIf="chatError" class="text-sm text-red-600 mb-2">{{chatError}}</div>
         <form (ngSubmit)="enviarMensaje()" class="flex gap-2">
           <input class="flex-1 border rounded px-2 py-1" [(ngModel)]="mensajeTexto" name="mensajeTexto" placeholder="Escribe un mensaje..." required>
           <button type="submit" class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700">Enviar</button>

@@ -1,107 +1,72 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
+using ServiceDeskNg.Server.Security;
+using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// Respaldo y restauración de la base de datos. Exclusivo de administración
+    /// (antes era público: cualquiera podía descargar la base entera o sobrescribirla).
     [ApiController]
     [Route("api/backup")]
+    [Authorize(Roles = RolesApp.Administrador)]
     public class BackupController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        public BackupController(IConfiguration config)
+        /// Límite de subida para la restauración (200 MB).
+        private const long LimiteSubida = 200L * 1024 * 1024;
+
+        private readonly RespaldoService _respaldo;
+        private readonly AuditoriaService _auditoria;
+
+        public BackupController(RespaldoService respaldo, AuditoriaService auditoria)
         {
-            _config = config;
+            _respaldo = respaldo;
+            _auditoria = auditoria;
         }
 
-        // GET: api/backup
+        // GET api/backup
         [HttpGet]
-        public async Task<IActionResult> CreateBackup()
+        public async Task<IActionResult> CreateBackup(CancellationToken ct)
         {
-            string dbHost = _config["Database:Host"] ?? "localhost";
-            string dbUser = _config["Database:User"] ?? "root";
-            string dbPass = _config["Database:Password"] ?? "";
-            string dbName = _config["Database:Name"] ?? "servicedesk";
-            string mysqldumpPath = _config["Database:MySqlDumpPath"] ?? "mysqldump";
-            string fileName = $"backup_{dbName}_{System.DateTime.Now:yyyyMMdd_HHmmss}.sql";
+            var volcado = await _respaldo.GenerarRespaldoAsync(ct);
+            var nombre = $"backup_{_respaldo.NombreBaseDatos}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.sql";
 
-            var psi = new ProcessStartInfo
-            {
-                FileName = mysqldumpPath,
-                Arguments = $"-h {dbHost} -u {dbUser} --password={dbPass} {dbName}",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.RespaldoDescargado,
+                $"{nombre} ({volcado.Length / 1024} KB)",
+                ct);
 
-            using var process = Process.Start(psi);
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                // Devuelve el error como JSON para que el frontend lo maneje correctamente
-                return StatusCode(500, new { message = $"Error al crear respaldo: {error}" });
-            }
-
-            var bytes = System.Text.Encoding.UTF8.GetBytes(output);
-            return File(bytes, "application/sql", fileName);
+            return File(volcado, "application/sql", nombre);
         }
 
-        // POST: api/backup/restore
+        // POST api/backup/restore   (multipart/form-data, campo "archivo")
         [HttpPost("restore")]
-        public async Task<IActionResult> RestoreBackup()
+        [RequestSizeLimit(LimiteSubida)]
+        [RequestFormLimits(MultipartBodyLengthLimit = LimiteSubida)]
+        public async Task<IActionResult> RestoreBackup(IFormFile? archivo, CancellationToken ct)
         {
-            var file = Request.Form.Files[0];
-            if (file == null || file.Length == 0)
-                return StatusCode(400, new { message = "No se recibi� archivo de respaldo." });
+            if (archivo is null || archivo.Length == 0)
+                return BadRequest(new { message = "No se recibió ningún archivo de respaldo." });
 
-            string dbHost = _config["Database:Host"] ?? "localhost";
-            string dbUser = _config["Database:User"] ?? "root";
-            string dbPass = _config["Database:Password"] ?? "";
-            string dbName = _config["Database:Name"] ?? "servicedesk";
-            string mysqlPath = _config["Database:MySqlPath"] ?? "mysql";
+            if (!archivo.FileName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = "El respaldo debe ser un archivo .sql." });
 
-            var tempPath = Path.GetTempFileName();
-            using (var stream = System.IO.File.Create(tempPath))
+            if (archivo.Length > _respaldo.TamanoMaximoBytes)
+                return BadRequest(new { message = "El archivo supera el tamaño máximo permitido." });
+
+            await using (var contenido = archivo.OpenReadStream())
             {
-                await file.CopyToAsync(stream);
+                await _respaldo.RestaurarAsync(contenido, ct);
             }
 
-            var psi = new ProcessStartInfo
-            {
-                FileName = mysqlPath,
-                Arguments = $"-h {dbHost} -u {dbUser} --password={dbPass} {dbName}",
-                RedirectStandardInput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.RespaldoRestaurado,
+                $"{archivo.FileName} ({archivo.Length / 1024} KB)",
+                ct);
 
-            using var process = Process.Start(psi);
-            using (var reader = new StreamReader(tempPath))
-            {
-                while (!reader.EndOfStream)
-                {
-                    var line = await reader.ReadLineAsync();
-                    await process.StandardInput.WriteLineAsync(line);
-                }
-            }
-            process.StandardInput.Close();
-            var error = await process.StandardError.ReadToEndAsync();
-            process.WaitForExit();
-            System.IO.File.Delete(tempPath);
-
-            if (process.ExitCode != 0)
-            {
-                return StatusCode(500, new { message = $"Error al restaurar respaldo: {error}" });
-            }
-
-            return Ok(new { message = "Restauraci�n completada correctamente." });
+            return Ok(new { message = "Restauración completada correctamente." });
         }
     }
 }

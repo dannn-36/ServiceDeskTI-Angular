@@ -1,562 +1,301 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using ServiceDeskNg.Server.Data;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceDeskNg.Server.Common;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// Tickets: consulta, alta, edición, asignación y reportes.
+    /// Las reglas de quién puede ver qué viven en TicketService.AsegurarAccesoAsync;
+    /// este controlador solo traduce HTTP a llamadas de servicio.
     [ApiController]
     [Route("api/tickets")]
+    [Authorize]
     public class TicketsController : ControllerBase
     {
-        private readonly TicketService _ticketService;
-        private readonly TicketsCategoriaService _categoriaService;
-        private readonly TicketsEstadoService _estadoService;
-        private readonly ServiceDeskContext _context;
+        private readonly TicketService _tickets;
+        private readonly CatalogoTicketsService _catalogo;
+        private readonly MetricasService _metricas;
+        private readonly AgenteService _agentes;
+        private readonly ReportesPdfService _reportes;
+        private readonly AuditoriaService _auditoria;
 
         public TicketsController(
-            TicketService ticketService,
-            TicketsCategoriaService categoriaService,
-            TicketsEstadoService estadoService,
-            ServiceDeskContext context)
+            TicketService tickets,
+            CatalogoTicketsService catalogo,
+            MetricasService metricas,
+            AgenteService agentes,
+            ReportesPdfService reportes,
+            AuditoriaService auditoria)
         {
-            _ticketService = ticketService;
-            _categoriaService = categoriaService;
-            _estadoService = estadoService;
-            _context = context;
+            _tickets = tickets;
+            _catalogo = catalogo;
+            _metricas = metricas;
+            _agentes = agentes;
+            _reportes = reportes;
+            _auditoria = auditoria;
         }
 
-        // GET: api/tickets?includeRelations=true
+        // ======================================================
+        // Consulta
+        // ======================================================
+
         [HttpGet]
-        public IActionResult GetAll([FromQuery] bool includeRelations = false)
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<ActionResult<List<TicketDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _tickets.ListarAsync(ct));
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<TicketDto>> GetById(int id, CancellationToken ct)
         {
-            try
-            {
-                var tickets = _ticketService.GetAll(includeRelations);
-                return Ok(tickets);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los tickets", error = ex.Message });
-            }
+            await AsegurarAccesoAsync(id, ct);
+            return Ok(await _tickets.ObtenerAsync(id, ct));
         }
 
-        // GET: api/tickets/{id}?includeRelations=true
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id, [FromQuery] bool includeRelations = false)
+        [HttpGet("cliente/{idCliente:int}")]
+        public async Task<ActionResult<List<TicketDto>>> GetByClienteId(int idCliente, CancellationToken ct)
         {
-            try
-            {
-                var ticket = _ticketService.GetById(id, includeRelations);
-                return Ok(ticket);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener el ticket", error = ex.Message });
-            }
+            var esElPropioCliente = User.IdCliente() == idCliente;
+            if (!User.TieneVisionGlobal() && !esElPropioCliente)
+                throw new AccesoDenegadoException("Solo puede consultar sus propios tickets.");
+
+            return Ok(await _tickets.ListarPorClienteAsync(idCliente, ct));
         }
 
-        // GET: api/tickets/cliente/{idCliente}
-        [HttpGet("cliente/{idCliente}")]
-        public IActionResult GetByClienteId(int idCliente)
+        [HttpGet("agente/{idAgente:int}")]
+        public async Task<ActionResult<List<TicketDto>>> GetByAgenteId(int idAgente, CancellationToken ct)
         {
-            try
-            {
-                var tickets = _ticketService.GetByClienteId(idCliente);
-                return Ok(tickets);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los tickets del cliente", error = ex.Message });
-            }
+            var esElPropioAgente = User.IdAgente() == idAgente;
+            if (!User.TieneVisionGlobal() && !esElPropioAgente)
+                throw new AccesoDenegadoException("Solo puede consultar los tickets que tiene asignados.");
+
+            return Ok(await _tickets.ListarPorAgenteAsync(idAgente, ct));
         }
 
-        // GET: api/tickets/agente/{idAgente}
-        [HttpGet("agente/{idAgente}")]
-        public IActionResult GetByAgenteId(int idAgente)
-        {
-            try
-            {
-                var tickets = _ticketService.GetByAgenteId(idAgente);
-                return Ok(tickets);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los tickets del agente", error = ex.Message });
-            }
-        }
-
-        // POST: api/tickets
-        [HttpPost]
-        public IActionResult Create([FromBody] Ticket entity)
-        {
-            if (entity == null)
-                return BadRequest(new { message = "El cuerpo de la solicitud no puede ser nulo." });
-
-            try
-            {
-                _ticketService.Create(entity);
-                return CreatedAtAction(nameof(GetById), new { id = entity.IdTicket }, entity);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al crear el ticket", error = ex.Message });
-            }
-        }
-
-        // PUT: api/tickets/{id}
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Ticket entity)
-        {
-            if (entity == null || id != entity.IdTicket)
-                return BadRequest(new { message = "Datos inválidos o ID no coincide." });
-
-            try
-            {
-                _ticketService.Update(entity);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al actualizar el ticket", error = ex.Message });
-            }
-        }
-
-        // DELETE: api/tickets/{id}
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            try
-            {
-                _ticketService.Delete(id);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al eliminar el ticket", error = ex.Message });
-            }
-        }
-
-        // GET: api/tickets/categorias
         [HttpGet("categorias")]
-        public IActionResult GetCategorias()
-        {
-            try
-            {
-                var categorias = _categoriaService.GetAll();
-                return Ok(categorias);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener las categorías de tickets", error = ex.Message });
-            }
-        }
+        public async Task<ActionResult<List<CategoriaTicketDto>>> GetCategorias(CancellationToken ct) =>
+            Ok(await _catalogo.ListarCategoriasAsync(ct));
 
-        // GET: api/tickets/estados
         [HttpGet("estados")]
-        public IActionResult GetEstados()
+        public async Task<ActionResult<List<EstadoTicketDto>>> GetEstados(CancellationToken ct) =>
+            Ok(await _catalogo.ListarEstadosAsync(ct));
+
+        // ======================================================
+        // Alta, edición y baja
+        // ======================================================
+
+        /// Un cliente siempre crea tickets a su nombre (se toma de la sesión).
+        /// El personal puede abrir uno en nombre de un cliente indicando IdCliente.
+        [HttpPost]
+        public async Task<ActionResult<TicketDto>> Create([FromBody] TicketCreateDto dto, CancellationToken ct)
         {
-            try
+            int idCliente;
+
+            if (User.EsCliente())
             {
-                var estados = _estadoService.GetAll();
-                return Ok(estados);
+                idCliente = User.IdCliente()
+                    ?? throw new AccesoDenegadoException("Su usuario no está registrado como cliente.");
             }
-            catch (Exception ex)
+            else
             {
-                return StatusCode(500, new { message = "Error al obtener los estados de tickets", error = ex.Message });
+                idCliente = dto.IdCliente
+                    ?? throw new ArgumentException("Indique el cliente para el que se abre el ticket.");
             }
+
+            var creado = await _tickets.CrearAsync(dto, idCliente, ct);
+
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketCreado,
+                $"Ticket {creado.IdTicket} creado para el cliente {idCliente}",
+                ct);
+
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdTicket }, creado);
         }
 
-        // GET: api/tickets/dashboard
-        [HttpGet("dashboard")]
-        public IActionResult GetDashboardTickets()
+        /// Gestión puede editar cualquier ticket; un agente, solo los que tiene asignados.
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = RolesApp.Personal)]
+        public async Task<IActionResult> Update(int id, [FromBody] TicketUpdateDto dto, CancellationToken ct)
         {
-            try
-            {
-                // Obtener todos los agentes con sus usuarios
-                var agentes = _context.Agentes.Include(a => a.IdUsuarioNavigation).ToList();
-                var tickets = _ticketService.GetAll(true)
-                    .Select(t => new {
-                        id = t.IdTicket,
-                        title = t.TituloTicket,
-                        descripcion = t.DescripcionTicket, // <-- Asegura que la descripción se incluya
-                        user = t.IdClienteNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Desconocido",
-                        agent = t.IdAgenteAsignadoNavigation != null && t.IdAgenteAsignadoNavigation.IdUsuarioNavigation != null
-                            ? t.IdAgenteAsignadoNavigation.IdUsuarioNavigation.NombreUsuario
-                            : (t.IdAgenteAsignado != null ? (agentes.FirstOrDefault(a => a.IdAgente == t.IdAgenteAsignado)?.IdUsuarioNavigation?.NombreUsuario ?? $"Agente #{t.IdAgenteAsignado}") : "Sin asignar"),
-                        status = t.IdEstadoTicketNavigation?.NombreEstado ?? "",
-                        priority = t.PrioridadTicket,
-                        category = t.IdCategoriaTicketNavigation?.NombreCategoria ?? "",
-                        time = t.FechaHoraCreacionTicket.HasValue
-                            ? (DateTime.Now - t.FechaHoraCreacionTicket.Value).TotalMinutes.ToString("0") + " min"
-                            : "-"
-                    })
-                    .ToList();
+            await AsegurarAccesoAsync(id, ct);
+            await _tickets.ActualizarAsync(id, dto, ct);
 
-                return Ok(tickets);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los tickets para el dashboard", error = ex.Message });
-            }
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketActualizado,
+                $"Ticket {id} actualizado (estado {dto.IdEstadoTicket}, prioridad {dto.PrioridadTicket ?? "media"})",
+                ct);
+
+            return NoContent();
         }
 
-        // POST: api/tickets/assign
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
+        {
+            await _tickets.EliminarAsync(id, ct);
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(), AccionesAuditoria.TicketEliminado, $"Ticket {id} eliminado", ct);
+
+            return NoContent();
+        }
+
+        // ======================================================
+        // Asignación y balanceo (supervisión)
+        // ======================================================
+
         [HttpPost("assign")]
-        public IActionResult AssignAgent([FromBody] AssignTicketRequest request)
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> AssignAgent([FromBody] AsignarTicketRequest request, CancellationToken ct)
         {
-            if (request == null || request.idTicket <= 0 || request.idAgente <= 0)
-                return BadRequest(new { message = "Datos inválidos para asignación." });
-            try
-            {
-                var ticket = _ticketService.GetById(request.idTicket);
-                if (ticket == null)
-                    return NotFound(new { message = "Ticket no encontrado." });
-                ticket.IdAgenteAsignado = request.idAgente;
-                _ticketService.Update(ticket);
-                return Ok(new { message = "Agente reasignado correctamente." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al reasignar agente.", error = ex.Message });
-            }
+            await _tickets.AsignarAgenteAsync(request.IdTicket, request.IdAgente, ct);
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketAsignado,
+                $"Ticket {request.IdTicket} asignado al agente {request.IdAgente}",
+                ct);
+
+            return Ok(new { message = "Agente asignado correctamente." });
         }
 
-        // POST: api/tickets/{id}/escalar
-        [HttpPost("{id}/escalar")]
-        public IActionResult EscalarTicket(int id, [FromBody] EscalarTicketRequest request)
+        [HttpPost("{id:int}/escalar")]
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> EscalarTicket(
+            int id,
+            [FromBody] EscalarTicketRequest request,
+            CancellationToken ct)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.nuevaCategoria))
-                return BadRequest(new { message = "Datos inválidos para escalar." });
-            try
-            {
-                var ticket = _ticketService.GetById(id);
-                if (ticket == null)
-                    return NotFound(new { message = "Ticket no encontrado." });
-                // Buscar la categoría por nombre
-                var categoria = _categoriaService.GetAll().FirstOrDefault(c => c.NombreCategoria.ToLower() == request.nuevaCategoria.ToLower());
-                if (categoria == null)
-                    return BadRequest(new { message = "Categoría no encontrada." });
-                ticket.IdCategoriaTicket = categoria.IdCategoria;
-                _ticketService.Update(ticket);
-                return Ok(new { message = "Ticket escalado correctamente." });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al escalar el ticket.", error = ex.Message });
-            }
+            await _tickets.EscalarCategoriaAsync(id, request.NuevaCategoria, ct);
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketEscalado,
+                $"Ticket {id} escalado a la categoría {request.NuevaCategoria}",
+                ct);
+
+            return Ok(new { message = "Ticket escalado correctamente." });
         }
 
-        // POST: api/tickets/redistributir
         [HttpPost("redistribuir")]
-        public IActionResult RedistribuirTickets()
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> RedistribuirTickets(CancellationToken ct)
         {
-            // Ejemplo de lógica: distribuir tickets activos entre agentes de forma equitativa
-            var tickets = _ticketService.GetAll().Where(t => t.IdAgenteAsignado == null).ToList();
-            var agentes = _ticketService.GetAll().Select(t => t.IdAgenteAsignado).Distinct().Where(a => a != null).ToList();
-            if (agentes.Count == 0 || tickets.Count == 0)
-                return Ok(new { message = "No hay agentes o tickets para redistribuir." });
-            int i = 0;
-            foreach (var ticket in tickets)
+            var movidos = await _tickets.RedistribuirAsync(ct);
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketsRedistribuidos,
+                $"{movidos} tickets reasignados por balanceo de carga",
+                ct);
+
+            return Ok(new
             {
-                ticket.IdAgenteAsignado = agentes[i % agentes.Count];
-                _ticketService.Update(ticket);
-                i++;
-            }
-            return Ok(new { message = "Tickets redistribuidos automáticamente." });
+                message = movidos == 0
+                    ? "La carga ya estaba equilibrada; no hubo cambios."
+                    : $"Se reasignaron {movidos} tickets para equilibrar la carga.",
+                movidos
+            });
         }
 
-        // POST: api/tickets/asignar-sin-agente
         [HttpPost("asignar-sin-agente")]
-        public IActionResult AsignarSinAgente()
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> AsignarSinAgente(CancellationToken ct)
         {
-            // Asigna todos los tickets sin agente al agente con menos tickets
-            var ticketsSinAgente = _ticketService.GetAll().Where(t => t.IdAgenteAsignado == null).ToList();
-            var agentes = _ticketService.GetAll().Where(t => t.IdAgenteAsignado != null)
-                .GroupBy(t => t.IdAgenteAsignado)
-                .Select(g => new { IdAgente = g.Key, Count = g.Count() })
-                .OrderBy(g => g.Count)
-                .ToList();
-            if (agentes.Count == 0 || ticketsSinAgente.Count == 0)
-                return Ok(new { message = "No hay agentes o tickets sin asignar." });
-            var agenteMenosTickets = agentes.First().IdAgente;
-            foreach (var ticket in ticketsSinAgente)
+            var asignados = await _tickets.AsignarSinAgenteAsync(ct);
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.TicketsRedistribuidos,
+                $"{asignados} tickets sin agente asignados",
+                ct);
+
+            return Ok(new
             {
-                ticket.IdAgenteAsignado = agenteMenosTickets;
-                _ticketService.Update(ticket);
-            }
-            return Ok(new { message = "Tickets sin asignar han sido distribuidos." });
+                message = asignados == 0
+                    ? "No había tickets sin agente."
+                    : $"Se asignaron {asignados} tickets que no tenían agente.",
+                asignados
+            });
         }
 
-        // GET: api/tickets/vencidos
+        // ======================================================
+        // Paneles e indicadores (supervisión)
+        // ======================================================
+
+        [HttpGet("dashboard")]
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<ActionResult<List<TicketPanelDto>>> GetDashboardTickets(CancellationToken ct) =>
+            Ok(await _metricas.PanelAsync(ct));
+
         [HttpGet("vencidos")]
-        public IActionResult GetTicketsVencidos()
-        {
-            // Considera vencido si la fecha de creación es mayor a X horas/días y no está resuelto
-            var vencidos = _ticketService.GetAll().Where(t =>
-                t.FechaHoraCreacionTicket.HasValue &&
-                (DateTime.Now - t.FechaHoraCreacionTicket.Value).TotalHours > 48 &&
-                t.IdEstadoTicketNavigation != null &&
-                t.IdEstadoTicketNavigation.NombreEstado.ToLower() != "resuelto"
-            ).ToList();
-            return Ok(vencidos);
-        }
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<ActionResult<List<TicketPanelDto>>> GetTicketsVencidos(CancellationToken ct) =>
+            Ok(await _metricas.VencidosAsync(ct));
 
-        // GET: api/tickets/reporte-carga
-        [HttpGet("reporte-carga")]
-        public IActionResult GenerarReporteCarga()
-        {
-            // Obtener agentes y tickets
-            var agentes = _context.Agentes.Include(a => a.IdUsuarioNavigation).ToList();
-            var tickets = _context.Tickets.Include(t => t.IdAgenteAsignadoNavigation).ToList();
-            var agentesCarga = agentes.Select(a => new
-            {
-                Nombre = a.IdUsuarioNavigation?.NombreUsuario ?? "Desconocido",
-                Tickets = tickets.Count(t => t.IdAgenteAsignado == a.IdAgente)
-            }).ToList();
-
-            // Generar PDF con QuestPDF
-            var pdf = QuestPDF.Fluent.Document.Create(container =>
-            {
-                container.Page(page =>
-                {
-                    page.Margin(30);
-                    page.Header().Text("Reporte de Carga de Trabajo").FontSize(20).Bold();
-                    page.Content().Table(table =>
-                    {
-                        table.ColumnsDefinition(columns =>
-                        {
-                            columns.RelativeColumn();
-                            columns.ConstantColumn(80);
-                        });
-                        table.Header(header =>
-                        {
-                            header.Cell().Element(CellStyle).Text("Agente").Bold();
-                            header.Cell().Element(CellStyle).Text("Tickets").Bold();
-                        });
-                        foreach (var agente in agentesCarga)
-                        {
-                            table.Cell().Element(CellStyle).Text(agente.Nombre);
-                            table.Cell().Element(CellStyle).Text(agente.Tickets.ToString());
-                        }
-                        static IContainer CellStyle(IContainer container) => container.PaddingVertical(5).PaddingHorizontal(2);
-                    });
-                    page.Footer().AlignCenter().Text(x =>
-                    {
-                        x.Span("Generado: ");
-                        x.Span(DateTime.Now.ToString("g")).SemiBold();
-                    });
-                });
-            }).GeneratePdf();
-
-            return File(pdf, "application/pdf", "reporte-carga.pdf");
-        }
-
-        // GET: api/tickets/weekly-performance
         [HttpGet("weekly-performance")]
-        public IActionResult GetWeeklyPerformance()
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<ActionResult<RendimientoSemanalDto>> GetWeeklyPerformance(CancellationToken ct) =>
+            Ok(await _metricas.RendimientoSemanalAsync(ct));
+
+        /// Política de SLA vigente (se configura en appsettings, sección "Sla").
+        [HttpGet("sla")]
+        [Authorize(Roles = RolesApp.Gestion)]
+        public IActionResult GetSla([FromServices] Microsoft.Extensions.Options.IOptions<OpcionesSla> sla) =>
+            Ok(new { horasVencimiento = sla.Value.HorasVencimiento });
+
+        // ======================================================
+        // Reportes PDF
+        // ======================================================
+
+        [HttpGet("reporte-carga")]
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> GenerarReporteCarga(CancellationToken ct)
         {
-            // Tickets creados y resueltos por día de la semana (últimos 7 días)
-            var now = DateTime.Now;
-            var start = now.AddDays(-6).Date;
-            var tickets = _ticketService.GetAll(true)
-                .Where(t => t.FechaHoraCreacionTicket.HasValue && t.FechaHoraCreacionTicket.Value.Date >= start)
-                .ToList();
-            var days = new[] { "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom" };
-            var created = new int[7];
-            var resolved = new int[7];
-            foreach (var t in tickets)
-            {
-                var dayIdx = ((int)t.FechaHoraCreacionTicket.Value.DayOfWeek + 6) % 7; // Lunes=0
-                created[dayIdx]++;
-                if (t.IdEstadoTicketNavigation?.NombreEstado.ToLower() == "resuelto")
-                    resolved[dayIdx]++;
-            }
-            return Ok(new { labels = days, created, resolved });
+            var carga = await _metricas.CargaPorAgenteAsync(ct);
+            return File(_reportes.CargaDeTrabajo(carga), "application/pdf", NombreArchivo("reporte-carga"));
         }
 
-        // GET: api/team/comparison
-        [HttpGet("/api/team/comparison")]
-        public IActionResult GetAgentComparison()
-        {
-            // Simula métricas por agente (puedes mejorar con datos reales)
-            var agentes = _context.Agentes.Include(a => a.IdUsuarioNavigation).ToList();
-            var result = agentes.Select(a => new {
-                name = a.IdUsuarioNavigation?.NombreUsuario ?? "",
-                velocidad = new Random().Next(6, 10),
-                calidad = new Random().Next(6, 10),
-                satisfaccion = new Random().Next(6, 10),
-                comunicacion = new Random().Next(6, 10),
-                proactividad = new Random().Next(6, 10)
-            }).ToList();
-            return Ok(result);
-        }
-
-        // GET: api/tickets/escalations
-        [HttpGet("escalations")]
-        public IActionResult GetEscalations()
-        {
-            try
-            {
-                var escalations = _ticketService.GetAll(true)
-                    .Where(t =>
-                        (t.PrioridadTicket != null && t.PrioridadTicket.ToLower() == "urgente") ||
-                        (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente")) ||
-                        (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("resuelto"))
-                    )
-                    .Select(t => new {
-                        id = t.IdTicket,
-                        title = t.TituloTicket,
-                        escalatedTo = t.IdAgenteAsignadoNavigation?.IdUsuarioNavigation?.NombreUsuario ?? "Sin asignar",
-                        reason = t.PrioridadTicket ?? "-",
-                        time = t.FechaHoraCreacionTicket.HasValue ? (DateTime.Now - t.FechaHoraCreacionTicket.Value).TotalMinutes.ToString("0") + " min" : "-",
-                        status = (t.PrioridadTicket != null && t.PrioridadTicket.ToLower() == "urgente") ? "critical"
-                                : (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("pendiente")) ? "pending"
-                                : (t.IdEstadoTicketNavigation != null && t.IdEstadoTicketNavigation.NombreEstado.ToLower().Contains("resuelto")) ? "resolved"
-                                : null
-                    })
-                    .Where(t => t.status != null)
-                    .ToList();
-
-                return Ok(escalations);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener las escalaciones", error = ex.Message });
-            }
-        }
-
-        // GET: api/tickets/reporte-semanal
         [HttpGet("reporte-semanal")]
-        public IActionResult GenerarReporteSemanal([FromQuery] string format = "pdf")
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> GenerarReporteSemanal(CancellationToken ct)
         {
-            // Simula un PDF o Excel con información semanal
-            var content = format == "pdf"
-                ? System.Text.Encoding.UTF8.GetBytes("Reporte semanal generado.")
-                : System.Text.Encoding.UTF8.GetBytes("Reporte semanal generado en Excel.");
-            var mime = format == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = format == "pdf" ? "reporte-semanal.pdf" : "reporte-semanal.xlsx";
-            return File(content, mime, fileName);
+            var resumen = await _metricas.ResumenSemanalAsync(ct);
+            var comparativa = await _metricas.ComparativaAgentesAsync(ct);
+
+            return File(
+                _reportes.ResumenSemanal(resumen, comparativa),
+                "application/pdf",
+                NombreArchivo("reporte-semanal"));
         }
 
-        // POST: api/tickets/reporte-individual
-        [HttpPost("reporte-individual")]
-        public IActionResult GenerarReporteIndividual([FromQuery] string agente, [FromQuery] string format = "pdf")
+        [HttpGet("reporte-individual")]
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<IActionResult> GenerarReporteIndividual([FromQuery] int idAgente, CancellationToken ct)
         {
-            var agenteDb = _context.Agentes.Include(a => a.IdUsuarioNavigation)
-                .FirstOrDefault(a => a.IdUsuarioNavigation.NombreUsuario == agente);
-            if (agenteDb == null)
-                return NotFound(new { message = "Agente no encontrado." });
-            var tickets = _context.Tickets.Include(t => t.IdEstadoTicketNavigation)
-                .Where(t => t.IdAgenteAsignado == agenteDb.IdAgente).ToList();
+            var agente = await _agentes.ObtenerAsync(idAgente, ct);
+            var tickets = await _tickets.ListarPorAgenteAsync(idAgente, ct);
+            var metricas = (await _metricas.ComparativaAgentesAsync(ct))
+                .FirstOrDefault(c => c.Name == agente.NombreUsuario);
 
-            var pdf = QuestPDF.Fluent.Document.Create(container =>
-            {
-                container.Page(page =>
-                {
-                    page.Margin(30);
-                    page.Header().Text($"Reporte Individual de {agente}").FontSize(20).Bold();
-                    page.Content().Column(col =>
-                    {
-                        col.Item().Text($"Agente: {agente}").FontSize(14).Bold();
-                        col.Item().Text($"Total de tickets asignados: {tickets.Count}").FontSize(12);
-                        col.Item().Text(" ");
-                        col.Item().Table(table =>
-                        {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.RelativeColumn();
-                                columns.RelativeColumn();
-                                columns.ConstantColumn(80);
-                            });
-                            table.Header(header =>
-                            {
-                                header.Cell().Element(CellStyle).Text("Título").Bold();
-                                header.Cell().Element(CellStyle).Text("Estado").Bold();
-                                header.Cell().Element(CellStyle).Text("Fecha").Bold();
-                            });
-                            foreach (var t in tickets)
-                            {
-                                table.Cell().Element(CellStyle).Text(t.TituloTicket);
-                                table.Cell().Element(CellStyle).Text(t.IdEstadoTicketNavigation?.NombreEstado ?? "-");
-                                table.Cell().Element(CellStyle).Text(t.FechaHoraCreacionTicket?.ToString("g") ?? "-");
-                            }
-                            static IContainer CellStyle(IContainer container) => container.PaddingVertical(3).PaddingHorizontal(2);
-                        });
-                    });
-                    page.Footer().AlignCenter().Text(x =>
-                    {
-                        x.Span("Generado: ");
-                        x.Span(DateTime.Now.ToString("g")).SemiBold();
-                    });
-                });
-            }).GeneratePdf();
-
-            return File(pdf, "application/pdf", $"reporte-individual-{agente}.pdf");
+            return File(
+                _reportes.ReporteIndividual(agente.NombreUsuario, metricas, tickets),
+                "application/pdf",
+                NombreArchivo($"reporte-agente-{idAgente}"));
         }
 
-        // GET: api/tickets/reporte-sla
-        [HttpGet("reporte-sla")]
-        public IActionResult GenerarReporteSla([FromQuery] string format = "pdf")
-        {
-            var content = format == "pdf"
-                ? System.Text.Encoding.UTF8.GetBytes("Reporte SLA generado.")
-                : System.Text.Encoding.UTF8.GetBytes("Reporte SLA generado en Excel.");
-            var mime = format == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            var fileName = format == "pdf" ? "reporte-sla.pdf" : "reporte-sla.xlsx";
-            return File(content, mime, fileName);
-        }
+        // ======================================================
+        // Apoyo
+        // ======================================================
 
-    }
+        private Task AsegurarAccesoAsync(int idTicket, CancellationToken ct) =>
+            _tickets.AsegurarAccesoAsync(
+                idTicket,
+                User.TieneVisionGlobal(),
+                User.IdCliente(),
+                User.IdAgente(),
+                ct);
 
-    public class AssignTicketRequest
-    {
-        public int idTicket { get; set; }
-        public int idAgente { get; set; }
-    }
-
-    public class EscalarTicketRequest
-    {
-        public string nuevaCategoria { get; set; }
+        private static string NombreArchivo(string prefijo) =>
+            $"{prefijo}-{DateTime.UtcNow:yyyyMMdd-HHmm}.pdf";
     }
 }

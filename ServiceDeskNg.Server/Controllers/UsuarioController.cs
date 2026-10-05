@@ -1,211 +1,99 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceDeskNg.Server.Common;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
-
-    /// Controlador de API para operaciones sobre usuarios.
-    /// Ruta base: api/Usuario
-    /// Provee endpoints CRUD y autenticación (login).
-
+    /// Gestión de usuarios.
+    /// Administración tiene control total; cualquier usuario puede ver y editar su propio perfil.
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UsuarioController : ControllerBase
     {
-        private readonly UsuarioService _usuarioService;
+        private readonly UsuarioService _usuarios;
+        private readonly AuditoriaService _auditoria;
 
-        public UsuarioController(UsuarioService usuarioService)
+        public UsuarioController(UsuarioService usuarios, AuditoriaService auditoria)
         {
-            _usuarioService = usuarioService;
+            _usuarios = usuarios;
+            _auditoria = auditoria;
         }
 
-     
-        /// GET api/Usuario
-        /// Obtiene todos los usuarios. Si se especifica includeRelations=true, devuelve también las relaciones
-        /// (por ejemplo, administradores/agentes asociados) para facilitar vistas detalladas.
-      
         [HttpGet]
-        public IActionResult GetAll()
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<ActionResult<List<UsuarioDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _usuarios.ListarAsync(ct));
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<UsuarioDto>> GetById(int id, CancellationToken ct)
         {
-            try
-            {
-                var usuariosDto = _usuarioService.GetAllUsuariosDto();
-                return Ok(usuariosDto);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los usuarios", error = ex.Message });
-            }
+            AsegurarAdministradorOPropietario(id);
+            return Ok(await _usuarios.ObtenerDtoAsync(id, ct));
         }
 
-     
-        /// GET api/Usuario/{id}
-        /// Obtiene un usuario por su identificador.
-        /// Retorna 404 si no se encuentra.
-       
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            try
-            {
-                var usuario = _usuarioService.GetById(id);
-                return Ok(usuario);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener el usuario", error = ex.Message });
-            }
-        }
-
-      
-        /// POST api/Usuario
-        /// Crea un nuevo usuario. Espera un objeto Usuario en el body.
-        /// Retorna 201 con la ubicación del nuevo recurso.
         [HttpPost]
-        public IActionResult Create([FromBody] UsuarioCreateDto usuarioDto)
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<ActionResult<UsuarioDto>> Create(
+            [FromBody] UsuarioCreateDto dto,
+            CancellationToken ct)
         {
-            try
-            {
-                if (usuarioDto == null)
-                    return BadRequest(new { message = "Los datos del usuario son inválidos." });
+            var creado = await _usuarios.CrearConRolAsync(dto, ct);
 
-                var usuario = new Usuario
-                {
-                    NombreUsuario = usuarioDto.NombreUsuario,
-                    CorreoUsuario = usuarioDto.CorreoUsuario,
-                    ContrasenaUsuario = usuarioDto.ContrasenaUsuario,
-                    DepartamentoUsuario = usuarioDto.DepartamentoUsuario,
-                    EstadoUsuario = usuarioDto.EstadoUsuario,
-                    UbicacionUsuario = usuarioDto.UbicacionUsuario
-                };
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.UsuarioCreado,
+                $"Usuario {creado.IdUsuario} ({creado.CorreoUsuario}) creado como {creado.TipoUsuario}",
+                ct);
 
-                _usuarioService.Create(usuario);
-
-                // Obtener el usuario recién creado por correo para asegurar el IdUsuario
-                var usuarioCreado = _usuarioService.GetByCorreo(usuario.CorreoUsuario);
-                if (usuarioCreado != null)
-                {
-                    usuario.IdUsuario = usuarioCreado.IdUsuario;
-                }
-
-                string tipo = usuarioDto.TipoUsuario;
-                if (tipo == "Cliente")
-                {
-                    var nivel = _usuarioService.GetNivelAccesoPorNombre("EndUser");
-                    var endUser = new EndUser
-                    {
-                        IdUsuario = usuario.IdUsuario,
-                        IdNivel = nivel?.IdNivel ?? 1
-                    };
-                    _usuarioService.CrearEndUser(endUser);
-                }
-                else if (tipo == "Agente")
-                {
-                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Agente");
-                    var agente = new Agente
-                    {
-                        IdUsuario = usuario.IdUsuario,
-                        IdNivel = nivel?.IdNivel ?? 1
-                    };
-                    _usuarioService.CrearAgente(agente);
-                }
-                else if (tipo == "Supervisor")
-                {
-                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Supervisor");
-                    var supervisor = new Supervisor
-                    {
-                        IdUsuario = usuario.IdUsuario,
-                        IdNivel = nivel?.IdNivel ?? 1
-                    };
-                    _usuarioService.CrearSupervisor(supervisor);
-                }
-                else if (tipo == "Administrador")
-                {
-                    var nivel = _usuarioService.GetNivelAccesoPorNombre("Administrador");
-                    var admin = new Administrador
-                    {
-                        IdUsuario = usuario.IdUsuario,
-                        IdNivel = nivel?.IdNivel ?? 1
-                    };
-                    _usuarioService.CrearAdministrador(admin);
-                }
-
-                return CreatedAtAction(nameof(GetById), new { id = usuario.IdUsuario }, usuario);
-            }
-            catch (Exception ex)
-            {
-                // Log detallado para depuración
-                System.Console.WriteLine("ERROR AL CREAR USUARIO: " + ex.ToString());
-                return StatusCode(500, new { message = "Error al crear el usuario", error = ex.Message });
-            }
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdUsuario }, creado);
         }
 
-        /// PUT api/Usuario/{id}
-        /// Actualiza un usuario existente. El ID en la ruta debe coincidir con usuario.IdUsuario.
-        /// Retorna 204 en caso de éxito.
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] UsuarioUpdateDto usuarioDto)
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(
+            int id,
+            [FromBody] UsuarioUpdateDto dto,
+            CancellationToken ct)
         {
-            try
-            {
-                if (usuarioDto == null)
-                    return BadRequest(new { message = "Datos inválidos para actualizar el usuario." });
+            AsegurarAdministradorOPropietario(id);
 
-                var usuario = _usuarioService.GetById(id);
-                if (usuario == null)
-                    return NotFound(new { message = "Usuario no encontrado." });
+            await _usuarios.ActualizarAsync(id, dto, puedeAdministrar: User.EsAdministrador(), ct);
 
-                usuario.NombreUsuario = usuarioDto.NombreUsuario;
-                usuario.CorreoUsuario = usuarioDto.CorreoUsuario;
-                if (!string.IsNullOrWhiteSpace(usuarioDto.ContrasenaUsuario))
-                {
-                    usuario.ContrasenaUsuario = BCrypt.Net.BCrypt.HashPassword(usuarioDto.ContrasenaUsuario);
-                }
-                usuario.DepartamentoUsuario = usuarioDto.DepartamentoUsuario;
-                usuario.EstadoUsuario = usuarioDto.EstadoUsuario;
-                usuario.UbicacionUsuario = usuarioDto.UbicacionUsuario;
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.UsuarioActualizado,
+                string.IsNullOrWhiteSpace(dto.ContrasenaUsuario)
+                    ? $"Usuario {id} actualizado"
+                    : $"Usuario {id} actualizado (incluye cambio de contraseña)",
+                ct);
 
-                _usuarioService.Update(usuario);
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                System.Console.WriteLine("ERROR AL ACTUALIZAR USUARIO: " + ex.ToString());
-                return StatusCode(500, new { message = "Error al actualizar el usuario", error = ex.Message });
-            }
+            return NoContent();
         }
 
-        /// DELETE api/Usuario/{id}
-        /// Elimina un usuario por su ID. Retorna 204 en caso de éxito o 404 si no existe.
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        /// Elimina al usuario, o lo desactiva si tiene historial que conservar.
+        /// La respuesta indica cuál de las dos cosas ocurrió.
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            try
-            {
-                _usuarioService.Delete(id);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al eliminar el usuario", error = ex.Message });
-            }
+            var resultado = await _usuarios.DarDeBajaAsync(id, User.IdUsuario(), ct);
+
+            await _auditoria.RegistrarAsync(
+                User.IdUsuario(),
+                AccionesAuditoria.UsuarioEliminado,
+                resultado.Eliminado ? $"Usuario {id} eliminado" : $"Usuario {id} desactivado",
+                ct);
+
+            return Ok(new { message = resultado.Mensaje, eliminado = resultado.Eliminado });
         }
 
-
-     
-        
+        private void AsegurarAdministradorOPropietario(int idUsuario)
+        {
+            if (!User.EsAdministrador() && User.IdUsuario() != idUsuario)
+                throw new AccesoDenegadoException("Solo puede consultar o modificar su propio perfil.");
+        }
     }
-
-
-   
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ServiceDeskNg.Server.Models;
 
@@ -12,6 +13,9 @@ public partial class Usuario
 
     public string CorreoUsuario { get; set; } = null!;
 
+    /// Hash BCrypt. [JsonIgnore] evita que salga en ninguna respuesta de la API,
+    /// incluso si la entidad se serializa por error dentro de un grafo de navegación.
+    [JsonIgnore]
     public string ContrasenaUsuario { get; set; } = null!;
 
     public string? EstadoUsuario { get; set; }

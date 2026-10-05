@@ -1,78 +1,93 @@
-﻿using ServiceDeskNg.Server.Data;
+using Microsoft.EntityFrameworkCore;
+using ServiceDeskNg.Server.Common;
 using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Repositories;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Repositories.Interfaces;
+
 namespace ServiceDeskNg.Server.Services
 {
+    /// Clientes (usuarios finales) que abren tickets.
     public class EndUserService
     {
+        private readonly IRepositorio<EndUser> _clientes;
+        private readonly IRepositorio<Ticket> _tickets;
+        private readonly IRepositorio<Usuario> _usuarios;
 
-        private readonly EndUserRepository _endUserRepo;
-        private readonly ServiceDeskContext _context;
-        public EndUserService(EndUserRepository endUserRepo, ServiceDeskContext context) 
-        { 
-        
-            _endUserRepo = endUserRepo;
-            _context = context;
+        public EndUserService(
+            IRepositorio<EndUser> clientes,
+            IRepositorio<Ticket> tickets,
+            IRepositorio<Usuario> usuarios)
+        {
+            _clientes = clientes;
+            _tickets = tickets;
+            _usuarios = usuarios;
         }
 
-        // Obtener todos los usuarios finales (con relaciones opcionales)
-        public IEnumerable<EndUser> GetAll(bool includeRelations = false)
+        public Task<List<EndUserDto>> ListarAsync(CancellationToken ct = default) =>
+            Consulta().OrderBy(c => c.NombreUsuario).ToListAsync(ct);
+
+        public async Task<EndUserDto> ObtenerAsync(int id, CancellationToken ct = default)
         {
-            if (includeRelations)
+            var cliente = await Consulta().FirstOrDefaultAsync(c => c.IdCliente == id, ct);
+            return cliente ?? throw new KeyNotFoundException($"No se encontró el cliente con ID {id}");
+        }
+
+        public async Task<EndUserDto> ObtenerPorUsuarioAsync(int idUsuario, CancellationToken ct = default)
+        {
+            var cliente = await Consulta().FirstOrDefaultAsync(c => c.IdUsuario == idUsuario, ct);
+            return cliente
+                ?? throw new KeyNotFoundException($"El usuario {idUsuario} no está registrado como cliente.");
+        }
+
+        public async Task<EndUserDto> CrearAsync(EndUserCreateDto dto, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(dto);
+
+            if (!await _usuarios.Query().AnyAsync(u => u.IdUsuario == dto.IdUsuario, ct))
+                throw new KeyNotFoundException($"No se encontró el usuario con ID {dto.IdUsuario}");
+
+            if (await _clientes.Query().AnyAsync(c => c.IdUsuario == dto.IdUsuario, ct))
+                throw new ConflictoNegocioException("Ya existe un cliente vinculado a ese usuario.");
+
+            var cliente = new EndUser { IdUsuario = dto.IdUsuario, IdNivel = dto.IdNivel };
+            await _clientes.AddAsync(cliente, ct);
+
+            return await ObtenerAsync(cliente.IdCliente, ct);
+        }
+
+        public async Task ActualizarAsync(int id, EndUserCreateDto dto, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(dto);
+
+            var cliente = await _clientes.QueryParaEscritura()
+                .FirstOrDefaultAsync(c => c.IdCliente == id, ct)
+                ?? throw new KeyNotFoundException($"No se encontró el cliente con ID {id}");
+
+            cliente.IdNivel = dto.IdNivel;
+            await _clientes.GuardarCambiosAsync(ct);
+        }
+
+        public async Task EliminarAsync(int id, CancellationToken ct = default)
+        {
+            if (!await _clientes.Query().AnyAsync(c => c.IdCliente == id, ct))
+                throw new KeyNotFoundException($"No se encontró el cliente con ID {id}");
+
+            if (await _tickets.Query().AnyAsync(t => t.IdCliente == id, ct))
+                throw new ConflictoNegocioException(
+                    "El cliente tiene tickets registrados y no puede eliminarse.");
+
+            await _clientes.DeleteAsync(id, ct);
+        }
+
+        private IQueryable<EndUserDto> Consulta() =>
+            _clientes.Query().Select(c => new EndUserDto
             {
-                return _context.Clientes
-                    .Select(e => new EndUser
-                    {
-                        IdCliente = e.IdCliente,
-                        IdUsuario = e.IdUsuario,
-                        IdNivel = e.IdNivel,
-                        IdNivelNavigation = e.IdNivelNavigation,
-                        IdUsuarioNavigation = e.IdUsuarioNavigation,
-                        Tickets = e.Tickets
-                    })
-                    .ToList();
-            }
-            return _endUserRepo.GetAll();
-        }
-
-        // Obtener un usuario final por ID
-        public EndUser GetById(int id)
-        {
-            var endUser = _endUserRepo.GetById(id);
-            if (endUser == null)
-                throw new KeyNotFoundException($"No se encontró el usuario final con ID {id}");
-            return endUser;
-        }
-        // Crear un nuevo usuario final
-        public void Create(EndUser entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            if (entity.IdUsuario == 0)
-                throw new ArgumentException("Debe asociarse un usuario válido.");
-            var existing = _context.Clientes.FirstOrDefault(e => e.IdUsuario == entity.IdUsuario);
-            if (existing != null)
-                throw new InvalidOperationException("Ya existe un usuario final vinculado a ese usuario.");
-            _endUserRepo.Add(entity);
-        }
-        // Actualizar un usuario final existente
-        public void Update(EndUser entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            var existing = _endUserRepo.GetById(entity.IdCliente);
-            if (existing == null)
-                throw new KeyNotFoundException($"No se encontró el usuario final con ID {entity.IdCliente}");
-            _endUserRepo.Update(entity);
-        }
-
-        // Eliminar un usuario final por ID
-        public void Delete(int id)
-        {
-            var existing = _endUserRepo.GetById(id);
-            if (existing == null)
-                throw new KeyNotFoundException($"No se encontró el usuario final con ID {id}");
-            _endUserRepo.Delete(id);
-        }
+                IdCliente = c.IdCliente,
+                IdUsuario = c.IdUsuario,
+                IdNivel = c.IdNivel,
+                NombreUsuario = c.IdUsuarioNavigation.NombreUsuario,
+                CorreoUsuario = c.IdUsuarioNavigation.CorreoUsuario,
+                DepartamentoUsuario = c.IdUsuarioNavigation.DepartamentoUsuario
+            });
     }
 }

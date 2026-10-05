@@ -1,130 +1,70 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using ServiceDeskNg.Server.Common;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EndUserController : ControllerBase
     {
-        private readonly EndUserService _endUserService;
+        private readonly EndUserService _clientes;
 
-        public EndUserController(EndUserService endUserService)
+        public EndUserController(EndUserService clientes)
         {
-            _endUserService = endUserService;
+            _clientes = clientes;
         }
 
-        // GET: api/enduser
+        /// El personal necesita la lista para abrir tickets en nombre de un cliente.
         [HttpGet]
-        public IActionResult GetAll([FromQuery] bool includeRelations = false)
+        [Authorize(Roles = RolesApp.Personal)]
+        public async Task<ActionResult<List<EndUserDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _clientes.ListarAsync(ct));
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<EndUserDto>> GetById(int id, CancellationToken ct)
         {
-            try
-            {
-                var users = _endUserService.GetAll(includeRelations);
-                return Ok(users);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los usuarios finales", error = ex.Message });
-            }
+            if (!User.TieneVisionGlobal() && User.IdCliente() != id)
+                throw new AccesoDenegadoException();
+
+            return Ok(await _clientes.ObtenerAsync(id, ct));
         }
 
-        // GET: api/enduser/{id}
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [HttpGet("by-usuario/{idUsuario:int}")]
+        public async Task<ActionResult<EndUserDto>> GetByUsuarioId(int idUsuario, CancellationToken ct)
         {
-            try
-            {
-                var user = _endUserService.GetById(id);
-                if (user == null)
-                    return NotFound(new { message = "Usuario final no encontrado" });
-                return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener el usuario final", error = ex.Message });
-            }
+            if (!User.TieneVisionGlobal() && User.IdUsuario() != idUsuario)
+                throw new AccesoDenegadoException();
+
+            return Ok(await _clientes.ObtenerPorUsuarioAsync(idUsuario, ct));
         }
 
-        // POST: api/enduser
         [HttpPost]
-        public IActionResult Create([FromBody] EndUser endUser)
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<ActionResult<EndUserDto>> Create([FromBody] EndUserCreateDto dto, CancellationToken ct)
         {
-            try
-            {
-                _endUserService.Create(endUser);
-                return CreatedAtAction(nameof(GetById), new { id = endUser.IdCliente }, endUser);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al crear el usuario final", error = ex.Message });
-            }
+            var creado = await _clientes.CrearAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdCliente }, creado);
         }
 
-        // PUT: api/enduser/{id}
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] EndUser endUser)
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Update(int id, [FromBody] EndUserCreateDto dto, CancellationToken ct)
         {
-            try
-            {
-                if (endUser == null || endUser.IdCliente != id)
-                    return BadRequest(new { message = "Datos inválidos para actualizar el usuario final." });
-                _endUserService.Update(endUser);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al actualizar el usuario final", error = ex.Message });
-            }
+            await _clientes.ActualizarAsync(id, dto, ct);
+            return NoContent();
         }
 
-        // DELETE: api/enduser/{id}
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            try
-            {
-                _endUserService.Delete(id);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al eliminar el usuario final", error = ex.Message });
-            }
-        }
-
-        // GET: api/enduser/by-usuario/{idUsuario}
-        [HttpGet("by-usuario/{idUsuario}")]
-        public IActionResult GetByUsuarioId(int idUsuario)
-        {
-            try
-            {
-                var cliente = _endUserService.GetAll().FirstOrDefault(e => e.IdUsuario == idUsuario);
-                if (cliente == null)
-                    return NotFound(new { message = "No existe cliente para el usuario especificado." });
-                return Ok(cliente);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al buscar el cliente por usuario.", error = ex.Message });
-            }
+            await _clientes.EliminarAsync(id, ct);
+            return NoContent();
         }
     }
 }

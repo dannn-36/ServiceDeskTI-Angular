@@ -1,0 +1,43 @@
+# Integración continua: compila y ejecuta todas las pruebas en cada push y pull request.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (.NET 9)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Pruebas unitarias y de integración
+        run: dotnet test ServiceDeskNg.Tests/ServiceDeskNg.Tests.csproj --configuration Release
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: servicedeskng.client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: servicedeskng.client/package-lock.json
+
+      - run: npm ci
+
+      - name: Build de producción
+        run: npx ng build
+
+      - name: Pruebas unitarias
+        run: npx ng test --watch=false --browsers=ChromeHeadlessCI

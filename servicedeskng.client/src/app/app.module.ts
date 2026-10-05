@@ -1,44 +1,35 @@
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
 
 import { AppComponent } from './app.component';
-import { AdministradorComponent } from './administrador/administrador.component';
-import { AgenteComponent } from './agente/agente.component';
-import { TicketsComponent } from './tickets/tickets.component';
 import { HogarComponent } from './hogar/hogar.component';
-import { SupervisorComponent } from './supervisor/supervisor.component';
-import { UsuarioComponent } from './usuario/usuario.component';
-import { EndUserComponent } from './end-user/end-user.component';
-import { AuditoriaComponent } from './auditoria/auditoria.component';
-import { TicketFiltroPipe } from './agente/ticketFiltro.pipe';
+import { AuthService } from './core/auth.service';
+import { authInterceptor } from './core/auth.interceptor';
 
+/** Recupera la sesión desde la cookie antes de evaluar la primera ruta. */
+export function restaurarSesionAlArrancar(auth: AuthService): () => Promise<void> {
+  return () => auth.restaurarSesion();
+}
+
+/**
+ * Módulo raíz: solo el login y la infraestructura común.
+ * Los paneles de cada rol son módulos con carga diferida (ver app-routing.module.ts).
+ */
 @NgModule({
-  declarations: [
-    AppComponent,
-    AdministradorComponent,
-    AgenteComponent,
-    TicketsComponent,
-    HogarComponent,
-    SupervisorComponent,
-    UsuarioComponent,
-    EndUserComponent,
-    AuditoriaComponent,
-    TicketFiltroPipe,
+  declarations: [AppComponent, HogarComponent],
+  imports: [BrowserModule, FormsModule, AppRoutingModule],
+  providers: [
+    provideHttpClient(withInterceptors([authInterceptor])),
+    {
+      provide: APP_INITIALIZER,
+      useFactory: restaurarSesionAlArrancar,
+      deps: [AuthService],
+      multi: true
+    }
   ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    FormsModule,
-    CommonModule,
-    AppRoutingModule,
-    RouterModule
-  ],
-  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

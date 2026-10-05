@@ -1,78 +1,90 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Data;
-using System.Linq;
+using ServiceDeskNg.Server.Common;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
+using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class AgenteController : ControllerBase
     {
-        private readonly ServiceDeskContext _context;
-        public AgenteController(ServiceDeskContext context)
+        private readonly AgenteService _agentes;
+
+        public AgenteController(AgenteService agentes)
         {
-            _context = context;
+            _agentes = agentes;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
+        [Authorize(Roles = RolesApp.Gestion)]
+        public async Task<ActionResult<List<AgenteDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _agentes.ListarAsync(ct));
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<AgenteDto>> GetById(int id, CancellationToken ct)
         {
-            var agentes = _context.Agentes.ToList();
-            return Ok(agentes);
+            AsegurarGestionOElPropioAgente(id);
+            return Ok(await _agentes.ObtenerAsync(id, ct));
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [HttpGet("by-usuario/{idUsuario:int}")]
+        public async Task<ActionResult<AgenteDto>> GetByUsuario(int idUsuario, CancellationToken ct)
         {
-            var agente = _context.Agentes.Find(id);
-            if (agente == null) return NotFound();
-            return Ok(agente);
+            if (!User.TieneVisionGlobal() && User.IdUsuario() != idUsuario)
+                throw new AccesoDenegadoException();
+
+            return Ok(await _agentes.ObtenerPorUsuarioAsync(idUsuario, ct));
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] AgenteCreateDto dto)
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<ActionResult<AgenteDto>> Create([FromBody] AgenteCreateDto dto, CancellationToken ct)
         {
-            var agente = new Agente
-            {
-                IdUsuario = dto.IdUsuario,
-                IdNivel = dto.IdNivel,
-                EspecialidadAgente = dto.EspecialidadAgente,
-                DisponibilidadAgente = dto.DisponibilidadAgente ?? true
-            };
-            _context.Agentes.Add(agente);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(GetById), new { id = agente.IdAgente }, agente);
+            var creado = await _agentes.CrearAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdAgente }, creado);
         }
 
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] AgenteCreateDto dto)
+        [HttpPut("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Update(int id, [FromBody] AgenteCreateDto dto, CancellationToken ct)
         {
-            var agente = _context.Agentes.Find(id);
-            if (agente == null) return NotFound();
-            agente.IdNivel = dto.IdNivel;
-            agente.EspecialidadAgente = dto.EspecialidadAgente;
-            agente.DisponibilidadAgente = dto.DisponibilidadAgente ?? true;
-            _context.SaveChanges();
+            await _agentes.ActualizarAsync(id, dto, ct);
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        /// El propio agente (o supervisión) indica si puede recibir tickets nuevos.
+        [HttpPut("{id:int}/disponibilidad")]
+        public async Task<IActionResult> CambiarDisponibilidad(
+            int id,
+            [FromBody] CambioDisponibilidadRequest request,
+            CancellationToken ct)
         {
-            var agente = _context.Agentes.Find(id);
-            if (agente == null) return NotFound();
-            _context.Agentes.Remove(agente);
-            _context.SaveChanges();
+            AsegurarGestionOElPropioAgente(id);
+            await _agentes.CambiarDisponibilidadAsync(id, request.Disponible, ct);
             return NoContent();
         }
 
-        [HttpGet("by-usuario/{idUsuario}")]
-        public IActionResult GetByUsuario(int idUsuario)
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var agente = _context.Agentes.FirstOrDefault(a => a.IdUsuario == idUsuario);
-            if (agente == null) return NotFound();
-            return Ok(agente);
+            await _agentes.EliminarAsync(id, ct);
+            return NoContent();
         }
+
+        private void AsegurarGestionOElPropioAgente(int idAgente)
+        {
+            if (!User.TieneVisionGlobal() && User.IdAgente() != idAgente)
+                throw new AccesoDenegadoException();
+        }
+    }
+
+    public class CambioDisponibilidadRequest
+    {
+        public bool Disponible { get; set; }
     }
 }

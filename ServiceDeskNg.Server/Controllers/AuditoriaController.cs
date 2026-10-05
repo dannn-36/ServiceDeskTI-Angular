@@ -1,97 +1,36 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// Consulta de la bitácora de auditoría (solo lectura).
+    /// Ya no existe un POST: los registros los escribe únicamente el servidor,
+    /// porque una bitácora que el cliente puede rellenar no prueba nada.
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = RolesApp.Administrador)]
     public class AuditoriaController : ControllerBase
     {
-        private readonly AuditoriaService _auditoriaService;
+        private readonly AuditoriaService _auditoria;
 
-        public AuditoriaController(AuditoriaService auditoriaService)
+        public AuditoriaController(AuditoriaService auditoria)
         {
-            _auditoriaService = auditoriaService;
+            _auditoria = auditoria;
         }
 
-        // ===========================================================
-        // 🔹 OBTENER TODAS LAS AUDITORÍAS 
-        // GET: api/auditoria?includeRelations=true
-        // ===========================================================
+        /// GET api/auditoria?limite=200&amp;accion=LOGIN_FALLIDO
         [HttpGet]
-        public IActionResult GetAll([FromQuery] bool includeRelations = false)
-        {
-            try
-            {
-                var auditorias = _auditoriaService.GetAll(includeRelations);
-                return Ok(auditorias);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error al obtener las auditorías.",
-                    error = ex.Message
-                });
-            }
-        }
+        public async Task<ActionResult<List<AuditoriaDto>>> GetAll(
+            [FromQuery] int limite = 200,
+            [FromQuery] string? accion = null,
+            CancellationToken ct = default) =>
+            Ok(await _auditoria.ListarAsync(limite, accion, ct));
 
-        // ===========================================================
-        // 🔹 OBTENER AUDITORÍA POR ID
-        // GET: api/auditoria/{id}
-        // ===========================================================
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            try
-            {
-                var auditoria = _auditoriaService.GetById(id);
-                return Ok(auditoria);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error al obtener la auditoría.",
-                    error = ex.Message
-                });
-            }
-        }
-
-        // ===========================================================
-        // 🔹 CREAR NUEVA AUDITORÍA
-        // POST: api/auditoria
-        // ===========================================================
-        [HttpPost]
-        public IActionResult Create([FromBody] Auditoria entity)
-        {
-            if (entity == null)
-                return BadRequest(new { message = "No puede ser nulo." });
-
-            try
-            {
-                _auditoriaService.Create(entity);
-                return CreatedAtAction(nameof(GetById),
-                    new { id = entity.IdAuditoria },
-                    entity);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    message = "Error al crear la auditoría.",
-                    error = ex.Message
-                });
-            }
-        }
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<AuditoriaDto>> GetById(int id, CancellationToken ct) =>
+            Ok(await _auditoria.ObtenerAsync(id, ct));
     }
 }

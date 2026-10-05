@@ -1,83 +1,116 @@
-﻿using ServiceDeskNg.Server.Data;
+using Microsoft.EntityFrameworkCore;
+using ServiceDeskNg.Server.Common;
 using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Repositories;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Repositories.Interfaces;
 
 namespace ServiceDeskNg.Server.Services
 {
     public class AgenteService
     {
-        private readonly AgenteRepository _agenteRepo;
-        private readonly ServiceDeskContext _context;
+        private readonly IRepositorio<Agente> _agentes;
+        private readonly IRepositorio<Ticket> _tickets;
+        private readonly IRepositorio<Usuario> _usuarios;
 
-        public AgenteService(AgenteRepository agenteRepo, ServiceDeskContext context)
+        public AgenteService(
+            IRepositorio<Agente> agentes,
+            IRepositorio<Ticket> tickets,
+            IRepositorio<Usuario> usuarios)
         {
-            _agenteRepo = agenteRepo;
-            _context = context;
+            _agentes = agentes;
+            _tickets = tickets;
+            _usuarios = usuarios;
         }
 
-        // Obtener todos los agentes (con relaciones opcionales)
-        public IEnumerable<Agente> GetAll(bool includeRelations = false)
+        public Task<List<AgenteDto>> ListarAsync(CancellationToken ct = default) =>
+            Consulta().OrderBy(a => a.NombreUsuario).ToListAsync(ct);
+
+        public async Task<AgenteDto> ObtenerAsync(int id, CancellationToken ct = default)
         {
-            if (includeRelations)
+            var agente = await Consulta().FirstOrDefaultAsync(a => a.IdAgente == id, ct);
+            return agente ?? throw new KeyNotFoundException($"No se encontró el agente con ID {id}");
+        }
+
+        public async Task<AgenteDto> ObtenerPorUsuarioAsync(int idUsuario, CancellationToken ct = default)
+        {
+            var agente = await Consulta().FirstOrDefaultAsync(a => a.IdUsuario == idUsuario, ct);
+            return agente
+                ?? throw new KeyNotFoundException($"El usuario {idUsuario} no está registrado como agente.");
+        }
+
+        public async Task<AgenteDto> CrearAsync(AgenteCreateDto dto, CancellationToken ct = default)
+        {
+            ArgumentNullException.ThrowIfNull(dto);
+
+            if (!await _usuarios.Query().AnyAsync(u => u.IdUsuario == dto.IdUsuario, ct))
+                throw new KeyNotFoundException($"No se encontró el usuario con ID {dto.IdUsuario}");
+
+            if (await _agentes.Query().AnyAsync(a => a.IdUsuario == dto.IdUsuario, ct))
+                throw new ConflictoNegocioException("Ya existe un agente vinculado a ese usuario.");
+
+            var agente = new Agente
             {
-                return _context.Agentes
-                    .Select(a => new Agente
-                    {
-                        IdAgente = a.IdAgente,
-                        IdUsuario = a.IdUsuario,
-                        IdNivel = a.IdNivel,
-                        EspecialidadAgente = a.EspecialidadAgente,
-                        DisponibilidadAgente = a.DisponibilidadAgente,
-                        IdUsuarioNavigation = a.IdUsuarioNavigation,
-                        IdNivelNavigation = a.IdNivelNavigation
-                    })
-                    .ToList();
-            }
-            return _agenteRepo.GetAll();
+                IdUsuario = dto.IdUsuario,
+                IdNivel = dto.IdNivel,
+                EspecialidadAgente = dto.EspecialidadAgente,
+                DisponibilidadAgente = dto.DisponibilidadAgente ?? true
+            };
+
+            await _agentes.AddAsync(agente, ct);
+            return await ObtenerAsync(agente.IdAgente, ct);
         }
 
-        // Obtener un agente por ID
-        public Agente GetById(int id)
+        public async Task ActualizarAsync(int id, AgenteCreateDto dto, CancellationToken ct = default)
         {
-            var agente = _agenteRepo.GetById(id);
-            if (agente == null)
+            ArgumentNullException.ThrowIfNull(dto);
+
+            var agente = await _agentes.QueryParaEscritura()
+                .FirstOrDefaultAsync(a => a.IdAgente == id, ct)
+                ?? throw new KeyNotFoundException($"No se encontró el agente con ID {id}");
+
+            agente.IdNivel = dto.IdNivel;
+            agente.EspecialidadAgente = dto.EspecialidadAgente;
+            agente.DisponibilidadAgente = dto.DisponibilidadAgente ?? agente.DisponibilidadAgente ?? true;
+
+            await _agentes.GuardarCambiosAsync(ct);
+        }
+
+        /// Marca al agente como disponible o no disponible para el reparto automático.
+        public async Task CambiarDisponibilidadAsync(
+            int id,
+            bool disponible,
+            CancellationToken ct = default)
+        {
+            var agente = await _agentes.QueryParaEscritura()
+                .FirstOrDefaultAsync(a => a.IdAgente == id, ct)
+                ?? throw new KeyNotFoundException($"No se encontró el agente con ID {id}");
+
+            agente.DisponibilidadAgente = disponible;
+            await _agentes.GuardarCambiosAsync(ct);
+        }
+
+        public async Task EliminarAsync(int id, CancellationToken ct = default)
+        {
+            if (!await _agentes.Query().AnyAsync(a => a.IdAgente == id, ct))
                 throw new KeyNotFoundException($"No se encontró el agente con ID {id}");
-            return agente;
+
+            if (await _tickets.Query().AnyAsync(t => t.IdAgenteAsignado == id, ct))
+                throw new ConflictoNegocioException(
+                    "El agente tiene tickets asignados. Reasigne sus tickets antes de eliminarlo.");
+
+            await _agentes.DeleteAsync(id, ct);
         }
 
-        // Crear un nuevo agente
-        public void Create(Agente entity)
-        {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            if (entity.IdUsuario == 0)
-                throw new ArgumentException("Debe asociarse un usuario válido.");
-            if (string.IsNullOrWhiteSpace(entity.EspecialidadAgente))
-                throw new ArgumentException("La especialidad es obligatoria.");
-            var existing = _context.Agentes.FirstOrDefault(a => a.IdUsuario == entity.IdUsuario);
-            if (existing != null)
-                throw new InvalidOperationException("Ya existe un agente vinculado a ese usuario.");
-            _agenteRepo.Add(entity);
-        }
-
-        // Actualizar un agente existente
-        public void Update(Agente entity)
-        {
-            var existing = _agenteRepo.GetById(entity.IdAgente);
-            if (existing == null)
-                throw new KeyNotFoundException($"No se encontró el agente con ID {entity.IdAgente}");
-            if (string.IsNullOrWhiteSpace(entity.EspecialidadAgente))
-                throw new ArgumentException("La especialidad no puede estar vacía.");
-            _agenteRepo.Update(entity);
-        }
-
-        // Eliminar un agente
-        public void Delete(int id)
-        {
-            var agente = _agenteRepo.GetById(id);
-            if (agente == null)
-                throw new KeyNotFoundException($"No existe el agente con ID {id}");
-            _agenteRepo.Delete(id);
-        }
+        private IQueryable<AgenteDto> Consulta() =>
+            _agentes.Query().Select(a => new AgenteDto
+            {
+                IdAgente = a.IdAgente,
+                IdUsuario = a.IdUsuario,
+                IdNivel = a.IdNivel,
+                NombreUsuario = a.IdUsuarioNavigation.NombreUsuario,
+                CorreoUsuario = a.IdUsuarioNavigation.CorreoUsuario,
+                EspecialidadAgente = a.EspecialidadAgente,
+                DisponibilidadAgente = a.DisponibilidadAgente ?? true
+            });
     }
 }

@@ -1,11 +1,12 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+/** Ticket tal como lo devuelve /api/tickets (TicketDto en el backend). */
 export interface Ticket {
   idTicket: number;
   idCliente: number;
-  idAgenteAsignado?: number;
+  idAgenteAsignado?: number | null;
   idEstadoTicket: number;
   idCategoriaTicket: number;
   tituloTicket: string;
@@ -15,46 +16,79 @@ export interface Ticket {
   departamentoTicket?: string;
   fechaHoraCreacionTicket?: string;
   fechaHoraActualizacionTicket?: string;
+  nombreEstado?: string;
+  nombreCategoria?: string;
+  nombreCliente?: string;
+  nombreAgente?: string | null;
+}
+
+/** Datos para abrir un ticket. Un cliente no indica idCliente: lo pone el servidor. */
+export interface NuevoTicket {
+  idCliente?: number;
+  tituloTicket: string;
+  descripcionTicket: string;
+  idCategoriaTicket: number;
+  idEstadoTicket?: number;
+  prioridadTicket?: string;
+  ubicacionTicket?: string;
+  departamentoTicket?: string;
+}
+
+/** Campos editables de un ticket (TicketUpdateDto en el backend). */
+export interface CambioTicket {
+  tituloTicket: string;
+  descripcionTicket: string;
+  idEstadoTicket: number;
+  idCategoriaTicket: number;
+  prioridadTicket?: string;
+  ubicacionTicket?: string;
+  departamentoTicket?: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class TicketsService {
-  private apiUrl = 'http://localhost:5076/api/tickets';
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = '/api/tickets';
 
-  constructor(private http: HttpClient) { }
-
-  // ✅ Obtener todos los tickets
   getAll(): Observable<Ticket[]> {
     return this.http.get<Ticket[]>(this.apiUrl);
   }
 
-  // ✅ Obtener tickets por ID de cliente (usado en EndUserComponent)
-  getTicketsByUser(clienteId: number): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/cliente/${clienteId}`);
+  getTicketsByUser(idCliente: number): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>(`${this.apiUrl}/cliente/${idCliente}`);
   }
 
-  // ✅ Obtener un ticket por ID
+  getTicketsByAgente(idAgente: number): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>(`${this.apiUrl}/agente/${idAgente}`);
+  }
+
   getById(id: number): Observable<Ticket> {
     return this.http.get<Ticket>(`${this.apiUrl}/${id}`);
   }
 
-  // ✅ Crear ticket (alias createTicket)
-  createTicket(ticket: Partial<Ticket>): Observable<Ticket> {
+  createTicket(ticket: NuevoTicket): Observable<Ticket> {
     return this.http.post<Ticket>(this.apiUrl, ticket);
   }
 
-  // ✅ Actualizar ticket
-  update(id: number, ticket: Ticket): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}`, ticket);
+  update(id: number, cambio: CambioTicket): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/${id}`, cambio);
   }
 
-  // ✅ Eliminar ticket
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // ✅ Obtener tickets por ID de agente (nuevos métodos)
-  getTicketsByAgente(agenteId: number): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/agente/${agenteId}`);
+  /** Construye el cambio a partir del ticket actual, sobrescribiendo lo indicado. */
+  static cambioDesde(ticket: Ticket, cambios: Partial<CambioTicket>): CambioTicket {
+    return {
+      tituloTicket: ticket.tituloTicket,
+      descripcionTicket: ticket.descripcionTicket,
+      idEstadoTicket: ticket.idEstadoTicket,
+      idCategoriaTicket: ticket.idCategoriaTicket,
+      prioridadTicket: ticket.prioridadTicket || 'media',
+      ubicacionTicket: ticket.ubicacionTicket,
+      departamentoTicket: ticket.departamentoTicket,
+      ...cambios
+    };
   }
 }

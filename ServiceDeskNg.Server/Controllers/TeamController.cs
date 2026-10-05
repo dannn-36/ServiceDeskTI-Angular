@@ -1,36 +1,31 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Data;
-using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// MÃ©tricas del equipo de agentes para el panel de supervisiÃ³n.
     [ApiController]
     [Route("api/team")]
+    [Authorize(Roles = RolesApp.Gestion)]
     public class TeamController : ControllerBase
     {
-        private readonly AgenteService _agenteService;
-        private readonly ServiceDeskContext _context;
+        private readonly MetricasService _metricas;
 
-        public TeamController(AgenteService agenteService, ServiceDeskContext context)
+        public TeamController(MetricasService metricas)
         {
-            _agenteService = agenteService;
-            _context = context;
+            _metricas = metricas;
         }
 
         [HttpGet]
-        public IActionResult GetTeamMembers()
-        {
-            var agentes = _agenteService.GetAll(true).Select(a => new {
-                idAgente = a.IdAgente,
-                name = a.IdUsuarioNavigation?.NombreUsuario ?? $"Agente {a.IdAgente}",
-                status = a.DisponibilidadAgente == true ? "available" : "busy",
-                tickets = _context.Tickets.Count(t => t.IdAgenteAsignado == a.IdAgente),
-                avgTime = "2.0", // Aquí puedes calcular el tiempo promedio si tienes esa info
-                satisfaction = 4.5 // Aquí puedes poner la satisfacción si tienes esa info
-            }).ToList();
-            return Ok(agentes);
-        }
+        public async Task<ActionResult<List<MiembroEquipoDto>>> GetTeamMembers(CancellationToken ct) =>
+            Ok(await _metricas.EquipoAsync(ct));
+
+        /// Antes devolvÃ­a nÃºmeros aleatorios (new Random()). Ahora son indicadores medidos.
+        [HttpGet("comparison")]
+        public async Task<ActionResult<List<ComparativaAgenteDto>>> GetAgentComparison(CancellationToken ct) =>
+            Ok(await _metricas.ComparativaAgentesAsync(ct));
     }
 }

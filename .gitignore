@@ -256,6 +256,10 @@ Generated_Code/
 # because we have git ;-)
 _UpgradeReport_Files/
 Backup*/
+# La regla anterior es para conversiones de Visual Studio, pero en Windows (sin distinguir
+# mayúsculas) también ignoró la carpeta src/app/backup de Angular y el proyecto dejó de
+# compilar desde un clon limpio. El código fuente nunca debe quedar fuera del repositorio.
+!servicedeskng.client/src/**/[Bb]ackup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/

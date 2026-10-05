@@ -1,8 +1,30 @@
-import { Component, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { AfterViewInit, Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
+import Chart from 'chart.js/auto';
 import { SupervisorService, TeamMember, Ticket, Escalation } from './supervisor.service';
 import { ChatService } from '../chat/chat.service';
-import Chart from 'chart.js/auto';
+import { UsuarioService } from '../usuario/usuario.service';
+import { AuthService } from '../core/auth.service';
+import { CatalogoService } from '../core/catalogo.service';
+import {
+  CategoriaTicket,
+  ComparativaAgente,
+  MensajeChatEnVivo,
+  RendimientoSemanal,
+  descargarArchivo,
+  esEstadoActivo,
+  esEstadoFinalizado,
+  mensajeDeError,
+  mensajeDeErrorBlob,
+  normalizarEstado
+} from '../core/modelos';
+
+interface MensajeSupervision {
+  remitente: string;
+  texto: string;
+  esSupervisor: boolean;
+}
 
 @Component({
   selector: 'app-supervisor',
@@ -10,603 +32,542 @@ import Chart from 'chart.js/auto';
   styleUrls: ['./supervisor.component.css']
 })
 export class SupervisorComponent implements AfterViewInit, OnInit, OnDestroy {
-  supervisorName = '';
-  supervisorId = 0;
-  // Profile modal state and fields (used by template)
-  mostrarProfileModal: boolean = false;
-  profileName: string = '';
-  profileEmail: string = '';
-  currentSection = 'dashboard';
+  private readonly supervisorService = inject(SupervisorService);
+  private readonly chatService = inject(ChatService);
+  private readonly usuarioService = inject(UsuarioService);
+  private readonly catalogo = inject(CatalogoService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  sidebarItems = [
+  mostrarProfileModal = false;
+  profileName = '';
+  profileEmail = '';
+  currentSection = 'dashboard';
+  cargando = false;
+
+  readonly sidebarItems = [
     { section: 'dashboard', icon: '📊', label: 'Dashboard' },
     { section: 'team', icon: '👥', label: 'Mi Equipo' },
     { section: 'tickets', icon: '🎫', label: 'Supervisión Tickets' },
     { section: 'workload', icon: '⚖️', label: 'Carga de Trabajo' },
     { section: 'performance', icon: '📈', label: 'Rendimiento' },
     { section: 'escalations', icon: '🚨', label: 'Escalaciones' }
-    // No incluir sección de reportes
   ];
 
   dashboardStats = [
-    { label: 'Tickets Activos', value: 0, trend: '', trendClass: 'text-blue-600', icon: '🎫', bgClass: 'bg-blue-100' },
-    { label: 'Agentes Activos', value: 0, trend: '', trendClass: 'text-green-600', icon: '👨‍💻', bgClass: 'bg-green-100' },
-    { label: 'Tiempo Promedio', value: '', trend: '', trendClass: 'text-green-600', icon: '⏱️', bgClass: 'bg-yellow-100' }
+    { label: 'Tickets Activos', value: '0', trend: '', trendClass: 'text-blue-600', icon: '🎫', bgClass: 'bg-blue-100' },
+    { label: 'Agentes Disponibles', value: '0', trend: '', trendClass: 'text-green-600', icon: '👨‍💻', bgClass: 'bg-green-100' },
+    { label: 'Tiempo Promedio de Resolución', value: '-', trend: '', trendClass: 'text-green-600', icon: '⏱️', bgClass: 'bg-yellow-100' }
   ];
 
   priorityTickets: Ticket[] = [];
   teamMembers: TeamMember[] = [];
   tickets: Ticket[] = [];
-  tiempoResolucionPromedio: string = '';
+  vencidos: Ticket[] = [];
+  mostrarVencidos = false;
+  tiempoResolucionPromedio = '-';
   escalations: Escalation[] = [];
-  weeklyPerformance: any = null;
-  agentComparison: any = null;
-  private workloadChartInstance: any;
-  private ticketDistributionChartInstance: any;
-  private weeklyTrendChartInstance: any;
-  private agentComparisonChartInstance: any;
-  selectedTicketId: number | null = null;
-  selectedTicketIdPerAgent: { [idAgente: number]: string | null } = {};
+  weeklyPerformance: RendimientoSemanal | null = null;
+  agentComparison: ComparativaAgente[] = [];
+  categorias: CategoriaTicket[] = [];
 
-  // Filtros para supervisión de tickets
-  filterEstado: string = '';
-  filterPrioridad: string = '';
-  filterAgente: string = '';
+  selectedTicketIdPerAgent: Record<number, number | null> = {};
+
+  // Filtros de supervisión de tickets
+  filterEstado = '';
+  filterPrioridad = '';
+  filterAgente = '';
   filteredTickets: Ticket[] = [];
 
-  // Nueva función para aplicar todos los filtros
-  aplicarFiltros() {
-    let baseTickets = this.tickets;
-    // Si hay filtro de agente, usa los tickets filtrados por agente
-    if (this.filterAgente) {
-      const agente = this.teamMembers.find(a => a.name === this.filterAgente);
-      if (agente) {
-        this.supervisorService.getTicketsByAgente(agente.idAgente).subscribe(tickets => {
-          this.filteredTickets = tickets.filter(ticket => {
-            const estadoMatch = !this.filterEstado || ticket.status?.toLowerCase() === this.filterEstado.toLowerCase();
-            const prioridadMatch = !this.filterPrioridad || ticket.priority?.toLowerCase() === this.filterPrioridad.toLowerCase();
-            return estadoMatch && prioridadMatch;
-          });
-        });
-        return; // Espera la respuesta del backend
-      }
-    }
-    // Si no hay filtro de agente, filtra sobre todos los tickets
-    this.filteredTickets = baseTickets.filter(ticket => {
-      const estadoMatch = !this.filterEstado || ticket.status?.toLowerCase() === this.filterEstado.toLowerCase();
-      const prioridadMatch = !this.filterPrioridad || ticket.priority?.toLowerCase() === this.filterPrioridad.toLowerCase();
-      return estadoMatch && prioridadMatch;
-    });
-  }
-
-  // Supervisión de ticket y chat
+  // Supervisión de un ticket y su chat
   supervisandoTicket: Ticket | null = null;
-  mensajes: any[] = [];
-  mensajeIntervencion: string = '';
-  chatBloqueado: boolean = true;
-  categoriaEscalada: string = '';
-  agenteReasignado: string = '';
+  mensajes: MensajeSupervision[] = [];
+  mensajeIntervencion = '';
+  chatBloqueado = true;
+  chatError = '';
+  categoriaEscalada = '';
+  agenteReasignado = '';
 
-  private chatSub: any;
+  // Reportes
+  agenteReporte: number | null = null;
+  generandoReporte = false;
 
-  constructor(
-    private supervisorService: SupervisorService,
-    private http: HttpClient,
-    private chatService: ChatService
-  ) {}
+  private graficas: Record<string, Chart | undefined> = {};
 
-  ngOnInit() {
-    this.supervisorName = localStorage.getItem('usuario') || 'Supervisor';
-    this.supervisorId = +(localStorage.getItem('usuarioId') || 0);
-    // Inicializa el agente individual con el primero disponible
-    this.supervisorService.getTeamMembers().subscribe(data => {
-      this.teamMembers = data;
-      if (data.length > 0) {
-        // Eliminar: this.reporteIndividualAgente = data[0].name;
-      }
-    });
-    // Initialize profile fields
-    this.profileName = this.supervisorName;
-    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
-    // Inicializa los tickets filtrados
-    this.filteredTickets = this.tickets;
+  get supervisorName(): string {
+    return this.auth.usuario()?.nombreUsuario ?? 'Supervisor';
   }
 
-  ngAfterViewInit() {
+  private get supervisorUserId(): number {
+    return this.auth.usuario()?.idUsuario ?? 0;
+  }
+
+  ngOnInit(): void {
+    this.catalogo.categorias$.subscribe(categorias => this.categorias = categorias);
+
+    this.chatService.mensajes$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(mensaje => this.agregarMensajeEnVivo(mensaje));
+  }
+
+  ngAfterViewInit(): void {
     this.loadAllData();
   }
 
-  ngOnDestroy() {
-    if (this.supervisandoTicket) {
-      this.chatService.disconnect(this.supervisandoTicket.id.toString());
-    }
-    if (this.chatSub) {
-      this.chatSub.unsubscribe();
-    }
+  ngOnDestroy(): void {
+    void this.chatService.desconectar();
+    Object.values(this.graficas).forEach(grafica => grafica?.destroy());
   }
 
-  showSection(section: string) {
+  showSection(section: string): void {
     this.currentSection = section;
+
     if (section === 'workload' || section === 'performance') {
       this.loadAllData();
-      // Espera a que Angular renderice el HTML antes de cargar las gráficas
-      setTimeout(() => this.loadCharts(), 500);
     } else {
-      setTimeout(() => this.loadCharts(), 0);
+      // Espera a que Angular pinte los <canvas> de la sección antes de dibujar.
+      setTimeout(() => this.loadCharts());
     }
   }
 
-  showNotifications() {
-    alert('Panel de notificaciones en desarrollo');
-  }
+  // ---------- Carga de datos ----------
 
-  logout() {
-    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-      localStorage.clear();
-      window.location.href = '/'; // Redirige al home/login
-    }
-  }
+  /** Pide todo en paralelo y dibuja cuando ha llegado todo (antes: cuatro banderas a mano). */
+  loadAllData(): void {
+    this.cargando = true;
 
-  // Template calls confirmLogout(); provide wrapper to keep naming in template
-  confirmLogout() {
-    this.logout();
-  }
+    forkJoin({
+      equipo: this.supervisorService.getTeamMembers(),
+      tickets: this.supervisorService.getDashboardTickets(),
+      prioritarios: this.supervisorService.getPriorityTickets(),
+      escalaciones: this.supervisorService.getEscalations(),
+      vencidos: this.supervisorService.getVencidos(),
+      semana: this.supervisorService.getWeeklyPerformance(),
+      comparativa: this.supervisorService.getAgentComparison()
+    }).subscribe({
+      next: datos => {
+        this.teamMembers = datos.equipo;
+        this.tickets = datos.tickets;
+        this.priorityTickets = datos.prioritarios;
+        this.escalations = datos.escalaciones;
+        this.vencidos = datos.vencidos;
+        this.weeklyPerformance = datos.semana;
+        this.agentComparison = datos.comparativa;
 
-  loadAllData() {
-    let teamLoaded = false, ticketsLoaded = false, weeklyLoaded = false, agentCompLoaded = false;
-    const checkAndLoadCharts = () => {
-      if (teamLoaded && ticketsLoaded && weeklyLoaded && agentCompLoaded) {
-        console.log('Datos para rendimiento:', {
-          weeklyPerformance: this.weeklyPerformance,
-          agentComparison: this.agentComparison
-        });
-        this.loadCharts();
+        if (this.agenteReporte === null && this.teamMembers.length > 0) {
+          this.agenteReporte = this.teamMembers[0].idAgente;
+        }
+
+        this.tiempoResolucionPromedio = this.getTiempoResolucionPromedio();
+        this.dashboardStats[0].value = String(this.activeTickets.length);
+        this.dashboardStats[1].value = String(this.getTeamStatus('available'));
+        this.dashboardStats[2].value = this.tiempoResolucionPromedio;
+
+        this.aplicarFiltros();
+        this.cargando = false;
+        setTimeout(() => this.loadCharts());
+      },
+      error: err => {
+        this.cargando = false;
+        alert(mensajeDeError(err, 'No se pudieron cargar los datos del panel.'));
       }
-    };
-    this.supervisorService.getTeamMembers().subscribe(data => {
-      this.teamMembers = data;
-      this.dashboardStats[1].value = data.length;
-      this.dashboardStats[2].value = this.getAverageTime();
-      teamLoaded = true;
-      checkAndLoadCharts();
-    });
-    this.supervisorService.getDashboardTickets().subscribe(data => {
-      this.tickets = data;
-      this.filteredTickets = data;
-      this.dashboardStats[0].value = data.filter(t => t.status === 'Abierto' || t.status === 'en-progreso').length;
-      this.tiempoResolucionPromedio = this.getTiempoResolucionPromedio();
-      ticketsLoaded = true;
-      checkAndLoadCharts();
-    });
-    this.supervisorService.getEscalations().subscribe(data => {
-      this.escalations = data;
-    });
-    this.supervisorService.getWeeklyPerformance().subscribe(data => {
-      this.weeklyPerformance = data;
-      weeklyLoaded = true;
-      checkAndLoadCharts();
-    });
-    this.supervisorService.getAgentComparison().subscribe(data => {
-      this.agentComparison = data;
-      agentCompLoaded = true;
-      checkAndLoadCharts();
     });
   }
 
-  getAverageTime(): string {
-    if (!this.teamMembers.length) return '';
-    const times = this.teamMembers.map(m => parseFloat(m.avgTime));
-    const avg = times.reduce((a, b) => a + b, 0) / times.length;
-    return avg.toFixed(1) + 'h';
+  // ---------- Indicadores ----------
+
+  get activeTickets(): Ticket[] {
+    return this.tickets.filter(t => esEstadoActivo(t.status));
   }
 
-  getTicketsPorDiaPromedio() {
-    // Simulación: tickets cerrados en los últimos 7 días / 7
-    const ahora = new Date();
-    const hace7 = new Date(ahora.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const cerrados = this.tickets.filter(t => (t.status?.toLowerCase() === 'resuelto' || t.status?.toLowerCase() === 'cerrado'));
-    // Si tu backend tiene fecha de cierre, úsala aquí
-    return (cerrados.length / 7).toFixed(1);
+  /** Promedio diario de tickets resueltos en los últimos siete días (dato real del backend). */
+  getTicketsPorDiaPromedio(): string {
+    const resueltos = this.weeklyPerformance?.resolved ?? [];
+    const total = resueltos.reduce((suma, valor) => suma + valor, 0);
+    return (total / 7).toFixed(1);
   }
 
-  // Calcula el tiempo promedio real de resolución de tickets cerrados/resueltos
-  getTiempoResolucionPromedio() {
-    // Filtra tickets resueltos/cerrados
-    const cerrados = this.tickets.filter(t =>
-      (t.status?.toLowerCase() === 'resuelto' || t.status?.toLowerCase() === 'cerrado') &&
-      t.fechaHoraCreacionTicket && t.fechaHoraActualizacionTicket
-    );
-    if (!cerrados.length) return '0h';
-    let totalHoras = 0;
-    cerrados.forEach(t => {
-      const inicio = new Date(t.fechaHoraCreacionTicket as string).getTime();
-      const fin = new Date(t.fechaHoraActualizacionTicket as string).getTime();
-      const diffHoras = (fin - inicio) / (1000 * 60 * 60);
-      totalHoras += diffHoras > 0 ? diffHoras : 0;
-    });
-    const promedio = totalHoras / cerrados.length;
-    return promedio.toFixed(1) + 'h';
+  /** Horas promedio entre apertura y última actualización de los tickets finalizados. */
+  getTiempoResolucionPromedio(): string {
+    const finalizados = this.tickets.filter(t =>
+      esEstadoFinalizado(t.status) && t.fechaHoraCreacionTicket && t.fechaHoraActualizacionTicket);
+
+    if (!finalizados.length) {
+      return 'N/D';
+    }
+
+    const totalHoras = finalizados.reduce((suma, t) => {
+      const inicio = new Date(t.fechaHoraCreacionTicket!).getTime();
+      const fin = new Date(t.fechaHoraActualizacionTicket!).getTime();
+      return suma + Math.max(0, (fin - inicio) / 3_600_000);
+    }, 0);
+
+    return (totalHoras / finalizados.length).toFixed(1) + 'h';
+  }
+
+  /** Porcentaje de tickets finalizados sobre asignados, sumando todo el equipo. */
+  get tasaResolucionGlobal(): string {
+    const asignados = this.agentComparison.reduce((suma, a) => suma + a.asignados, 0);
+    const resueltos = this.agentComparison.reduce((suma, a) => suma + a.resueltos, 0);
+    return asignados === 0 ? 'N/D' : `${((resueltos * 100) / asignados).toFixed(1)}%`;
   }
 
   getTeamStatus(status: string): number {
     return this.teamMembers.filter(m => m.status === status).length;
   }
 
-  getPriorityIcon(priority: string) {
-    const icons: any = { urgent: '🚨', high: '⚠️', medium: '📋', low: '📝' };
-    return icons[priority] || '📋';
-  }
+  // ---------- Estilos ----------
 
-  getPriorityClass(priority: string) {
-    return {
-      'priority-urgent': priority === 'urgent',
-      'priority-high': priority === 'high',
-      'priority-medium': priority === 'medium',
-      'priority-low': priority === 'low'
+  getPriorityBadgeClass(priority: string): string {
+    const clases: Record<string, string> = {
+      urgente: 'bg-red-100 text-red-800',
+      alta: 'bg-orange-100 text-orange-800',
+      media: 'bg-yellow-100 text-yellow-800',
+      baja: 'bg-green-100 text-green-800'
     };
+    return clases[(priority ?? '').toLowerCase()] ?? 'bg-gray-100 text-gray-800';
   }
 
-  getPriorityBadgeClass(priority: string) {
-    const classes: any = {
-      urgent: 'bg-red-100 text-red-800',
-      high: 'bg-orange-100 text-orange-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      low: 'bg-green-100 text-green-800'
-    };
-    return classes[priority] || 'bg-gray-100 text-gray-800';
-  }
-
-  getStatusColor(status: string) {
-    const colors: any = {
+  getStatusColor(status: string): string {
+    const colores: Record<string, string> = {
       available: 'bg-green-500',
       busy: 'bg-yellow-500',
       away: 'bg-red-500'
     };
-    return colors[status] || 'bg-gray-500';
-  }
-
-  getCategoryIcon(category: string): string {
-    const icons: any = {
-      'Infraestructura': '🏗️',
-      'Base de Datos': '🗄️',
-      'Software': '💾',
-      'Hardware': '🖥️',
-      'Red': '🌐'
-    };
-    return icons[category] || '❓';
+    return colores[status] ?? 'bg-gray-500';
   }
 
   getStatusBadgeClass(status: string): string {
-    const classes: any = {
+    const clases: Record<string, string> = {
       'abierto': 'bg-blue-100 text-blue-800',
       'en-progreso': 'bg-yellow-100 text-yellow-800',
       'pendiente': 'bg-purple-100 text-purple-800',
       'resuelto': 'bg-green-100 text-green-800'
     };
-    return classes[status] || 'bg-gray-100 text-gray-800';
+    return clases[normalizarEstado(status)] ?? 'bg-gray-100 text-gray-800';
   }
 
-  getEscalationCount(type: string): number {
-    return this.escalations.filter(e => e.status === type).length;
+  get escalacionesCriticas(): Escalation[] {
+    return this.escalations.filter(e => e.status === 'critical');
   }
 
-  loadCharts() {
-    const ticketDistributionElem = document.getElementById('ticketDistributionChart');
-    if (ticketDistributionElem) {
-      if (this.ticketDistributionChartInstance) {
-        this.ticketDistributionChartInstance.destroy();
-      }
-      this.ticketDistributionChartInstance = new Chart(ticketDistributionElem as HTMLCanvasElement, {
-        type: 'doughnut',
-        data: {
-          labels: this.teamMembers.map(m => m.name),
-          datasets: [{
-            data: this.teamMembers.map(m => m.tickets),
-            backgroundColor: [
-              'rgba(59, 130, 246, 0.8)',
-              'rgba(16, 185, 129, 0.8)',
-              'rgba(245, 158, 11, 0.8)',
-              'rgba(139, 92, 246, 0.8)'
-            ]
-          }]
-        },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
-    const workloadChartElem = document.getElementById('workloadChart');
-    if (workloadChartElem) {
-      if (this.workloadChartInstance) {
-        this.workloadChartInstance.destroy();
-      }
-      this.workloadChartInstance = new Chart(workloadChartElem as HTMLCanvasElement, {
-        type: 'bar',
-        data: {
-          labels: this.teamMembers.map(m => m.name),
-          datasets: [{
-            label: 'Tickets Asignados',
-            data: this.teamMembers.map(m => m.tickets),
-            backgroundColor: 'rgba(59, 130, 246, 0.8)'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    }
-    const weeklyTrendElem = document.getElementById('weeklyTrendChart');
-    console.log('weeklyTrendElem:', weeklyTrendElem, 'weeklyPerformance:', this.weeklyPerformance);
-    if (weeklyTrendElem && this.weeklyPerformance) {
-      if (this.weeklyTrendChartInstance) {
-        this.weeklyTrendChartInstance.destroy();
-      }
-      this.weeklyTrendChartInstance = new Chart(weeklyTrendElem as HTMLCanvasElement, {
+  get escalacionesPendientes(): Escalation[] {
+    return this.escalations.filter(e => e.status === 'pending');
+  }
+
+  get escalacionesResueltas(): Escalation[] {
+    return this.escalations.filter(e => e.status === 'resolved');
+  }
+
+  // ---------- Gráficas ----------
+
+  loadCharts(): void {
+    this.dibujar('ticketDistributionChart', canvas => new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: this.teamMembers.map(m => m.name),
+        datasets: [{
+          data: this.teamMembers.map(m => m.tickets),
+          backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6']
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    }));
+
+    this.dibujar('workloadChart', canvas => new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: this.teamMembers.map(m => m.name),
+        datasets: [{ label: 'Tickets activos', data: this.teamMembers.map(m => m.tickets), backgroundColor: '#3b82f6' }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    }));
+
+    if (this.weeklyPerformance) {
+      const semana = this.weeklyPerformance;
+      this.dibujar('weeklyTrendChart', canvas => new Chart(canvas, {
         type: 'line',
         data: {
-          labels: this.weeklyPerformance.labels,
+          labels: semana.labels,
           datasets: [
-            {
-              label: 'Tickets Resueltos',
-              data: this.weeklyPerformance.resolved,
-              borderColor: 'rgba(16, 185, 129, 1)',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              tension: 0.4
-            },
-            {
-              label: 'Tickets Creados',
-              data: this.weeklyPerformance.created,
-              borderColor: 'rgba(59, 130, 246, 1)',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              tension: 0.4
-            }
+            { label: 'Resueltos', data: semana.resolved, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.4 },
+            { label: 'Creados', data: semana.created, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4 }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      }));
     }
-    const agentComparisonElem = document.getElementById('agentComparisonChart');
-    console.log('agentComparisonElem:', agentComparisonElem, 'agentComparison:', this.agentComparison);
-    if (agentComparisonElem && this.agentComparison) {
-      if (this.agentComparisonChartInstance) {
-        this.agentComparisonChartInstance.destroy();
-      }
-      this.agentComparisonChartInstance = new Chart(agentComparisonElem as HTMLCanvasElement, {
-        type: 'radar',
-        data: {
-          labels: ['Velocidad', 'Calidad', 'Satisfacción', 'Comunicación', 'Proactividad'],
-          datasets: this.agentComparison.map((a: any) => ({
-            label: a.name,
-            data: [a.velocidad, a.calidad, a.satisfaccion, a.comunicacion, a.proactividad],
-            borderColor: 'rgba(59, 130, 246, 1)',
-            backgroundColor: 'rgba(59, 130, 246, 0.2)'
-          }))
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { r: { beginAtZero: true, max: 10 } }
+
+    // Comparativa real por agente: antes era un radar alimentado con números aleatorios.
+    this.dibujar('agentComparisonChart', canvas => new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: this.agentComparison.map(a => a.name),
+        datasets: [
+          { label: 'Resueltos', data: this.agentComparison.map(a => a.resueltos), backgroundColor: '#10b981' },
+          { label: 'Activos', data: this.agentComparison.map(a => a.activos), backgroundColor: '#f59e0b' }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              footer: elementos => {
+                const agente = this.agentComparison[elementos[0]?.dataIndex ?? -1];
+                if (!agente) {
+                  return '';
+                }
+                const promedio = agente.tiempoPromedioHoras === null ? 'N/D' : `${agente.tiempoPromedioHoras} h`;
+                return `Tasa de resolución: ${agente.tasaResolucion}% · Promedio: ${promedio}`;
+              }
+            }
+          }
         }
-      });
-    }
+      }
+    }));
   }
 
-  assignTicket(ticketId: string | null, agenteId: number) {
-    if (!ticketId) return;
-    this.http.post('/api/tickets/assign', { idTicket: Number(ticketId), idAgente: agenteId }).subscribe({
-      next: () => {
-        alert('Ticket asignado correctamente');
-        this.loadAllData();
-        this.selectedTicketIdPerAgent[agenteId] = null;
-      },
-      error: () => {
-        alert('Error al asignar el ticket');
-      }
+  private dibujar(id: string, crear: (canvas: HTMLCanvasElement) => Chart): void {
+    const canvas = document.getElementById(id) as HTMLCanvasElement | null;
+    this.graficas[id]?.destroy();
+    this.graficas[id] = canvas ? crear(canvas) : undefined;
+  }
+
+  // ---------- Filtros ----------
+
+  aplicarFiltros(): void {
+    this.filteredTickets = this.tickets.filter(ticket => {
+      const estado = !this.filterEstado || normalizarEstado(ticket.status) === normalizarEstado(this.filterEstado);
+      const prioridad = !this.filterPrioridad || (ticket.priority ?? '').toLowerCase() === this.filterPrioridad.toLowerCase();
+      const agente = !this.filterAgente || ticket.agent === this.filterAgente;
+      return estado && prioridad && agente;
     });
   }
 
-  // Cuando el usuario seleccione un ticket para asignar, actualiza selectedTicketId
-  selectTicket(ticketId: number) {
-    this.selectedTicketId = ticketId;
-  }
-
-  get activeTickets() {
-    // Ajusta los estados según tu lógica de "activo"
-    return this.tickets.filter(t => t.status === 'Abierto' || t.status === 'en-progreso');
-  }
-
-  onEstadoChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.filterEstado = select.value;
+  onEstadoChange(event: Event): void {
+    this.filterEstado = (event.target as HTMLSelectElement).value;
     this.aplicarFiltros();
   }
 
-  onPrioridadChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.filterPrioridad = select.value;
+  onPrioridadChange(event: Event): void {
+    this.filterPrioridad = (event.target as HTMLSelectElement).value;
     this.aplicarFiltros();
   }
 
-  onAgenteChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.filterAgente = select.value;
+  onAgenteChange(event: Event): void {
+    this.filterAgente = (event.target as HTMLSelectElement).value;
     this.aplicarFiltros();
   }
 
-  abrirSupervision(ticket: Ticket) {
-    if (this.supervisandoTicket) {
-      this.chatService.disconnect(this.supervisandoTicket.id.toString());
+  // ---------- Acciones sobre tickets ----------
+
+  assignTicket(ticketId: number | null, agenteId: number): void {
+    if (!ticketId) {
+      return;
     }
+
+    this.supervisorService.asignarTicket(Number(ticketId), agenteId).subscribe({
+      next: respuesta => {
+        alert(respuesta.message);
+        this.selectedTicketIdPerAgent[agenteId] = null;
+        this.loadAllData();
+      },
+      error: err => alert(mensajeDeError(err, 'No se pudo asignar el ticket.'))
+    });
+  }
+
+  redistribuirTickets(): void {
+    this.supervisorService.redistribuir().subscribe({
+      next: respuesta => {
+        alert(respuesta.message);
+        this.loadAllData();
+      },
+      error: err => alert(mensajeDeError(err, 'No se pudieron redistribuir los tickets.'))
+    });
+  }
+
+  asignarSinAsignar(): void {
+    this.supervisorService.asignarSinAgente().subscribe({
+      next: respuesta => {
+        alert(respuesta.message);
+        this.loadAllData();
+      },
+      error: err => alert(mensajeDeError(err, 'No se pudieron asignar los tickets sin agente.'))
+    });
+  }
+
+  /** Muestra la lista de tickets que superan el SLA (antes solo decía cuántos había). */
+  revisarVencidos(): void {
+    this.supervisorService.getVencidos().subscribe({
+      next: vencidos => {
+        this.vencidos = vencidos;
+        this.mostrarVencidos = true;
+      },
+      error: err => alert(mensajeDeError(err, 'No se pudieron consultar los tickets vencidos.'))
+    });
+  }
+
+  // ---------- Supervisión y chat ----------
+
+  abrirSupervision(ticket: Ticket): void {
     this.supervisandoTicket = ticket;
     this.mensajes = [];
     this.mensajeIntervencion = '';
     this.categoriaEscalada = '';
-    this.agenteReasignado = ticket.agent;
+    this.agenteReasignado = ticket.idAgenteAsignado ? String(ticket.idAgenteAsignado) : '';
     this.chatBloqueado = true;
-    // Cargar mensajes históricos
-    this.chatService.getMensajesPorTicket(Number(ticket.id)).subscribe(mensajes => {
-      this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.nombreUsuario || m.usuario, // Siempre usar el nombre guardado
-        texto: m.mensajeTicket,
-        esSupervisor: m.idUsuario === this.supervisorId
-      }));
+    this.chatError = '';
+
+    this.chatService.historial(ticket.id).subscribe({
+      next: historial => {
+        this.mensajes = historial.map(m => ({
+          remitente: m.usuarioNombre,
+          texto: m.mensajeTicket,
+          esSupervisor: m.idUsuario === this.supervisorUserId
+        }));
+      },
+      error: err => this.chatError = mensajeDeError(err, 'No se pudo cargar el historial.')
     });
-    // Conecta al hub y suscríbete a los mensajes en tiempo real
-    this.chatService.connect(ticket.id.toString());
-    this.chatService.onReceiveMessage((user, message, fecha) => {
-      this.mensajes.push({
-        remitente: user, // Usar siempre el nombre recibido
-        texto: message,
-        esSupervisor: user === this.supervisorName
-      });
-    });
+
+    this.chatService.conectar(ticket.id)
+      .catch(() => this.chatError = 'No se pudo conectar al chat en tiempo real.');
   }
 
-  intervenirChat() {
+  intervenirChat(): void {
     this.chatBloqueado = false;
   }
 
-  enviarMensaje() {
-    if (!this.mensajeIntervencion.trim() || !this.supervisandoTicket) return;
-    this.chatService.sendMessage(
-      this.supervisandoTicket.id.toString(),
-      this.supervisorName,
-      this.mensajeIntervencion,
-      this.supervisorId
-    );
+  enviarMensaje(): void {
+    const texto = this.mensajeIntervencion.trim();
+    if (!texto || !this.supervisandoTicket) {
+      return;
+    }
+
     this.mensajeIntervencion = '';
+    this.chatService.enviar(texto).catch(err => {
+      this.mensajeIntervencion = texto;
+      this.chatError = err?.message ?? 'No se pudo enviar el mensaje.';
+    });
   }
 
-  cerrarSupervision() {
-    if (this.supervisandoTicket) {
-      this.chatService.disconnect(this.supervisandoTicket.id.toString());
-    }
+  cerrarSupervision(): void {
     this.supervisandoTicket = null;
     this.mensajes = [];
+    void this.chatService.desconectar();
   }
 
-  reasignarAgente() {
-    if (this.supervisandoTicket) {
-      this.http.post('/api/tickets/assign', {
-        idTicket: this.supervisandoTicket.id,
-        idAgente: this.agenteReasignado // ahora es el id numérico
-      }).subscribe({
-        next: () => {
-          alert('Ticket reasignado correctamente');
-          if (this.supervisandoTicket) {
-            // Actualiza el nombre del agente en el ticket local
-            const agente = this.teamMembers.find(a => a.idAgente === Number(this.agenteReasignado));
-            this.supervisandoTicket.agent = agente ? agente.name : '';
-          }
-          this.loadAllData();
-        },
-        error: () => {
-          alert('Error al reasignar el ticket');
-        }
-      });
+  reasignarAgente(): void {
+    if (!this.supervisandoTicket || !this.agenteReasignado) {
+      return;
     }
-  }
 
-  escalarTicket() {
-    if (this.supervisandoTicket) {
-      this.http.post(`/api/tickets/${this.supervisandoTicket.id}/escalar`, {
-        nuevaCategoria: this.categoriaEscalada
-      }).subscribe({
-        next: () => {
-          alert('Ticket escalado correctamente');
-          if (this.supervisandoTicket) {
-            this.supervisandoTicket.category = this.categoriaEscalada;
-          }
-          this.loadAllData();
-        },
-        error: () => {
-          alert('Error al escalar el ticket');
+    const idAgente = Number(this.agenteReasignado);
+
+    this.supervisorService.asignarTicket(this.supervisandoTicket.id, idAgente).subscribe({
+      next: respuesta => {
+        alert(respuesta.message);
+        if (this.supervisandoTicket) {
+          this.supervisandoTicket.agent = this.teamMembers.find(a => a.idAgente === idAgente)?.name ?? '';
+          this.supervisandoTicket.idAgenteAsignado = idAgente;
         }
-      });
-    }
-  }
-
-  redistribuirTickets() {
-    this.http.post('/api/tickets/redistribuir', {}).subscribe({
-      next: () => {
-        alert('Tickets redistribuidos automáticamente');
         this.loadAllData();
       },
-      error: () => {
-        alert('Error al redistribuir tickets');
-      }
+      error: err => alert(mensajeDeError(err, 'No se pudo reasignar el ticket.'))
     });
   }
 
-  asignarSinAsignar() {
-    this.http.post('/api/tickets/asignar-sin-agente', {}).subscribe({
-      next: () => {
-        alert('Tickets sin asignar han sido distribuidos');
+  escalarTicket(): void {
+    if (!this.supervisandoTicket || !this.categoriaEscalada) {
+      return;
+    }
+
+    this.supervisorService.escalarTicket(this.supervisandoTicket.id, this.categoriaEscalada).subscribe({
+      next: respuesta => {
+        alert(respuesta.message);
+        if (this.supervisandoTicket) {
+          this.supervisandoTicket.category = this.categoriaEscalada;
+        }
         this.loadAllData();
       },
-      error: () => {
-        alert('Error al asignar tickets sin agente');
-      }
+      error: err => alert(mensajeDeError(err, 'No se pudo escalar el ticket.'))
     });
   }
 
-  revisarVencidos() {
-    this.http.get('/api/tickets/vencidos').subscribe({
-      next: (tickets: any) => {
-        alert(`Tickets vencidos encontrados: ${tickets.length}`);
-        // Aquí podrías mostrar los tickets en un modal o sección
+  private agregarMensajeEnVivo(mensaje: MensajeChatEnVivo): void {
+    if (mensaje.idTicket !== this.supervisandoTicket?.id) {
+      return;
+    }
+
+    this.mensajes.push({
+      remitente: mensaje.usuario,
+      texto: mensaje.mensaje,
+      esSupervisor: mensaje.idUsuario === this.supervisorUserId
+    });
+  }
+
+  // ---------- Reportes ----------
+
+  generarReporteCarga(): void {
+    this.descargar(this.supervisorService.reporteCarga(), 'reporte-carga.pdf');
+  }
+
+  generarReporteSemanal(): void {
+    this.descargar(this.supervisorService.reporteSemanal(), 'reporte-semanal.pdf');
+  }
+
+  generarReporteIndividual(): void {
+    if (this.agenteReporte === null) {
+      return;
+    }
+    this.descargar(
+      this.supervisorService.reporteIndividual(this.agenteReporte),
+      `reporte-agente-${this.agenteReporte}.pdf`);
+  }
+
+  private descargar(peticion: ReturnType<SupervisorService['reporteCarga']>, nombre: string): void {
+    this.generandoReporte = true;
+
+    peticion.subscribe({
+      next: blob => {
+        descargarArchivo(blob, nombre);
+        this.generandoReporte = false;
       },
-      error: () => {
-        alert('Error al revisar tickets vencidos');
+      error: async err => {
+        this.generandoReporte = false;
+        alert(await mensajeDeErrorBlob(err, 'No se pudo generar el reporte.'));
       }
     });
   }
 
-  get escalacionesActivas() {
-    return this.escalations.filter(e => e.status === 'critical' || e.status === 'pending');
-  }
-  get escalacionesCriticas() {
-    return this.escalations.filter(e => e.status === 'critical');
-  }
-  get escalacionesPendientes() {
-    return this.escalations.filter(e => e.status === 'pending');
-  }
-  get escalacionesResueltas() {
-    return this.escalations.filter(e => e.status === 'resolved');
-  }
-  get escalacionesEscaladas() {
-    return this.escalations.filter(e => e.status === 'escalated');
-  }
+  // ---------- Perfil y sesión ----------
 
-  // Show profile modal (called from template gears)
-  showProfileModal() {
+  showProfileModal(): void {
     this.profileName = this.supervisorName;
-    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
+    this.profileEmail = this.auth.usuario()?.correoUsuario ?? '';
     this.mostrarProfileModal = true;
   }
 
-  closeProfileModal() {
+  closeProfileModal(): void {
     this.mostrarProfileModal = false;
   }
 
-  updateProfile() {
-    // Persist profile changes locally (adapt to API if available)
-    this.supervisorName = this.profileName;
-    if (this.profileEmail) {
-      localStorage.setItem('usuarioEmail', this.profileEmail);
-    }
-    localStorage.setItem('usuario', this.supervisorName);
-    this.closeProfileModal();
+  /** Antes solo se guardaba en localStorage; ahora se persiste en el servidor. */
+  updateProfile(): void {
+    const nombre = this.profileName.trim() || this.supervisorName;
+
+    this.usuarioService.updateProfile(nombre, this.profileEmail.trim()).subscribe({
+      next: () => this.closeProfileModal(),
+      error: err => alert(mensajeDeError(err, 'No se pudo actualizar el perfil.'))
+    });
   }
 
-  generarReporteCarga() {
-    this.http.get('/api/tickets/reporte-carga', { responseType: 'blob' }).subscribe(blob => {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'reporte-carga.pdf';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
+  confirmLogout(): void {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      void this.chatService.desconectar();
+      this.auth.logout();
+    }
   }
 }

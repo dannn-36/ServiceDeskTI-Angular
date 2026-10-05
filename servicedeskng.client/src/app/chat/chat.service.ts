@@ -1,73 +1,91 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
 import * as signalR from '@microsoft/signalr';
+import { Observable, Subject } from 'rxjs';
+import { MensajeChatEnVivo, MensajeTicket } from '../core/modelos';
 
-@Injectable({
-  providedIn: 'root'
-})
+/**
+ * Chat en tiempo real de un ticket.
+ *
+ * - Usa rutas relativas (/chathub), que el proxy de desarrollo reenvía al backend
+ *   y que en producción apuntan al mismo servidor. Antes estaba fija a localhost:5076.
+ * - La autenticación viaja en la cookie de sesión: el hub ya no recibe
+ *   userId ni userName del cliente, así que nadie puede escribir como otra persona.
+ * - Los mensajes se exponen como Observable; cada componente se suscribe y se
+ *   desuscribe al destruirse. Antes se registraba un manejador nuevo en cada apertura
+ *   del chat y los mensajes llegaban duplicados.
+ */
+@Injectable({ providedIn: 'root' })
 export class ChatService {
-  private hubConnection!: signalR.HubConnection;
-  private readonly hubUrl = 'http://localhost:5076/chathub';
-  private readonly apiUrl = 'http://localhost:5076/api/ticketmensaje';
+  private readonly http = inject(HttpClient);
 
-  constructor(private http: HttpClient) { }
+  private conexion: signalR.HubConnection | null = null;
+  private ticketActual: number | null = null;
+  private readonly mensajesEnVivo = new Subject<MensajeChatEnVivo>();
 
-  private isConnected = false;
+  /** Mensajes que llegan por el hub para el ticket conectado. */
+  readonly mensajes$: Observable<MensajeChatEnVivo> = this.mensajesEnVivo.asObservable();
 
-  connect(ticketId: string): void {
-    if (this.isConnected) return;
-    this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(this.hubUrl)
-      .configureLogging(signalR.LogLevel.Information)
+  historial(idTicket: number): Observable<MensajeTicket[]> {
+    return this.http.get<MensajeTicket[]>(`/api/TicketMensaje/ticket/${idTicket}`);
+  }
+
+  async conectar(idTicket: number): Promise<void> {
+    await this.desconectar();
+
+    const conexion = new signalR.HubConnectionBuilder()
+      .withUrl('/chathub')
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Warning)
       .build();
 
-    this.hubConnection
-      .start()
-      .then(() => {
-        console.log('✅ Conectado al hub');
-        this.isConnected = true;
-        this.joinTicket(ticketId);
-      })
-      .catch(err => console.error('❌ Error de conexión:', err));
-  }
-
-  joinTicket(ticketId: string): void {
-    this.hubConnection.invoke('JoinTicket', ticketId);
-  }
-
-  leaveTicket(ticketId: string): void {
-    this.hubConnection.invoke('LeaveTicket', ticketId);
-  }
-
-  onReceiveMessage(callback: (user: string, message: string, fecha: string) => void): void {
-    this.hubConnection.on('ReceiveMessage', (data) => {
-      callback(data.usuario, data.mensaje, data.fecha);
+    conexion.on('ReceiveMessage', (mensaje: MensajeChatEnVivo) => {
+      if (mensaje.idTicket === this.ticketActual) {
+        this.mensajesEnVivo.next(mensaje);
+      }
     });
+
+    // Tras una reconexión el servidor ya no recuerda el grupo: hay que volver a unirse.
+    conexion.onreconnected(() => conexion.invoke('JoinTicket', String(idTicket)));
+
+    this.conexion = conexion;
+    this.ticketActual = idTicket;
+
+    await conexion.start();
+    await conexion.invoke('JoinTicket', String(idTicket));
   }
 
-  sendMessage(ticketId: string, userName: string, message: string, userId: number): void {
-    console.log('SignalR sendMessage:', ticketId, userName, message, userId);
-    if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
-      console.error('No hay conexión activa al chat.');
+  async enviar(texto: string): Promise<void> {
+    const mensaje = texto.trim();
+    if (!mensaje) {
       return;
     }
-    this.hubConnection.invoke('SendMessage', ticketId, userName, message, userId)
-      .catch(err => console.error('Error al enviar mensaje:', err));
+
+    if (!this.conexion || this.ticketActual === null
+        || this.conexion.state !== signalR.HubConnectionState.Connected) {
+      throw new Error('No hay conexión con el chat. Vuelve a abrir el ticket.');
+    }
+
+    await this.conexion.invoke('SendMessage', String(this.ticketActual), mensaje);
   }
 
-  disconnect(ticketId?: string): void {
-    if (ticketId) {
-      this.leaveTicket(ticketId);
-    }
-    if (this.hubConnection) {
-      this.hubConnection.stop();
-    }
-    this.isConnected = false;
-  }
+  async desconectar(): Promise<void> {
+    const conexion = this.conexion;
+    const ticket = this.ticketActual;
 
-  // Nuevo: obtener mensajes históricos de un ticket
-  getMensajesPorTicket(ticketId: number): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/ticket/${ticketId}`);
+    this.conexion = null;
+    this.ticketActual = null;
+
+    if (!conexion) {
+      return;
+    }
+
+    try {
+      if (ticket !== null && conexion.state === signalR.HubConnectionState.Connected) {
+        await conexion.invoke('LeaveTicket', String(ticket));
+      }
+    } finally {
+      await conexion.stop();
+    }
   }
 }

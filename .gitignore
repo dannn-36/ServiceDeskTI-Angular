@@ -367,3 +367,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /ServiceDeskNg.Server/Models/Cliente.cs
 /ServiceDeskNg.Server/Data/ServiceDeskContext.cs
+
+# Variables locales de Docker Compose (contienen contraseñas)
+.env

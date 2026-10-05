@@ -39,7 +39,9 @@
     <PackageReference Include="QuestPDF" Version="2025.7.4" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- En Docker la interfaz se compila en su propia imagen (nginx), así que se omite
+       con -p:SinFrontend=true y la API no necesita Node.js para compilar. -->
+  <ItemGroup Condition="'$(SinFrontend)' != 'true'">
     <ProjectReference Include="..\servicedeskng.client\servicedeskng.client.esproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>

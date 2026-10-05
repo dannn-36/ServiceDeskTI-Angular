@@ -41,3 +41,12 @@ jobs:
 
       - name: Pruebas unitarias
         run: npx ng test --watch=false --browsers=ChromeHeadlessCI
+
+  docker:
+    name: Imágenes Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imágenes de la API y la web
+        run: docker compose build

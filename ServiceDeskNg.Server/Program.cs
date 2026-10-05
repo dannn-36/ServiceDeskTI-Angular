@@ -4,6 +4,8 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
@@ -37,10 +39,16 @@ namespace ServiceDeskNg.Server
             var app = builder.Build();
 
             VerificarConexion(app);
+            InicializarBaseDeDatos(app);
             ConfigurarPipeline(app);
 
             app.Run();
         }
+
+        /// Cookies Secure, HSTS y redirección a HTTPS. Activado fuera de Development salvo
+        /// que se desactive explícitamente (por ejemplo, en Docker local servido por http).
+        private static bool EsSoloHttps(IConfiguration configuracion, IHostEnvironment entorno) =>
+            configuracion.GetValue<bool?>("Seguridad:SoloHttps") ?? !entorno.IsDevelopment();
 
         // ======================================================
         // Base de datos
@@ -92,9 +100,20 @@ namespace ServiceDeskNg.Server
             services.AddScoped<AdministradorService>();
             services.AddScoped<RespaldoService>();
             services.AddSingleton<ReportesPdfService>();
+            services.AddScoped<InicializadorBaseDatos>();
 
             services.Configure<OpcionesSla>(configuracion.GetSection(OpcionesSla.Seccion));
             services.Configure<OpcionesRespaldo>(configuracion.GetSection(OpcionesRespaldo.Seccion));
+            services.Configure<OpcionesInicializacion>(configuracion.GetSection(OpcionesInicializacion.Seccion));
+
+            services.AddHealthChecks().AddCheck<ChequeoBaseDatos>("base-de-datos");
+
+            // Claves que cifran la cookie de sesión. Si se guardan en un volumen, las sesiones
+            // sobreviven a un reinicio del contenedor; si no, cada arranque las invalida.
+            var rutaClaves = configuracion["DataProtection:RutaClaves"];
+            var dataProtection = services.AddDataProtection().SetApplicationName("ServiceDeskTI");
+            if (!string.IsNullOrWhiteSpace(rutaClaves))
+                dataProtection.PersistKeysToFileSystem(new DirectoryInfo(rutaClaves));
         }
 
         // ======================================================
@@ -115,9 +134,9 @@ namespace ServiceDeskNg.Server
                     // No viaja en peticiones iniciadas desde otros sitios (mitiga CSRF).
                     options.Cookie.SameSite = SameSiteMode.Strict;
 
-                    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
-                        ? CookieSecurePolicy.SameAsRequest
-                        : CookieSecurePolicy.Always;
+                    options.Cookie.SecurePolicy = EsSoloHttps(builder.Configuration, builder.Environment)
+                        ? CookieSecurePolicy.Always
+                        : CookieSecurePolicy.SameAsRequest;
 
                     options.ExpireTimeSpan = TimeSpan.FromHours(8);
                     options.SlidingExpiration = true;
@@ -158,6 +177,17 @@ namespace ServiceDeskNg.Server
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0
                         }));
+            });
+
+            // Detrás de un proxy inverso (nginx en Docker), la IP real del cliente y el esquema
+            // original llegan en cabeceras X-Forwarded-*. Sin esto, el límite de intentos de login
+            // vería a todos los usuarios con la misma IP (la del proxy).
+            builder.Services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                // La API solo es accesible a través del proxy (red interna de Docker).
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
             });
 
             var origenes = builder.Configuration.GetSection("Cors:OrigenesPermitidos").Get<string[]>()
@@ -268,11 +298,47 @@ namespace ServiceDeskNg.Server
             }
         }
 
+        /// Crea el primer administrador y, si se pidió, los datos de demostración.
+        /// Reintenta unos segundos por si la base de datos todavía está arrancando.
+        private static void InicializarBaseDeDatos(WebApplication app)
+        {
+            if (app.Environment.IsEnvironment(EntornoPruebas))
+                return;
+
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            const int intentos = 10;
+
+            for (var intento = 1; intento <= intentos; intento++)
+            {
+                try
+                {
+                    using var scope = app.Services.CreateScope();
+                    scope.ServiceProvider.GetRequiredService<InicializadorBaseDatos>()
+                        .EjecutarAsync().GetAwaiter().GetResult();
+                    return;
+                }
+                catch (Exception ex) when (intento < intentos)
+                {
+                    logger.LogWarning(
+                        "Inicialización de la base pendiente (intento {Intento}/{Total}): {Motivo}",
+                        intento, intentos, ex.Message);
+                    Thread.Sleep(TimeSpan.FromSeconds(3));
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "No se pudo inicializar la base de datos.");
+                }
+            }
+        }
+
         private static void ConfigurarPipeline(WebApplication app)
         {
+            if (app.Configuration.GetValue("Proxy:UsarEncabezadosReenviados", false))
+                app.UseForwardedHeaders();
+
             app.UseExceptionHandler();
 
-            if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment(EntornoPruebas))
+            if (EsSoloHttps(app.Configuration, app.Environment) && !app.Environment.IsEnvironment(EntornoPruebas))
             {
                 app.UseHsts();
                 app.UseHttpsRedirection();
@@ -293,6 +359,9 @@ namespace ServiceDeskNg.Server
             // Documento OpenAPI en desarrollo (y en pruebas, que verifican que se genera bien).
             if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment(EntornoPruebas))
                 app.MapOpenApi().AllowAnonymous();
+
+            // Estado de la API y de su conexión con la base de datos (público, sin datos sensibles).
+            app.MapHealthChecks("/health").AllowAnonymous();
 
             app.MapControllers();
             app.MapHub<ChatHub>("/chathub");

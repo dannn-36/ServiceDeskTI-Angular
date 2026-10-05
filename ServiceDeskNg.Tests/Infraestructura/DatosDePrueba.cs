@@ -54,7 +54,27 @@ namespace ServiceDeskNg.Tests.Infraestructura
 
         /// Los catálogos copian literalmente los datos iniciales de Database/DatabaseScript.txt,
         /// para que las pruebas fallen si el código asume valores que la base real no tiene.
+        /// Base con solo los catálogos del script SQL, sin ningún usuario (como recién creada).
+        public static DatosDePrueba CrearSoloCatalogos()
+        {
+            var datos = new DatosDePrueba();
+            using var contexto = datos.NuevoContexto();
+            datos.SembrarCatalogos(contexto);
+            return datos;
+        }
+
+        private NivelesAcceso _nivelCliente = null!;
+        private NivelesAcceso _nivelAgente = null!;
+        private NivelesAcceso _nivelSupervisor = null!;
+        private NivelesAcceso _nivelAdmin = null!;
+
         public void Sembrar(ServiceDeskContext contexto)
+        {
+            SembrarCatalogos(contexto);
+            SembrarUsuarios(contexto);
+        }
+
+        public void SembrarCatalogos(ServiceDeskContext contexto)
         {
             var nivelCliente = new NivelesAcceso { Nivel = 1, Nombre = "Acceso básico - Usuarios finales" };
             var nivelAgente = new NivelesAcceso { Nivel = 2, Nombre = "Acceso intermedio - Agentes" };
@@ -71,10 +91,32 @@ namespace ServiceDeskNg.Tests.Infraestructura
             var reabierto = new TicketsEstado { NombreEstado = "reabierto" };
             contexto.TicketsEstados.AddRange(abierto, enProgreso, pendiente, pendienteUsuario, resuelto, cerrado, reabierto);
 
-            var hardware = new TicketsCategoria { NombreCategoria = "hardware" };
-            var software = new TicketsCategoria { NombreCategoria = "software" };
-            var red = new TicketsCategoria { NombreCategoria = "red" };
-            contexto.TicketsCategorias.AddRange(hardware, software, red);
+            var categorias = new[] { "hardware", "software", "red", "correo", "telefono", "acceso", "otro" }
+                .Select(nombre => new TicketsCategoria { NombreCategoria = nombre })
+                .ToArray();
+            contexto.TicketsCategorias.AddRange(categorias);
+
+            contexto.SaveChanges();
+
+            _nivelCliente = nivelCliente;
+            _nivelAgente = nivelAgente;
+            _nivelSupervisor = nivelSupervisor;
+            _nivelAdmin = nivelAdmin;
+
+            IdEstadoAbierto = abierto.IdEstado;
+            IdEstadoEnProgreso = enProgreso.IdEstado;
+            IdEstadoPendiente = pendiente.IdEstado;
+            IdEstadoResuelto = resuelto.IdEstado;
+            IdCategoriaHardware = categorias[0].IdCategoria;
+            IdCategoriaSoftware = categorias[1].IdCategoria;
+        }
+
+        private void SembrarUsuarios(ServiceDeskContext contexto)
+        {
+            var nivelCliente = _nivelCliente;
+            var nivelAgente = _nivelAgente;
+            var nivelSupervisor = _nivelSupervisor;
+            var nivelAdmin = _nivelAdmin;
 
             Admin = NuevoUsuario("Ana Admin", "admin@servicedesk.test");
             Supervisor = NuevoUsuario("Sergio Supervisor", "supervisor@servicedesk.test");
@@ -100,12 +142,6 @@ namespace ServiceDeskNg.Tests.Infraestructura
 
             contexto.SaveChanges();
 
-            IdEstadoAbierto = abierto.IdEstado;
-            IdEstadoEnProgreso = enProgreso.IdEstado;
-            IdEstadoPendiente = pendiente.IdEstado;
-            IdEstadoResuelto = resuelto.IdEstado;
-            IdCategoriaHardware = hardware.IdCategoria;
-            IdCategoriaSoftware = software.IdCategoria;
             IdAgente1 = agente1.IdAgente;
             IdAgente2 = agente2.IdAgente;
             IdCliente1 = cliente1.IdCliente;

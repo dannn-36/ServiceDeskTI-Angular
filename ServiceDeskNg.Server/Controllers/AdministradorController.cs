@@ -1,87 +1,36 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = RolesApp.Administrador)]
     public class AdministradorController : ControllerBase
     {
-        private readonly AdministradorService _administradorService;
-        private readonly UsuarioService _usuarioService;
-        public AdministradorController(
-            AdministradorService administradorService, UsuarioService usuarioService)
+        private readonly AdministradorService _administradores;
+
+        public AdministradorController(AdministradorService administradores)
         {
-            _administradorService = administradorService;
-            _usuarioService = usuarioService;
+            _administradores = administradores;
         }
-        // ===========================================================
-        // 🔹 OBTENER TODOS LOS ADMINISTRADORES (con o sin relaciones)
-        // GET: api/administrador?includeRelations=true
-        // ===========================================================
+
         [HttpGet]
-        public IActionResult GetAll([FromQuery] bool includeRelations = false)
+        public async Task<ActionResult<List<AdministradorDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _administradores.ListarAsync(ct));
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<AdministradorDto>> GetById(int id, CancellationToken ct) =>
+            Ok(await _administradores.ObtenerAsync(id, ct));
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] AdministradorUpdateDto dto, CancellationToken ct)
         {
-            try
-            {
-                var administradores = _administradorService.GetAll(includeRelations);
-                return Ok(administradores);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los administradores", error = ex.Message });
-            }
-        }
-        // ===========================================================
-        // 🔹 OBTENER ADMINISTRADOR POR ID
-        // GET: api/administrador/{id}?includeRelations=true
-        // ===========================================================
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id, [FromQuery] bool includeRelations = false)
-        {
-            try
-            {
-                var administrador = _administradorService.GetById(id, includeRelations);
-                return Ok(administrador);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener el administrador", error = ex.Message });
-            }
-        }
-        // ===========================================================
-        // 🔹 ACTUALIZAR ADMINISTRADOR EXISTENTE
-        // PUT: api/administrador/{id}
-        // ===========================================================
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] Administrador administrador)
-        {
-            try
-            {
-                if (administrador == null || administrador.IdAdmin != id)
-                    return BadRequest(new { message = "Datos inválidos para actualizar el administrador." });
-                _administradorService.Update(administrador);
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al actualizar el administrador", error = ex.Message });
-            }
+            await _administradores.ActualizarAsync(id, dto, ct);
+            return NoContent();
         }
     }
-
-    //nota del ultimo commit jeje, sacamos muy buena nota y el profe dijo que muy buen trabajo, bendecido dia
 }

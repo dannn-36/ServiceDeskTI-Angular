@@ -1,154 +1,109 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using ServiceDeskNg.Server.Data;
 
 namespace ServiceDeskNg.Server.Controllers
 {
-   
-    /// Endpoints de autenticación:
-    /// POST  api/auth/login             -> Autentica usuario y crea sesión
-    /// POST  api/auth/logout            -> Cierra una sesión por sessionId
-    /// GET   api/auth/validate-session/{userId} -> Valida si el usuario tiene sesión activa
-
+    /// Autenticación por cookie HttpOnly.
+    ///   POST api/auth/login   -> valida credenciales, abre sesión y emite la cookie
+    ///   POST api/auth/logout  -> cierra la sesión en base de datos y borra la cookie
+    ///   GET  api/auth/me      -> identidad de la sesión actual (para restaurarla al recargar)
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UsuarioService _usuarioService;
-        private readonly ServiceDeskContext _context;
+        public const string PoliticaLimiteLogin = "login";
 
-        public AuthController(UsuarioService usuarioService, ServiceDeskContext context)
+        private readonly UsuarioService _usuarios;
+        private readonly SesionService _sesiones;
+        private readonly AuditoriaService _auditoria;
+        private readonly ILogger<AuthController> _logger;
+
+        public AuthController(
+            UsuarioService usuarios,
+            SesionService sesiones,
+            AuditoriaService auditoria,
+            ILogger<AuthController> logger)
         {
-            _usuarioService = usuarioService;
-            _context = context;
+            _usuarios = usuarios;
+            _sesiones = sesiones;
+            _auditoria = auditoria;
+            _logger = logger;
         }
 
-        /// POST api/auth/login
-        /// Recibe credenciales, autentica al usuario y crea una sesión activa en la BD.
-        /// Devuelve el usuario (sin contraseña) y el sessionId creado.
+        [AllowAnonymous]
+        [EnableRateLimiting(PoliticaLimiteLogin)]
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<ActionResult<SesionUsuarioDto>> Login(
+            [FromBody] LoginRequest request,
+            CancellationToken ct)
         {
+            IdentidadUsuario identidad;
+
             try
             {
-                if (request == null || string.IsNullOrWhiteSpace(request.CorreoUsuario) || string.IsNullOrWhiteSpace(request.ContrasenaUsuario))
-                    return BadRequest(new { message = "Correo y contraseña son obligatorios." });
-
-                var usuario = _usuarioService.Authenticate(request.CorreoUsuario, request.ContrasenaUsuario);
-
-                // Determinar el rol del usuario
-                if (usuario.Administradores != null && usuario.Administradores.Count > 0)
-                    usuario.Rol = "Administrador";
-                else if (usuario.Supervisores != null && usuario.Supervisores.Count > 0)
-                    usuario.Rol = "Supervisor";
-                else if (usuario.Agentes != null && usuario.Agentes.Count > 0)
-                    usuario.Rol = "Agente";
-                else if (usuario.Clientes != null && usuario.Clientes.Count > 0)
-                    usuario.Rol = "Cliente";
-                else
-                    usuario.Rol = "Desconocido";
-
-                // Crear sesión
-                var sesion = new Sesion
-                {
-                    IdUsuario = usuario.IdUsuario,
-                    FechaHoraInicioSesion = DateTime.UtcNow,
-                    SesionActiva = true
-                };
-
-                _context.Sesiones.Add(sesion);
-                _context.SaveChanges();
-
-                // No devolver contraseña
-                usuario.ContrasenaUsuario = null!;
-
-                // Log para depuración
-                Console.WriteLine($"Login OK: usuario={usuario.CorreoUsuario}, rol={usuario.Rol}");
-
-                return Ok(new
-                {
-                    message = "Autenticación exitosa",
-                    usuario,
-                    sessionId = sesion.IdSesion,
-                    rol = usuario.Rol // <-- Asegura que sea exactamente 'Administrador', 'Cliente', etc.
-                });
+                identidad = await _usuarios.AutenticarAsync(
+                    request.CorreoUsuario.Trim(),
+                    request.ContrasenaUsuario,
+                    ct);
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(new { message = ex.Message });
+                // Si el correo corresponde a un usuario real, el intento queda en su bitácora.
+                var idUsuario = await _usuarios.BuscarIdPorCorreoAsync(request.CorreoUsuario.Trim(), ct);
+                if (idUsuario is int id)
+                    await _auditoria.RegistrarAsync(id, AccionesAuditoria.LoginFallido, ex.Message, ct);
+
+                _logger.LogWarning(
+                    "Inicio de sesión rechazado desde {Ip}",
+                    HttpContext.Connection.RemoteIpAddress);
+                throw;
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error en la autenticación del usuario", error = ex.Message });
-            }
+
+            var sesion = await _sesiones.AbrirAsync(identidad.Usuario.IdUsuario, ct);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                FabricaIdentidad.CrearPrincipal(identidad, sesion.IdSesion),
+                new AuthenticationProperties { IsPersistent = false });
+
+            await _auditoria.RegistrarAsync(
+                identidad.Usuario.IdUsuario,
+                AccionesAuditoria.Login,
+                $"Sesión {sesion.IdSesion} abierta como {identidad.Rol}",
+                ct);
+
+            return Ok(FabricaIdentidad.CrearDto(identidad));
         }
 
-        /// POST api/auth/logout
-        /// Cierra la sesión indicada por sessionId (marca FechaHoraFinSesion y SesionActiva = false).
+        [Authorize]
         [HttpPost("logout")]
-        public IActionResult Logout([FromBody] LogoutRequest request)
+        public async Task<IActionResult> Logout(CancellationToken ct)
         {
-            try
-            {
-                if (request == null || request.SessionId <= 0)
-                    return BadRequest(new { message = "SessionId inválido." });
+            var idUsuario = User.IdUsuario();
 
-                // Delegar la lógica al servicio de usuario (usa SesionRepository internamente)
-                var sesion = new Sesion { IdSesion = request.SessionId };
-                _usuarioService.Logout(sesion);
+            if (User.IdSesion() is int idSesion)
+                await _sesiones.CerrarAsync(idSesion, ct);
 
-                return NoContent();
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al cerrar la sesión", error = ex.Message });
-            }
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _auditoria.RegistrarAsync(idUsuario, AccionesAuditoria.Logout, null, ct);
+
+            return NoContent();
         }
 
-        /// GET api/auth/validate-session/{userId}
-        /// Comprueba si el usuario tiene una sesión activa. Si existe, devuelve valid=true y sessionId.
-        [HttpGet("validate-session/{userId}")]
-        public IActionResult ValidateSession(int userId)
+        /// Se lee de la base de datos y no de la cookie, para reflejar
+        /// cambios de nombre o correo hechos durante la sesión.
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<ActionResult<SesionUsuarioDto>> Me(CancellationToken ct)
         {
-            try
-            {
-                if (userId <= 0)
-                    return BadRequest(new { message = "UserId inválido." });
-
-                _usuarioService.IsUserSessionActive(userId);
-                return Ok(new { valid = false });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al validar la sesión", error = ex.Message });
-            }
+            var identidad = await _usuarios.ObtenerIdentidadAsync(User.IdUsuario(), ct);
+            return Ok(FabricaIdentidad.CrearDto(identidad));
         }
-    }
-
-    /// DTO para login.
-    public class LoginRequest
-    {
-        public string CorreoUsuario { get; set; } = null!;
-        public string ContrasenaUsuario { get; set; } = null!;
-    }
-
-    /// DTO para logout.
-    public class LogoutRequest
-    {
-        public int SessionId { get; set; }
     }
 }
-

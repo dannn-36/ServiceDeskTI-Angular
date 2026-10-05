@@ -1,18 +1,23 @@
-import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef } from '@angular/core';
+import { AfterViewChecked, Component, DestroyRef, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
-import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../usuario/usuario.service';
+import { AgenteService } from './agente.service';
+import { AuthService } from '../core/auth.service';
+import { CatalogoService } from '../core/catalogo.service';
+import {
+  CategoriaTicket,
+  EstadoTicket,
+  MensajeChatEnVivo,
+  mensajeDeError,
+  normalizarEstado
+} from '../core/modelos';
 
 interface MensajeChat {
   remitente: string;
   texto: string;
   esAgente: boolean;
-}
-
-interface EstadoTicket {
-  idEstado: number;
-  nombreEstado: string;
 }
 
 @Component({
@@ -21,277 +26,234 @@ interface EstadoTicket {
   styleUrls: ['./agente.component.css']
 })
 export class AgenteComponent implements OnInit, OnDestroy, AfterViewChecked {
+  private readonly ticketsService = inject(TicketsService);
+  private readonly chatService = inject(ChatService);
+  private readonly usuarioService = inject(UsuarioService);
+  private readonly agenteService = inject(AgenteService);
+  private readonly catalogo = inject(CatalogoService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+
   tickets: Ticket[] = [];
   ticketSeleccionado: Ticket | null = null;
   mensajes: MensajeChat[] = [];
   mensajeTexto = '';
-  usuarioNombre = '';
-  usuarioId = 0;
-  filtroBusqueda: string = '';
-  filtroEstado: string = '';
-  filtroPrioridad: string = '';
-  filtroCategoria: string = '';
-  categorias: any[] = [];
+  chatError = '';
+  filtroBusqueda = '';
+  filtroEstado = '';
+  filtroPrioridad = '';
+  filtroCategoria = '';
+  categorias: CategoriaTicket[] = [];
   estados: EstadoTicket[] = [];
-  mostrarProfileModal: boolean = false;
-  profileName: string = '';
-  profileEmail: string = '';
-  @ViewChild('chatScroll') chatScroll!: ElementRef;
+  disponible = true;
+  cambiandoDisponibilidad = false;
+  mostrarProfileModal = false;
+  profileName = '';
+  profileEmail = '';
 
-  constructor(
-    private ticketsService: TicketsService,
-    private chatService: ChatService,
-    private http: HttpClient,
-    private usuarioService: UsuarioService
-  ) {}
+  @ViewChild('chatScroll') chatScroll?: ElementRef<HTMLElement>;
 
-  ngOnInit() {
-    this.usuarioNombre = localStorage.getItem('usuario') || 'Agente';
-    this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
-    this.cargarCategorias();
-    this.cargarEstados();
+  get usuarioNombre(): string {
+    return this.auth.usuario()?.nombreUsuario ?? 'Agente';
+  }
+
+  private get usuarioId(): number {
+    return this.auth.usuario()?.idUsuario ?? 0;
+  }
+
+  private get agenteId(): number | null {
+    return this.auth.usuario()?.idAgente ?? null;
+  }
+
+  ngOnInit(): void {
+    this.catalogo.categorias$.subscribe(categorias => this.categorias = categorias);
+    this.catalogo.estados$.subscribe(estados => this.estados = estados);
+
+    this.chatService.mensajes$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(mensaje => this.agregarMensajeEnVivo(mensaje));
+
+    const idAgente = this.agenteId;
+    if (idAgente) {
+      this.agenteService.getById(idAgente).subscribe(agente => this.disponible = agente.disponibilidadAgente);
+    }
+
     this.cargarTicketsAsignados();
   }
 
-  cargarCategorias() {
-    this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
-      this.categorias = data;
-    });
+  ngOnDestroy(): void {
+    void this.chatService.desconectar();
   }
 
-  cargarEstados() {
-    this.http.get<EstadoTicket[]>('/api/tickets/estados').subscribe(estados => {
-      this.estados = estados;
-    });
+  ngAfterViewChecked(): void {
+    const contenedor = this.chatScroll?.nativeElement;
+    if (contenedor) {
+      contenedor.scrollTop = contenedor.scrollHeight;
+    }
   }
 
-  cargarTicketsAsignados() {
-    const agenteId = +(localStorage.getItem('agenteId') || 0);
-    this.ticketsService.getTicketsByAgente(agenteId).subscribe(tickets => {
+  // ---------- Tickets ----------
+
+  cargarTicketsAsignados(): void {
+    const idAgente = this.agenteId;
+    if (!idAgente) {
+      return;
+    }
+
+    this.ticketsService.getTicketsByAgente(idAgente).subscribe(tickets => {
       this.tickets = tickets;
+
+      // Mantiene el ticket abierto actualizado tras recargar la lista.
+      if (this.ticketSeleccionado) {
+        this.ticketSeleccionado =
+          tickets.find(t => t.idTicket === this.ticketSeleccionado!.idTicket) ?? this.ticketSeleccionado;
+      }
     });
   }
 
-  abrirChat(ticket: Ticket) {
-    if (this.ticketSeleccionado) {
-      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
-    }
-    this.ticketSeleccionado = ticket;
-    this.mensajes = [];
-    // Cambiar estado a "En Progreso" si no lo está
-    const estadoEnProgreso = this.estados.find(e => e.nombreEstado.toLowerCase() === 'en-progreso');
-    if (estadoEnProgreso && ticket.idEstadoTicket !== estadoEnProgreso.idEstado) {
-      const actualizado = { ...ticket, idEstadoTicket: estadoEnProgreso.idEstado };
-      this.ticketsService.update(ticket.idTicket, actualizado).subscribe(() => {
-        ticket.idEstadoTicket = estadoEnProgreso.idEstado;
-      });
-    }
-    // Cargar mensajes históricos
-    this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
-      this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.nombreUsuario || m.usuario, // Siempre usar el nombre guardado
-        texto: m.mensajeTicket,
-        esAgente: m.idUsuario === this.usuarioId
-      }));
-    });
-    // Conecta al hub y suscríbete a los mensajes en tiempo real
-    this.chatService.connect(ticket.idTicket.toString());
-    this.chatService.onReceiveMessage((user, message, fecha) => {
-      this.mensajes.push({
-        remitente: user, // Usar siempre el nombre recibido
-        texto: message,
-        esAgente: user === this.usuarioNombre
-      });
-    });
+  get totalAbiertos(): number {
+    return this.tickets.filter(t => normalizarEstado(t.nombreEstado) === 'abierto').length;
   }
 
-  enviarMensaje() {
-    if (!this.mensajeTexto.trim() || !this.ticketSeleccionado) return;
-    this.chatService.sendMessage(
-      this.ticketSeleccionado.idTicket.toString(),
-      this.usuarioNombre,
-      this.mensajeTexto,
-      this.usuarioId
-    );
-    this.mensajeTexto = '';
+  get totalEnProgreso(): number {
+    return this.tickets.filter(t => normalizarEstado(t.nombreEstado) === 'en-progreso').length;
   }
 
-  cambiarEstadoTicket(ticket: Ticket, estado: string) {
-    const estadoObj = this.estados.find(e => e.nombreEstado.toLowerCase() === estado.toLowerCase());
-    if (!estadoObj) return;
-    // Si el estado es 'Urgente', también cambia la prioridad a 'urgente'
-    // Si el estado es 'En Progreso', mantiene la prioridad actual
-    let nuevaPrioridad = ticket.prioridadTicket || 'media';
-    if (estado.toLowerCase() === 'urgente') {
-      nuevaPrioridad = 'urgente';
-    }
-    const actualizado = {
-      ...ticket,
-      idEstadoTicket: estadoObj.idEstado,
-      tituloTicket: ticket.tituloTicket || '',
-      descripcionTicket: ticket.descripcionTicket || '',
-      idCliente: ticket.idCliente,
-      idCategoriaTicket: ticket.idCategoriaTicket,
-      prioridadTicket: nuevaPrioridad,
-      ubicacionTicket: ticket.ubicacionTicket || '',
-      departamentoTicket: ticket.departamentoTicket || '',
-      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
-      fechaHoraActualizacionTicket: new Date().toISOString()
-    };
-    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
-      next: () => {
-        this.cargarTicketsAsignados(); // Recarga la lista de tickets
-        // Actualiza el ticket seleccionado si corresponde
-        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
-          this.ticketSeleccionado.idEstadoTicket = estadoObj.idEstado;
-          this.ticketSeleccionado.prioridadTicket = nuevaPrioridad;
-        }
-      },
-      error: (err) => { /* Manejo de error */ }
-    });
-  }
-
-  cambiarPrioridad(ticket: Ticket, nuevaPrioridad: string) {
-    const actualizado = {
-      ...ticket,
-      prioridadTicket: nuevaPrioridad,
-      idEstadoTicket: ticket.idEstadoTicket,
-      tituloTicket: ticket.tituloTicket || '',
-      descripcionTicket: ticket.descripcionTicket || '',
-      idCliente: ticket.idCliente,
-      idCategoriaTicket: ticket.idCategoriaTicket,
-      ubicacionTicket: ticket.ubicacionTicket || '',
-      departamentoTicket: ticket.departamentoTicket || '',
-      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
-      fechaHoraActualizacionTicket: new Date().toISOString()
-    };
-    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
-      next: () => {
-        this.cargarTicketsAsignados();
-        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
-          this.ticketSeleccionado.prioridadTicket = nuevaPrioridad;
-        }
-      },
-      error: (err) => { /* Manejo de error */ }
-    });
-  }
-
-  ngAfterViewChecked() {
-    this.scrollToBottom();
-  }
-
-  scrollToBottom() {
-    try {
-      this.chatScroll.nativeElement.scrollTop = this.chatScroll.nativeElement.scrollHeight;
-    } catch (err) {}
-  }
-
-  getTicketsCountByEstado(estado: number): number {
-    return this.tickets.filter(t => t.idEstadoTicket === estado).length;
-  }
-
-  logout() {
-    localStorage.clear();
-    window.location.href = '/';
-  }
-
-  confirmLogout() {
-    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-      this.logout();
-    }
-  }
-
-  ponerUrgente(ticket: Ticket) {
-    const actualizado = {
-      ...ticket,
-      prioridadTicket: 'urgente',
-      idEstadoTicket: ticket.idEstadoTicket,
-      tituloTicket: ticket.tituloTicket || '',
-      descripcionTicket: ticket.descripcionTicket || '',
-      idCliente: ticket.idCliente,
-      idCategoriaTicket: ticket.idCategoriaTicket,
-      ubicacionTicket: ticket.ubicacionTicket || '',
-      departamentoTicket: ticket.departamentoTicket || '',
-      fechaHoraCreacionTicket: ticket.fechaHoraCreacionTicket || '',
-      fechaHoraActualizacionTicket: new Date().toISOString()
-    };
-    this.ticketsService.update(ticket.idTicket, actualizado).subscribe({
-      next: () => {
-        this.cargarTicketsAsignados(); // Recarga la lista
-        if (this.ticketSeleccionado && this.ticketSeleccionado.idTicket === ticket.idTicket) {
-          this.ticketSeleccionado.prioridadTicket = 'urgente';
-        }
-      },
-      error: (err) => { /* Manejo de error */ }
-    });
+  get totalUrgentes(): number {
+    return this.tickets.filter(t => t.prioridadTicket === 'urgente').length;
   }
 
   getCategoriaNombre(idCategoria: number): string {
-    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
-    return categoria ? categoria.nombreCategoria : 'Otro';
+    return this.categorias.find(c => c.idCategoria === idCategoria)?.nombreCategoria ?? 'Otro';
   }
 
-  crearTicket(ticketData: { categoria: string, estado: string, asunto: string, descripcion: string }) {
-    console.log('Categorias cargadas:', this.categorias);
-    console.log('Valor seleccionado:', ticketData.categoria);
-    // Buscar el ID de la categoría seleccionada (normalizado)
-    const categoriaObj = this.categorias.find(
-      c => c.nombreCategoria.trim().toLowerCase() === ticketData.categoria.trim().toLowerCase()
-    );
-    // Buscar el ID del estado
-    const estadoObj = this.estados.find(e => e.nombreEstado.trim().toLowerCase() === ticketData.estado.trim().toLowerCase());
-    if (!categoriaObj || !estadoObj) {
-      alert('No se pudo encontrar la categoría o el estado.');
+  cambiarEstadoTicket(ticket: Ticket, estado: string): void {
+    const estadoObj = this.estados.find(e => normalizarEstado(e.nombreEstado) === normalizarEstado(estado));
+    if (!estadoObj) {
+      alert(`El estado "${estado}" no existe en el catálogo.`);
       return;
     }
-    const ticket = {
-      idCategoriaTicket: categoriaObj.idCategoria,
-      idEstadoTicket: estadoObj.idEstado,
-      tituloTicket: ticketData.asunto,
-      descripcionTicket: ticketData.descripcion,
-      prioridadTicket: 'media',
-      ubicacionTicket: '',
-      departamentoTicket: ''
-      // ...otros campos necesarios
-    };
-    this.ticketsService.createTicket(ticket).subscribe({
+
+    this.guardarCambio(ticket, { idEstadoTicket: estadoObj.idEstado });
+  }
+
+  cambiarPrioridad(ticket: Ticket, nuevaPrioridad: string): void {
+    this.guardarCambio(ticket, { prioridadTicket: nuevaPrioridad });
+  }
+
+  /** "Urgente" es una prioridad, no un estado (antes este botón no hacía nada). */
+  ponerUrgente(ticket: Ticket): void {
+    this.cambiarPrioridad(ticket, 'urgente');
+  }
+
+  private guardarCambio(ticket: Ticket, cambios: Parameters<typeof TicketsService.cambioDesde>[1]): void {
+    this.ticketsService.update(ticket.idTicket, TicketsService.cambioDesde(ticket, cambios)).subscribe({
+      next: () => this.cargarTicketsAsignados(),
+      error: err => alert(mensajeDeError(err, 'No se pudo actualizar el ticket.'))
+    });
+  }
+
+  // ---------- Disponibilidad ----------
+
+  /** El agente decide si entra en el reparto automático de tickets nuevos. */
+  alternarDisponibilidad(): void {
+    const idAgente = this.agenteId;
+    if (!idAgente || this.cambiandoDisponibilidad) {
+      return;
+    }
+
+    const nuevoValor = !this.disponible;
+    this.cambiandoDisponibilidad = true;
+
+    this.agenteService.cambiarDisponibilidad(idAgente, nuevoValor).subscribe({
       next: () => {
-        this.cargarTicketsAsignados();
+        this.disponible = nuevoValor;
+        this.cambiandoDisponibilidad = false;
       },
       error: err => {
-        alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
+        this.cambiandoDisponibilidad = false;
+        alert(mensajeDeError(err, 'No se pudo cambiar la disponibilidad.'));
       }
     });
   }
 
-  showProfileModal() {
+  // ---------- Chat ----------
+
+  abrirChat(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.mensajes = [];
+    this.chatError = '';
+
+    // Al abrir un ticket todavía no empezado, pasa a "en progreso".
+    if (normalizarEstado(ticket.nombreEstado) === 'abierto') {
+      this.cambiarEstadoTicket(ticket, 'en-progreso');
+    }
+
+    this.chatService.historial(ticket.idTicket).subscribe({
+      next: historial => {
+        this.mensajes = historial.map(m => ({
+          remitente: m.usuarioNombre,
+          texto: m.mensajeTicket,
+          esAgente: m.idUsuario === this.usuarioId
+        }));
+      },
+      error: err => this.chatError = mensajeDeError(err, 'No se pudo cargar el historial.')
+    });
+
+    this.chatService.conectar(ticket.idTicket)
+      .catch(() => this.chatError = 'No se pudo conectar al chat en tiempo real.');
+  }
+
+  enviarMensaje(): void {
+    const texto = this.mensajeTexto.trim();
+    if (!texto || !this.ticketSeleccionado) {
+      return;
+    }
+
+    this.mensajeTexto = '';
+    this.chatService.enviar(texto).catch(err => {
+      this.mensajeTexto = texto;
+      this.chatError = err?.message ?? 'No se pudo enviar el mensaje.';
+    });
+  }
+
+  private agregarMensajeEnVivo(mensaje: MensajeChatEnVivo): void {
+    if (mensaje.idTicket !== this.ticketSeleccionado?.idTicket) {
+      return;
+    }
+
+    this.mensajes.push({
+      remitente: mensaje.usuario,
+      texto: mensaje.mensaje,
+      esAgente: mensaje.idUsuario === this.usuarioId
+    });
+  }
+
+  // ---------- Perfil y sesión ----------
+
+  showProfileModal(): void {
     this.profileName = this.usuarioNombre;
-    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
+    this.profileEmail = this.auth.usuario()?.correoUsuario ?? '';
     this.mostrarProfileModal = true;
   }
 
-  closeProfileModal() {
+  closeProfileModal(): void {
     this.mostrarProfileModal = false;
   }
 
-  updateProfile() {
-    if (this.profileName.trim() === '') {
-      this.profileName = this.usuarioNombre;
-    }
-    this.usuarioService.updateProfile(this.profileName, this.profileEmail).subscribe({
-      next: () => {
-        this.usuarioNombre = this.profileName;
-        localStorage.setItem('usuario', this.profileName);
-        localStorage.setItem('usuarioEmail', this.profileEmail);
-        this.closeProfileModal();
-      },
-      error: (err) => {
-        console.error('Error updating profile:', err);
-      }
+  updateProfile(): void {
+    const nombre = this.profileName.trim() || this.usuarioNombre;
+
+    this.usuarioService.updateProfile(nombre, this.profileEmail.trim()).subscribe({
+      next: () => this.closeProfileModal(),
+      error: err => alert(mensajeDeError(err, 'No se pudo actualizar el perfil.'))
     });
   }
 
-  ngOnDestroy(): void {
-    // Limpieza de recursos si es necesario
+  confirmLogout(): void {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      void this.chatService.desconectar();
+      this.auth.logout();
+    }
   }
 }

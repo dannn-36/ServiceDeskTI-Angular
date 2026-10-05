@@ -1,9 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { TicketsService, Ticket } from '../tickets/tickets.service';
 import { ChatService } from '../chat/chat.service';
-import { Subscription } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
 import { UsuarioService } from '../usuario/usuario.service';
+import { AuthService } from '../core/auth.service';
+import { CatalogoService } from '../core/catalogo.service';
+import { CategoriaTicket, EstadoTicket, MensajeChatEnVivo, mensajeDeError, normalizarEstado } from '../core/modelos';
 
 interface MensajeChat {
   remitente: string;
@@ -17,22 +19,27 @@ interface MensajeChat {
   styleUrls: ['./end-user.component.css']
 })
 export class EndUserComponent implements OnInit, OnDestroy {
+  private readonly ticketService = inject(TicketsService);
+  private readonly chatService = inject(ChatService);
+  private readonly usuarioService = inject(UsuarioService);
+  private readonly catalogo = inject(CatalogoService);
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+
   tickets: Ticket[] = [];
   nuevoTicket = { asunto: '', descripcion: '', categoria: '' };
   mostrarModalTicket = false;
+  creandoTicket = false;
   ticketSeleccionado: Ticket | null = null;
   mensajes: MensajeChat[] = [];
   mensajeTexto = '';
-  usuarioNombre = '';
-  usuarioId = 0;
+  chatError = '';
   categoriaSeleccionada = '';
-  private chatSub: Subscription | null = null;
 
-  categorias: any[] = [];
-  estados: any[] = [];
+  categorias: CategoriaTicket[] = [];
+  estados: EstadoTicket[] = [];
 
-  // Filtro de estado para tickets
-  filtroEstado: string = '';
+  filtroEstado = '';
   ticketsFiltrados: Ticket[] = [];
 
   mostrarChatModal = false;
@@ -41,216 +48,198 @@ export class EndUserComponent implements OnInit, OnDestroy {
   profileName = '';
   profileEmail = '';
 
-  constructor(
-    private ticketService: TicketsService,
-    private chatService: ChatService,
-    private http: HttpClient,
-    private usuarioService: UsuarioService // Inyectar el servicio de Usuario
-  ) {}
+  get usuarioNombre(): string {
+    return this.auth.usuario()?.nombreUsuario ?? 'Cliente';
+  }
 
-  ngOnInit() {
-    this.usuarioNombre = localStorage.getItem('usuario') || 'Cliente';
-    this.usuarioId = +(localStorage.getItem('usuarioId') || 0);
-    this.profileName = this.usuarioNombre;
-    this.profileEmail = localStorage.getItem('usuarioEmail') || 'usuario@empresa.com';
-    this.cargarCategorias();
-    this.cargarEstados();
+  private get usuarioId(): number {
+    return this.auth.usuario()?.idUsuario ?? 0;
+  }
+
+  ngOnInit(): void {
+    this.catalogo.categorias$.subscribe(categorias => this.categorias = categorias);
+    this.catalogo.estados$.subscribe(estados => this.estados = estados);
+
+    this.chatService.mensajes$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(mensaje => this.agregarMensajeEnVivo(mensaje));
+
     this.cargarTickets();
   }
 
-  ngOnDestroy() {
-    if (this.mostrarChatModal) {
-      this.cerrarChatModal();
+  ngOnDestroy(): void {
+    void this.chatService.desconectar();
+  }
+
+  // ---------- Tickets ----------
+
+  cargarTickets(): void {
+    const idCliente = this.auth.usuario()?.idCliente;
+    if (!idCliente) {
+      return;
     }
-  }
 
-  cargarCategorias() {
-    this.http.get<any[]>('/api/tickets/categorias').subscribe(data => {
-      this.categorias = data;
-    });
-  }
-
-  cargarEstados() {
-    this.http.get<any[]>('/api/tickets/estados').subscribe(data => {
-      this.estados = data;
-    });
-  }
-
-  abrirModalTicket(categoria: string = '') {
-    this.mostrarModalTicket = true;
-    this.categoriaSeleccionada = categoria;
-    if (categoria) {
-      this.nuevoTicket.categoria = categoria;
-    }
-  }
-
-  cerrarModalTicket() {
-    this.mostrarModalTicket = false;
-    this.categoriaSeleccionada = '';
-    this.nuevoTicket = { asunto: '', descripcion: '', categoria: '' };
-  }
-
-  cargarTickets() {
-    const clienteId = +(localStorage.getItem('clienteId') || 0);
-    this.ticketService.getTicketsByUser(clienteId).subscribe(tickets => {
+    this.ticketService.getTicketsByUser(idCliente).subscribe(tickets => {
       this.tickets = tickets;
       this.filtrarTickets();
     });
   }
 
-  filtrarTickets() {
-    if (!this.filtroEstado) {
-      this.ticketsFiltrados = this.tickets;
-    } else {
-      this.ticketsFiltrados = this.tickets.filter(t => this.getNombreEstado(t.idEstadoTicket).toLowerCase() === this.filtroEstado.toLowerCase());
+  filtrarTickets(): void {
+    this.ticketsFiltrados = this.filtroEstado
+      ? this.tickets.filter(t => normalizarEstado(this.getEstadoNombre(t.idEstadoTicket))
+          === normalizarEstado(this.filtroEstado))
+      : this.tickets;
+  }
+
+  abrirModalTicket(categoria = ''): void {
+    this.mostrarModalTicket = true;
+    this.categoriaSeleccionada = categoria;
+
+    // Los accesos rápidos usan nombres en minúscula; se busca la categoría real.
+    const coincidencia = this.categorias.find(
+      c => c.nombreCategoria.trim().toLowerCase() === categoria.trim().toLowerCase());
+    if (coincidencia) {
+      this.nuevoTicket.categoria = coincidencia.nombreCategoria;
     }
   }
 
-  crearTicket() {
-    if (!this.nuevoTicket.categoria) {
+  cerrarModalTicket(): void {
+    this.mostrarModalTicket = false;
+    this.categoriaSeleccionada = '';
+    this.nuevoTicket = { asunto: '', descripcion: '', categoria: '' };
+  }
+
+  crearTicket(): void {
+    const categoria = this.categorias.find(
+      c => c.nombreCategoria.trim().toLowerCase() === this.nuevoTicket.categoria.trim().toLowerCase());
+
+    if (!categoria) {
       alert('Debes seleccionar una categoría.');
       return;
     }
-    console.log('Categorias cargadas:', this.categorias);
-    console.log('Valor seleccionado:', this.nuevoTicket.categoria);
-    // Buscar el ID de la categoría seleccionada (normalizado)
-    const categoriaObj = this.categorias.find(
-      c => c.nombreCategoria.trim().toLowerCase() === this.nuevoTicket.categoria.trim().toLowerCase()
-    );
-    // Buscar el ID del estado "abierto"
-    const estadoObj = this.estados.find(e => e.nombreEstado.trim().toLowerCase() === 'abierto');
-    if (!categoriaObj || !estadoObj) {
-      alert('No se pudo encontrar la categoría o el estado.');
-      return;
-    }
-    const clienteId = +(localStorage.getItem('clienteId') || 0);
-    const ticketData = {
-      idCliente: clienteId,
-      idEstadoTicket: estadoObj.idEstado,
-      idCategoriaTicket: categoriaObj.idCategoria,
+
+    this.creandoTicket = true;
+
+    // El cliente no indica su id: el servidor lo toma de la sesión.
+    this.ticketService.createTicket({
+      idCategoriaTicket: categoria.idCategoria,
       tituloTicket: this.nuevoTicket.asunto,
       descripcionTicket: this.nuevoTicket.descripcion,
-      prioridadTicket: 'media',
-      ubicacionTicket: '',
-      departamentoTicket: ''
-    };
-    this.ticketService.createTicket(ticketData).subscribe({
+      prioridadTicket: 'media'
+    }).subscribe({
       next: ticket => {
+        this.creandoTicket = false;
         this.tickets.unshift(ticket);
+        this.filtrarTickets();
         this.cerrarModalTicket();
         this.abrirChat(ticket);
       },
       error: err => {
-        alert('Error al crear ticket: ' + JSON.stringify(err.error?.errors || err.error));
+        this.creandoTicket = false;
+        alert(mensajeDeError(err, 'No se pudo crear el ticket.'));
       }
     });
   }
 
   getNombreEstado(idEstado: number): string {
-    const estado = this.estados.find(e => e.idEstado === idEstado);
-    return estado ? estado.nombreEstado : idEstado;
+    return this.getEstadoNombre(idEstado);
   }
 
   getNombreCategoria(idCategoria: number): string {
-    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
-    return categoria ? categoria.nombreCategoria : idCategoria;
-  }
-
-  abrirChat(ticket: Ticket) {
-    if (this.ticketSeleccionado) {
-      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
-    }
-    this.ticketSeleccionado = ticket;
-    this.mostrarChatModal = true;
-    this.mensajes = [];
-    // Cargar mensajes históricos
-    this.chatService.getMensajesPorTicket(ticket.idTicket).subscribe(mensajes => {
-      this.mensajes = mensajes.map(m => ({
-        remitente: m.usuarioNombre || m.nombreUsuario || m.usuario, // Siempre usar el nombre guardado
-        texto: m.mensajeTicket,
-        esCliente: m.idUsuario === this.usuarioId
-      }));
-    });
-    // Conecta al hub y suscríbete a los mensajes en tiempo real
-    this.chatService.connect(ticket.idTicket.toString());
-    this.chatService.onReceiveMessage((user, message, fecha) => {
-      this.mensajes.push({
-        remitente: user, // Usar siempre el nombre recibido
-        texto: message,
-        esCliente: user === this.usuarioNombre
-      });
-    });
-  }
-
-
-  enviarMensaje() {
-    if (!this.mensajeTexto.trim() || !this.ticketSeleccionado) return;
-
-    this.chatService.sendMessage(
-      this.ticketSeleccionado.idTicket.toString(),
-      this.usuarioNombre,
-      this.mensajeTexto,
-      this.usuarioId
-    );
-
-    this.mensajeTexto = '';
-  }
-
-  showProfileModal() {
-    this.profileName = this.usuarioNombre;
-    this.profileEmail = localStorage.getItem('usuarioEmail') || '';
-    this.mostrarProfileModal = true;
-  }
-
-  closeProfileModal() {
-    this.mostrarProfileModal = false;
-  }
-
-  updateProfile() {
-    if (this.profileName.trim() === '') {
-      this.profileName = this.usuarioNombre;
-    }
-    this.usuarioService.updateProfile(this.profileName, this.profileEmail).subscribe({
-      next: () => {
-        this.usuarioNombre = this.profileName;
-        localStorage.setItem('usuario', this.profileName);
-        localStorage.setItem('usuarioEmail', this.profileEmail);
-        this.closeProfileModal();
-        alert('Perfil actualizado.');
-      },
-      error: (err) => {
-        console.error('Error updating profile:', err);
-        alert('Error al actualizar el perfil.');
-      }
-    });
-  }
-
-  confirmLogout() {
-    // TODO: lógica para cerrar sesión (borrar localStorage y redirigir)
-    console.log('Cerrar sesión');
-    localStorage.clear();
-    window.location.href = '/'; // o usar el router: this.router.navigate(['/login']);
+    return this.getCategoriaNombre(idCategoria);
   }
 
   getCategoriaNombre(idCategoria: number): string {
-    const categoria = this.categorias.find(c => c.idCategoria === idCategoria);
-    return categoria ? categoria.nombreCategoria : 'Otro';
+    return this.categorias.find(c => c.idCategoria === idCategoria)?.nombreCategoria ?? 'Otro';
   }
 
   getEstadoNombre(idEstado: number): string {
-    const estado = this.estados.find(e => e.idEstado === idEstado);
-    return estado ? estado.nombreEstado : idEstado.toString();
+    return this.estados.find(e => e.idEstado === idEstado)?.nombreEstado ?? String(idEstado);
   }
 
-  cerrarChatModal() {
-    this.mostrarChatModal = false;
-    if (this.ticketSeleccionado) {
-      this.chatService.disconnect(this.ticketSeleccionado.idTicket.toString());
+  // ---------- Chat ----------
+
+  abrirChat(ticket: Ticket): void {
+    this.ticketSeleccionado = ticket;
+    this.mostrarChatModal = true;
+    this.mensajes = [];
+    this.chatError = '';
+
+    this.chatService.historial(ticket.idTicket).subscribe({
+      next: historial => {
+        this.mensajes = historial.map(m => ({
+          remitente: m.usuarioNombre,
+          texto: m.mensajeTicket,
+          esCliente: m.idUsuario === this.usuarioId
+        }));
+      },
+      error: err => this.chatError = mensajeDeError(err, 'No se pudo cargar el historial.')
+    });
+
+    this.chatService.conectar(ticket.idTicket)
+      .catch(() => this.chatError = 'No se pudo conectar al chat en tiempo real.');
+  }
+
+  enviarMensaje(): void {
+    const texto = this.mensajeTexto.trim();
+    if (!texto || !this.ticketSeleccionado) {
+      return;
     }
+
+    this.mensajeTexto = '';
+    this.chatService.enviar(texto).catch(err => {
+      this.mensajeTexto = texto;
+      this.chatError = err?.message ?? 'No se pudo enviar el mensaje.';
+    });
+  }
+
+  cerrarChatModal(): void {
+    this.mostrarChatModal = false;
     this.ticketSeleccionado = null;
-    if (this.chatSub) {
-      this.chatSub.unsubscribe();
-      this.chatSub = null;
+    void this.chatService.desconectar();
+  }
+
+  private agregarMensajeEnVivo(mensaje: MensajeChatEnVivo): void {
+    if (mensaje.idTicket !== this.ticketSeleccionado?.idTicket) {
+      return;
+    }
+
+    this.mensajes.push({
+      remitente: mensaje.usuario,
+      texto: mensaje.mensaje,
+      esCliente: mensaje.idUsuario === this.usuarioId
+    });
+  }
+
+  // ---------- Perfil y sesión ----------
+
+  showProfileModal(): void {
+    this.profileName = this.usuarioNombre;
+    this.profileEmail = this.auth.usuario()?.correoUsuario ?? '';
+    this.mostrarProfileModal = true;
+  }
+
+  closeProfileModal(): void {
+    this.mostrarProfileModal = false;
+  }
+
+  updateProfile(): void {
+    const nombre = this.profileName.trim() || this.usuarioNombre;
+
+    this.usuarioService.updateProfile(nombre, this.profileEmail.trim()).subscribe({
+      next: () => {
+        this.closeProfileModal();
+        alert('Perfil actualizado.');
+      },
+      error: err => alert(mensajeDeError(err, 'No se pudo actualizar el perfil.'))
+    });
+  }
+
+  confirmLogout(): void {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+      void this.chatService.desconectar();
+      this.auth.logout();
     }
   }
 }

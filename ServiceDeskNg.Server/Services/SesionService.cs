@@ -1,70 +1,86 @@
-﻿using ServiceDeskNg.Server.Data;
+using Microsoft.EntityFrameworkCore;
 using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Repositories;
+using ServiceDeskNg.Server.Repositories.Interfaces;
 
 namespace ServiceDeskNg.Server.Services
 {
+    /// Sesiones persistidas en la tabla `sesiones`.
+    /// La cookie de autenticación lleva el id de sesión, y cada petición comprueba
+    /// contra esta tabla que la sesión siga abierta: así un "cerrar sesión" invalida
+    /// la credencial del lado del servidor y no solo en el navegador.
     public class SesionService
     {
-        private readonly SesionRepository _sesionRepo;
-        private readonly ServiceDeskContext _context;
+        private readonly IRepositorio<Sesion> _sesiones;
+        private readonly IRepositorio<Usuario> _usuarios;
 
-        // Implementación del servicio de sesión
-        public SesionService(SesionRepository sesionRepo, ServiceDeskContext context)
+        public SesionService(IRepositorio<Sesion> sesiones, IRepositorio<Usuario> usuarios)
         {
-            _sesionRepo = sesionRepo;
-            _context = context;
+            _sesiones = sesiones;
+            _usuarios = usuarios;
         }
 
-        public IEnumerable<Sesion> GetAll(bool includeRelations = false)
+        public async Task<Sesion> AbrirAsync(int idUsuario, CancellationToken ct = default)
         {
-            if (includeRelations)
+            var sesion = new Sesion
             {
-                return _context.Sesiones
-                    .Select(s => new Sesion
-                    {
-                        IdSesion = s.IdSesion,
-                        IdUsuario = s.IdUsuario,
-                        FechaHoraInicioSesion = s.FechaHoraInicioSesion,
-                        FechaHoraFinSesion = s.FechaHoraFinSesion,
-                        SesionActiva = s.SesionActiva,
-                        IdUsuarioNavigation = s.IdUsuarioNavigation
-                    })
-                    .ToList();
-            }
-            return _sesionRepo.GetAll();
-        }
+                IdUsuario = idUsuario,
+                FechaHoraInicioSesion = DateTime.UtcNow,
+                SesionActiva = true
+            };
 
-        public Sesion GetById(int id)
-        {
-            var sesion = _sesionRepo.GetById(id);
-            if (sesion == null)
-                throw new KeyNotFoundException($"No se encontró la sesión con ID {id}");
+            await _sesiones.AddAsync(sesion, ct);
             return sesion;
         }
 
-        public void Create(Sesion entity)
+        public async Task CerrarAsync(int idSesion, CancellationToken ct = default)
         {
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            if (entity.IdUsuario == 0)
-                throw new ArgumentException("Debe asociarse un usuario válido.");
-            _sesionRepo.Add(entity);
+            var sesion = await _sesiones.GetByIdAsync(idSesion, ct)
+                ?? throw new KeyNotFoundException($"No se encontró la sesión con ID {idSesion}");
+
+            if (sesion.SesionActiva == false)
+                return;
+
+            sesion.SesionActiva = false;
+            sesion.FechaHoraFinSesion = DateTime.UtcNow;
+            await _sesiones.UpdateAsync(sesion, ct);
         }
 
-        public void Update(Sesion entity)
+        /// Cierra todas las sesiones abiertas de un usuario (al desactivarlo o eliminarlo).
+        public async Task CerrarTodasAsync(int idUsuario, CancellationToken ct = default)
         {
+            var abiertas = await _sesiones.QueryParaEscritura()
+                .Where(s => s.IdUsuario == idUsuario && s.SesionActiva == true)
+                .ToListAsync(ct);
 
-            if (entity == null)
-                throw new ArgumentNullException(nameof(entity));
-            var existing = _sesionRepo.GetById(entity.IdSesion);
-            if (existing == null)
-                throw new KeyNotFoundException($"No se encontró la sesión con ID {entity.IdSesion}");
-            _sesionRepo.Update(entity);
+            if (abiertas.Count == 0)
+                return;
 
+            foreach (var sesion in abiertas)
+            {
+                sesion.SesionActiva = false;
+                sesion.FechaHoraFinSesion = DateTime.UtcNow;
+            }
+
+            await _sesiones.GuardarCambiosAsync(ct);
         }
 
-        //verificar si una sesión de un usuario está activa
-       
+        /// La sesión vale si sigue abierta, pertenece al usuario indicado
+        /// y la cuenta de ese usuario continúa activa.
+        public async Task<bool> EsValidaAsync(int idSesion, int idUsuario, CancellationToken ct = default)
+        {
+            var sesionAbierta = await _sesiones.Query()
+                .AnyAsync(s => s.IdSesion == idSesion
+                               && s.IdUsuario == idUsuario
+                               && s.SesionActiva == true, ct);
+
+            if (!sesionAbierta)
+                return false;
+
+            return await _usuarios.Query()
+                .AnyAsync(u => u.IdUsuario == idUsuario && u.EstadoUsuario == "activo", ct);
+        }
+
+        public Task<bool> TieneSesionActivaAsync(int idUsuario, CancellationToken ct = default) =>
+            _sesiones.Query().AnyAsync(s => s.IdUsuario == idUsuario && s.SesionActiva == true, ct);
     }
 }

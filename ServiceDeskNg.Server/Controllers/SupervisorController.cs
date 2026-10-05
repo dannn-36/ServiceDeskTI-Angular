@@ -1,67 +1,49 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
-using ServiceDeskNg.Server.Data;
-using System.Linq;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
+using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = RolesApp.Administrador)]
     public class SupervisorController : ControllerBase
     {
-        private readonly ServiceDeskContext _context;
-        public SupervisorController(ServiceDeskContext context)
+        private readonly SupervisorService _supervisores;
+
+        public SupervisorController(SupervisorService supervisores)
         {
-            _context = context;
+            _supervisores = supervisores;
         }
 
         [HttpGet]
-        public IActionResult GetAll()
-        {
-            var supervisores = _context.Supervisores.ToList();
-            return Ok(supervisores);
-        }
+        public async Task<ActionResult<List<SupervisorDto>>> GetAll(CancellationToken ct) =>
+            Ok(await _supervisores.ListarAsync(ct));
 
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            var supervisor = _context.Supervisores.Find(id);
-            if (supervisor == null) return NotFound();
-            return Ok(supervisor);
-        }
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<SupervisorDto>> GetById(int id, CancellationToken ct) =>
+            Ok(await _supervisores.ObtenerAsync(id, ct));
 
         [HttpPost]
-        public IActionResult Create([FromBody] SupervisorCreateDto dto)
+        public async Task<ActionResult<SupervisorDto>> Create([FromBody] SupervisorCreateDto dto, CancellationToken ct)
         {
-            var supervisor = new Supervisor
-            {
-                IdUsuario = dto.IdUsuario,
-                IdNivel = dto.IdNivel,
-                AreaResponsabilidadSupervisor = dto.AreaResponsabilidadSupervisor
-            };
-            _context.Supervisores.Add(supervisor);
-            _context.SaveChanges();
-            return CreatedAtAction(nameof(GetById), new { id = supervisor.IdSupervisor }, supervisor);
+            var creado = await _supervisores.CrearAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = creado.IdSupervisor }, creado);
         }
 
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] SupervisorCreateDto dto)
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> Update(int id, [FromBody] SupervisorCreateDto dto, CancellationToken ct)
         {
-            var supervisor = _context.Supervisores.Find(id);
-            if (supervisor == null) return NotFound();
-            supervisor.IdNivel = dto.IdNivel;
-            supervisor.AreaResponsabilidadSupervisor = dto.AreaResponsabilidadSupervisor;
-            _context.SaveChanges();
+            await _supervisores.ActualizarAsync(id, dto, ct);
             return NoContent();
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var supervisor = _context.Supervisores.Find(id);
-            if (supervisor == null) return NotFound();
-            _context.Supervisores.Remove(supervisor);
-            _context.SaveChanges();
+            await _supervisores.EliminarAsync(id, ct);
             return NoContent();
         }
     }

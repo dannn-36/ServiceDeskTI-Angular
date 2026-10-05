@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ServiceDesk TI - Iniciar Sesión</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@@300;400;500;600;700&display=swap');
 
@@ -114,7 +113,7 @@
           <div class="relative">
             <input type="email" id="correoUsuario" name="correoUsuario" [(ngModel)]="correoUsuario" required
                    class="input-focus w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                   placeholder="carlos.mendoza@gmail.com">
+                   placeholder="usuario@empresa.com" autocomplete="username">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <span class="text-gray-400">📧</span>
             </div>
@@ -128,7 +127,7 @@
           <div class="relative">
             <input type="password" id="contrasenaUsuario" name="contrasenaUsuario" [(ngModel)]="contrasenaUsuario" required
                    class="input-focus w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                   placeholder="••••••••">
+                   placeholder="••••••••" autocomplete="current-password">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <span class="text-gray-400">🔒</span>
             </div>
@@ -137,10 +136,10 @@
         <!-- Mensaje de error -->
         <div *ngIf="loginError" class="text-red-600 text-center">{{loginError}}</div>
         <!-- Botón de login -->
-        <button type="submit" class="btn-hover w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all slide-in" style="animation-delay: 0.7s;">
+        <button type="submit" [disabled]="enviando || !loginForm.valid" class="btn-hover w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-3 px-4 rounded-lg transition-all slide-in" style="animation-delay: 0.7s;">
           <span class="flex items-center justify-center space-x-2">
             <span>🚀</span>
-            <span>Iniciar Sesión</span>
+            <span>{{ enviando ? 'Verificando...' : 'Iniciar Sesión' }}</span>
           </span>
         </button>
       </form>
@@ -151,57 +150,5 @@
       <p class="mt-1">Versión 2.1.0 | <a href="#" class="hover:text-white transition-colors">Soporte Técnico</a></p>
     </div>
   </div>
-  <!-- Notificaciones -->
-  <div id="notifications" class="fixed top-4 right-4 z-50 space-y-2"></div>
-
-  <script>
-        function showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            const icons = {
-                success: '✅',
-                error: '❌',
-                info: 'ℹ️',
-                warning: '⚠️'
-            };
-
-            const colors = {
-                success: 'bg-green-500',
-                error: 'bg-red-500',
-                info: 'bg-blue-500',
-                warning: 'bg-yellow-500'
-            };
-
-            notification.className = `flex items-center space-x-2 px-4 py-3 rounded-lg text-white shadow-lg fade-in ${colors[type]}`;
-            notification.innerHTML = `
-                <span>${icons[type]}</span>
-                <span class="text-sm font-medium">${message}</span>
-            `;
-
-            document.getElementById('notifications').appendChild(notification);
-
-            setTimeout(() => {
-                notification.style.animation = 'fadeOut 0.3s ease-out forwards';
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 4000);
-        }
-
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto-completar credenciales al hacer clic en los ejemplos
-            document.addEventListener('click', function(event) {
-                if (event.target.closest('.bg-gray-50')) {
-                    const emailInput = document.getElementById('email');
-                    const passwordInput = document.getElementById('password');
-                    // Por defecto cargar el primer usuario de ejemplo
-                    emailInput.value = 'carlos.mendoza@gmail.com';
-                    passwordInput.value = '123456';
-                    showNotification('Credenciales cargadas. ¡Haz clic en "Iniciar Sesión"!', 'info');
-                }
-            });
-        });
-  </script>
-  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97c35d78e43c02f1',t:'MTc1NzM4NjA5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

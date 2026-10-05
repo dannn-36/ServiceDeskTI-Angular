@@ -1,22 +1,28 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
+using ServiceDeskNg.Server.Services;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// Escalaciones del panel de supervisi√≥n.
+    /// Antes devolv√≠a tres tickets inventados ("TK-1245", "TK-1243"...) escritos en el c√≥digo.
+    /// Ahora se calculan con los tickets reales: urgentes, vencidos seg√∫n SLA y de prioridad alta.
     [ApiController]
     [Route("api/escalations")]
+    [Authorize(Roles = RolesApp.Gestion)]
     public class EscalationsController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult GetEscalations()
+        private readonly MetricasService _metricas;
+
+        public EscalationsController(MetricasService metricas)
         {
-            var escalations = new List<object>
-            {
-                new { id = "TK-1245", title = "Falla crÌtica en producciÛn", escalatedTo = "Gerencia TI", reason = "Impacto alto", time = "3h 15min", status = "critical" },
-                new { id = "TK-1243", title = "PÈrdida de datos cliente", escalatedTo = "Director TÈcnico", reason = "Datos sensibles", time = "5h 30min", status = "critical" },
-                new { id = "TK-1240", title = "CaÌda de servicios web", escalatedTo = "Equipo DevOps", reason = "SLA vencido", time = "2h 45min", status = "pending" }
-            };
-            return Ok(escalations);
+            _metricas = metricas;
         }
+
+        [HttpGet]
+        public async Task<ActionResult<List<EscalacionDto>>> GetEscalations(CancellationToken ct) =>
+            Ok(await _metricas.EscalacionesAsync(ct));
     }
 }

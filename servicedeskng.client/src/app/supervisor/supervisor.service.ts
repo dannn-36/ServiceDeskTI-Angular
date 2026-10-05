@@ -1,27 +1,27 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-
-export interface Supervisor {
-  idSupervisor: number;
-  idUsuario: number;
-  idNivel: number;
-}
+import { ComparativaAgente, RendimientoSemanal } from '../core/modelos';
 
 export interface TeamMember {
   idAgente: number;
   name: string;
   status: string;
+  /** Tickets activos asignados. */
   tickets: number;
+  /** Horas promedio de resolución, medidas. */
   avgTime: string;
-  satisfaction: number;
+  /** null: el sistema no mide satisfacción todavía. */
+  satisfaction: number | null;
 }
 
+/** Ticket tal como lo devuelven los paneles de supervisión. */
 export interface Ticket {
-  id: string;
+  id: number;
   title: string;
   user: string;
   agent: string;
+  idAgenteAsignado?: number | null;
   status: string;
   priority: string;
   category: string;
@@ -32,34 +32,32 @@ export interface Ticket {
 }
 
 export interface Escalation {
-  id: string;
+  id: number;
   title: string;
   escalatedTo: string;
   reason: string;
   time: string;
-  status: string;
+  status: 'critical' | 'pending' | 'resolved';
+}
+
+export interface ResultadoOperacion {
+  message: string;
 }
 
 @Injectable({ providedIn: 'root' })
 export class SupervisorService {
-  private apiUrl = '/api/supervisores';
-  private teamUrl = '/api/team';
-  private ticketsUrl = '/api/tickets';
-  private priorityTicketsUrl = '/api/priority-tickets';
-  private escalationsUrl = '/api/escalations';
-
-  constructor(private http: HttpClient) {}
-
-  getAll(): Observable<Supervisor[]> {
-    return this.http.get<Supervisor[]>(this.apiUrl);
-  }
+  private readonly http = inject(HttpClient);
 
   getTeamMembers(): Observable<TeamMember[]> {
-    return this.http.get<TeamMember[]>(this.teamUrl);
+    return this.http.get<TeamMember[]>('/api/team');
   }
 
-  getTickets(): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(this.ticketsUrl);
+  getAgentComparison(): Observable<ComparativaAgente[]> {
+    return this.http.get<ComparativaAgente[]>('/api/team/comparison');
+  }
+
+  getDashboardTickets(): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>('/api/tickets/dashboard');
   }
 
   getPriorityTickets(): Observable<Ticket[]> {
@@ -67,50 +65,46 @@ export class SupervisorService {
   }
 
   getEscalations(): Observable<Escalation[]> {
-    return this.http.get<Escalation[]>(this.escalationsUrl);
+    return this.http.get<Escalation[]>('/api/escalations');
   }
 
-  getById(id: number): Observable<Supervisor> {
-    return this.http.get<Supervisor>(`${this.apiUrl}/${id}`);
+  getVencidos(): Observable<Ticket[]> {
+    return this.http.get<Ticket[]>('/api/tickets/vencidos');
   }
 
-  create(supervisor: Supervisor): Observable<Supervisor> {
-    return this.http.post<Supervisor>(this.apiUrl, supervisor);
+  getWeeklyPerformance(): Observable<RendimientoSemanal> {
+    return this.http.get<RendimientoSemanal>('/api/tickets/weekly-performance');
   }
 
-  update(id: number, supervisor: Supervisor): Observable<void> {
-    return this.http.put<void>(`${this.apiUrl}/${id}`, supervisor);
+  getTicketsByAgente(idAgente: number): Observable<unknown[]> {
+    return this.http.get<unknown[]>(`/api/tickets/agente/${idAgente}`);
   }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  asignarTicket(idTicket: number, idAgente: number): Observable<ResultadoOperacion> {
+    return this.http.post<ResultadoOperacion>('/api/tickets/assign', { idTicket, idAgente });
   }
 
-  getDashboardTickets(): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>('/api/tickets/dashboard');
+  escalarTicket(idTicket: number, nuevaCategoria: string): Observable<ResultadoOperacion> {
+    return this.http.post<ResultadoOperacion>(`/api/tickets/${idTicket}/escalar`, { nuevaCategoria });
   }
 
-  getWeeklyPerformance(): Observable<any> {
-    return this.http.get<any>('/api/tickets/weekly-performance');
+  redistribuir(): Observable<ResultadoOperacion> {
+    return this.http.post<ResultadoOperacion>('/api/tickets/redistribuir', {});
   }
 
-  getAgentComparison(): Observable<any> {
-    return this.http.get<any>('/api/team/comparison');
+  asignarSinAgente(): Observable<ResultadoOperacion> {
+    return this.http.post<ResultadoOperacion>('/api/tickets/asignar-sin-agente', {});
   }
 
-  generateWeeklyReport(format: string) {
-    return this.http.get(`/api/tickets/reporte-semanal?format=${format}`, { responseType: 'blob' });
+  reporteCarga(): Observable<Blob> {
+    return this.http.get('/api/tickets/reporte-carga', { responseType: 'blob' });
   }
 
-  generateIndividualReport(agente: string, format: string) {
-    return this.http.get(`/api/tickets/reporte-individual?agente=${agente}&format=${format}`, { responseType: 'blob' });
+  reporteSemanal(): Observable<Blob> {
+    return this.http.get('/api/tickets/reporte-semanal', { responseType: 'blob' });
   }
 
-  generateSlaReport(format: string) {
-    return this.http.get(`/api/tickets/reporte-sla?format=${format}`, { responseType: 'blob' });
-  }
-
-  getTicketsByAgente(agenteId: number): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`/api/tickets/agente/${agenteId}`);
+  reporteIndividual(idAgente: number): Observable<Blob> {
+    return this.http.get(`/api/tickets/reporte-individual?idAgente=${idAgente}`, { responseType: 'blob' });
   }
 }

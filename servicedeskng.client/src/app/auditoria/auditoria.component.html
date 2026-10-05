@@ -1,1 +1,61 @@
-<p>auditoria works!</p>
+<div class="bg-white rounded-xl shadow-sm border border-gray-200">
+  <div class="p-6 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+    <div>
+      <h3 class="text-lg font-semibold text-gray-900">Bitácora de auditoría</h3>
+      <p class="text-sm text-gray-600">
+        Registro inalterable de las acciones sensibles. Lo escribe el servidor; no se puede editar desde la interfaz.
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span *ngIf="fallidosUltimoDia > 0"
+            class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        {{ fallidosUltimoDia }} intento(s) fallido(s) en 24 h
+      </span>
+      <select [(ngModel)]="accionSeleccionada" (change)="cargar()"
+              class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              aria-label="Filtrar por acción">
+        <option *ngFor="let accion of acciones" [value]="accion.valor">{{ accion.etiqueta }}</option>
+      </select>
+      <button type="button" (click)="cargar()" [disabled]="cargando"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm border border-gray-300">
+        ↻ Actualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <div *ngIf="cargando" class="text-gray-500">Cargando registros...</div>
+    <div *ngIf="error" class="text-red-600">{{ error }}</div>
+    <div *ngIf="!cargando && !error && registros.length === 0" class="text-gray-500">
+      No hay registros para este filtro.
+    </div>
+
+    <div class="overflow-x-auto" *ngIf="!cargando && registros.length > 0">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acción</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Detalle</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let registro of registros; trackBy: trackPorId">
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+              {{ registro.fechaAuditoria | date: 'dd/MM/yyyy HH:mm:ss' }}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ registro.nombreUsuario }}</td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                    [ngClass]="claseAccion(registro.accionAuditoria)">
+                {{ etiquetaAccion(registro.accionAuditoria) }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-600">{{ registro.detalleAuditoria || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

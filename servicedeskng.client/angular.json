@@ -77,7 +77,7 @@
           },
           "defaultConfiguration": "development",
           "options": {
-            "proxyConfig": "src/proxy.conf.js",
+            "proxyConfig": "proxy.conf.json",
             "port": 59435
           }
         },

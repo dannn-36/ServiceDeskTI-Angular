@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { AuthService } from '../core/auth.service';
+import { mensajeDeError } from '../core/modelos';
 
 @Component({
   selector: 'app-hogar',
@@ -8,58 +9,35 @@ import { Router } from '@angular/router';
   styleUrls: ['./hogar.component.css']
 })
 export class HogarComponent {
-  correoUsuario: string = '';
-  contrasenaUsuario: string = '';
-  loginError: string = '';
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
-  constructor(private http: HttpClient, private router: Router) {}
+  correoUsuario = '';
+  contrasenaUsuario = '';
+  loginError = '';
+  enviando = false;
 
-  login() {
+  /**
+   * El backend devuelve rol e identificadores en la misma respuesta del login,
+   * así que ya no hace falta una segunda llamada para averiguar el idCliente/idAgente.
+   */
+  login(): void {
+    if (this.enviando) {
+      return;
+    }
+
     this.loginError = '';
-    const body = {
-      CorreoUsuario: this.correoUsuario,
-      ContrasenaUsuario: this.contrasenaUsuario
-    };
-    this.http.post<any>('/api/auth/login', body).subscribe({
-      next: (response) => {
-        console.log('Respuesta del backend:', response); // Para depuración
-        localStorage.setItem('rol', response.rol);
-        localStorage.setItem('usuarioId', response.usuario.idUsuario); // Guarda el idUsuario
-        localStorage.setItem('usuario', response.usuario.nombreUsuario); // Guarda el nombre del usuario
+    this.enviando = true;
 
-        // Solo buscar clienteId si el rol es Cliente o EndUser
-        if (response.rol === 'Cliente' || response.rol === 'EndUser') {
-          this.http.get<any>(`/api/enduser/by-usuario/${response.usuario.idUsuario}`).subscribe({
-            next: cliente => {
-              localStorage.setItem('clienteId', cliente.idCliente);
-              this.router.navigate(['/end-user']);
-            },
-            error: () => {
-              // Si no existe cliente, igual redirige
-              this.router.navigate(['/end-user']);
-            }
-          });
-        } else if (response.rol === 'Administrador') {
-          this.router.navigate(['/administrador']);
-        } else if (response.rol === 'Agente') {
-          // Obtener el agenteId usando el idUsuario
-          this.http.get<any>(`/api/agente/by-usuario/${response.usuario.idUsuario}`).subscribe({
-            next: agente => {
-              localStorage.setItem('agenteId', agente.idAgente);
-              this.router.navigate(['/agente']);
-            },
-            error: () => {
-              this.router.navigate(['/agente']);
-            }
-          });
-        } else if (response.rol === 'Supervisor') {
-          this.router.navigate(['/supervisor']);
-        } else {
-          this.router.navigate(['/']);
-        }
+    this.auth.login(this.correoUsuario.trim(), this.contrasenaUsuario).subscribe({
+      next: () => {
+        this.enviando = false;
+        this.contrasenaUsuario = '';
+        void this.router.navigateByUrl(this.auth.rutaInicio());
       },
-      error: (err) => {
-        this.loginError = err.error?.message || 'Error de autenticación';
+      error: err => {
+        this.enviando = false;
+        this.loginError = mensajeDeError(err, 'No se pudo iniciar sesión.');
       }
     });
   }

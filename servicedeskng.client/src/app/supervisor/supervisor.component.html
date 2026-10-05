@@ -175,12 +175,31 @@
           </div>
         </div>
 
-        <!-- Charts (sin tickets prioritarios) -->
-        <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+        <div *ngIf="cargando" class="text-sm text-gray-500 mb-4">Actualizando datos...</div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución de Tickets</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Distribución de Tickets Activos</h3>
             <div class="chart-container">
               <canvas id="ticketDistributionChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Tickets Prioritarios</h3>
+            <div *ngIf="priorityTickets.length === 0" class="text-sm text-gray-500">
+              No hay tickets de prioridad alta o urgente pendientes. 🎉
+            </div>
+            <div class="space-y-3 max-h-72 overflow-y-auto">
+              <div *ngFor="let ticket of priorityTickets"
+                   class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+                   (click)="showSection('tickets'); abrirSupervision(ticket)">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">#{{ ticket.id }} · {{ ticket.title }}</p>
+                  <p class="text-xs text-gray-500">{{ ticket.user }} → {{ ticket.agent }} · {{ ticket.time }}</p>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getPriorityBadgeClass(ticket.priority)">{{ ticket.priority }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -232,8 +251,8 @@
                 <span class="text-sm font-medium">{{ tiempoResolucionPromedio }}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Satisfacción cliente</span>
-                <span class="text-sm font-medium text-green-600">4.7/5</span>
+                <span class="text-sm text-gray-600">Tasa de resolución</span>
+                <span class="text-sm font-medium text-green-600">{{ tasaResolucionGlobal }}</span>
               </div>
             </div>
           </div>
@@ -265,15 +284,15 @@
                 <div class="grid grid-cols-3 gap-3 text-center">
                   <div>
                     <p class="text-lg font-bold text-blue-600">{{ member.tickets }}</p>
-                    <p class="text-xs text-gray-600">Tickets</p>
+                    <p class="text-xs text-gray-600">Activos</p>
                   </div>
                   <div>
-                    <p class="text-lg font-bold text-green-600">{{ member.avgTime }}</p>
+                    <p class="text-lg font-bold text-green-600">{{ member.avgTime }}h</p>
                     <p class="text-xs text-gray-600">Promedio</p>
                   </div>
                   <div>
-                    <p class="text-lg font-bold text-yellow-600">{{ member.satisfaction }}</p>
-                    <p class="text-xs text-gray-600">Rating</p>
+                    <p class="text-lg font-bold text-yellow-600" title="El sistema todavía no registra encuestas de satisfacción">{{ member.satisfaction ?? 'N/D' }}</p>
+                    <p class="text-xs text-gray-600">Satisfacción</p>
                   </div>
                 </div>
                 <div class="mt-3">
@@ -281,7 +300,7 @@
                   <div class="flex space-x-2">
                     <select class="flex-1 border rounded px-2 py-1 text-xs" [(ngModel)]="selectedTicketIdPerAgent[member.idAgente]" name="ticketSelect-{{member.idAgente}}">
                       <option [ngValue]="null">Selecciona un ticket</option>
-                      <option *ngFor="let ticket of tickets" [ngValue]="ticket.id">{{ ticket.title }} ({{ ticket.id }})</option>
+                      <option *ngFor="let ticket of activeTickets" [ngValue]="ticket.id">{{ ticket.title }} ({{ ticket.id }})</option>
                     </select>
                     <button class="bg-blue-600 text-white py-1 px-2 rounded text-xs hover:bg-blue-700 transition-colors"
                             [disabled]="!selectedTicketIdPerAgent[member.idAgente]"
@@ -379,6 +398,7 @@
             <div class="mb-4 border rounded p-4 bg-gray-50">
               <div class="text-xs text-gray-500 mb-2">Chat</div>
               <div class="h-64 overflow-y-auto space-y-2 mb-4">
+                <div *ngIf="mensajes.length === 0" class="text-sm text-gray-400">Sin mensajes en este ticket.</div>
                 <div *ngFor="let msg of mensajes" [ngClass]="{'text-right': msg.esSupervisor, 'text-left': !msg.esSupervisor}">
                     <span class="font-semibold">{{msg.remitente}}:</span>
                     <span>{{msg.texto}}</span>
@@ -390,11 +410,13 @@
                   <button type="button" class="bg-orange-600 text-white px-3 py-1 rounded" (click)="intervenirChat()" *ngIf="chatBloqueado">Intervenir</button>
               </form>
               <div *ngIf="chatBloqueado" class="text-xs text-gray-400 mt-1">Chat bloqueado - Haz clic en 'Intervenir' para escribir</div>
+              <div *ngIf="chatError" class="text-xs text-red-600 mt-1">{{ chatError }}</div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label class="block text-sm font-medium mb-1">Reasignar a otro agente:</label>
                 <select class="w-full border rounded px-2 py-1" [(ngModel)]="agenteReasignado">
+                  <option value="" disabled>Selecciona un agente</option>
                   <option *ngFor="let agente of teamMembers" [value]="agente.idAgente">{{agente.name}}</option>
                 </select>
                 <button class="w-full bg-blue-600 text-white mt-2 py-1 rounded" (click)="reasignarAgente()">Reasignar</button>
@@ -403,7 +425,7 @@
                 <label class="block text-sm font-medium mb-1">Escalar a categoría:</label>
                 <select class="w-full border rounded px-2 py-1" [(ngModel)]="categoriaEscalada">
                   <option value="">Selecciona una categoría</option>
-                  <option *ngFor="let cat of ['Red', 'Software', 'Hardware', 'Base de Datos', 'Infraestructura']" [value]="cat">{{cat}}</option>
+                  <option *ngFor="let cat of categorias" [value]="cat.nombreCategoria">{{cat.nombreCategoria}}</option>
                 </select>
                 <button class="w-full bg-yellow-600 text-white mt-2 py-1 rounded" (click)="escalarTicket()">Escalar Ticket</button>
               </div>
@@ -439,7 +461,37 @@
               <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded transition-colors"
                       (click)="revisarVencidos()">Revisar tickets vencidos</button>
               <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded transition-colors"
-                      (click)="generarReporteCarga()">Generar reporte de carga</button>
+                      [disabled]="generandoReporte"
+                      (click)="generarReporteCarga()">📄 Reporte de carga (PDF)</button>
+              <button class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded transition-colors"
+                      [disabled]="generandoReporte"
+                      (click)="generarReporteSemanal()">📄 Reporte semanal (PDF)</button>
+              <div class="flex space-x-2">
+                <select class="flex-1 border border-gray-300 rounded px-2 py-2 text-sm" [(ngModel)]="agenteReporte"
+                        aria-label="Agente para el reporte individual">
+                  <option *ngFor="let member of teamMembers" [ngValue]="member.idAgente">{{ member.name }}</option>
+                </select>
+                <button class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded text-sm transition-colors"
+                        [disabled]="generandoReporte || agenteReporte === null"
+                        (click)="generarReporteIndividual()">📄 Individual</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="mostrarVencidos" class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Tickets vencidos ({{ vencidos.length }})</h3>
+            <button class="text-sm text-gray-500 hover:text-gray-700" (click)="mostrarVencidos = false">Ocultar</button>
+          </div>
+          <div *ngIf="vencidos.length === 0" class="text-sm text-gray-500">Ningún ticket supera el SLA. ✅</div>
+          <div class="space-y-3">
+            <div *ngFor="let ticket of vencidos" class="flex items-center justify-between p-3 border border-red-200 bg-red-50 rounded-lg">
+              <div>
+                <p class="text-sm font-medium text-gray-900">#{{ ticket.id }} · {{ ticket.title }}</p>
+                <p class="text-xs text-gray-600">{{ ticket.user }} → {{ ticket.agent }} · {{ ticket.status }}</p>
+              </div>
+              <span class="text-sm font-semibold text-red-700">{{ ticket.time }}</span>
             </div>
           </div>
         </div>
@@ -459,7 +511,8 @@
             </div>
           </div>
           <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Comparativa Agentes</h3>
+            <h3 class="text-lg font-semibold text-gray-900 mb-1">Comparativa Agentes</h3>
+            <p class="text-xs text-gray-500 mb-3">Tickets resueltos frente a activos por agente</p>
             <div class="chart-container">
               <canvas id="agentComparisonChart"></canvas>
             </div>
@@ -469,16 +522,16 @@
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Métricas Clave</h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <p class="text-2xl font-bold text-blue-600">94.5%</p>
-              <p class="text-sm text-gray-600">Primera Resolución</p>
+              <p class="text-2xl font-bold text-blue-600">{{ tasaResolucionGlobal }}</p>
+              <p class="text-sm text-gray-600">Tasa de Resolución</p>
             </div>
             <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <p class="text-2xl font-bold text-green-600">1.8h</p>
-              <p class="text-sm text-gray-600">Tiempo Promedio</p>
+              <p class="text-2xl font-bold text-green-600">{{ tiempoResolucionPromedio }}</p>
+              <p class="text-sm text-gray-600">Tiempo Promedio de Resolución</p>
             </div>
             <div class="text-center p-4 bg-gray-50 rounded-lg">
-              <p class="text-2xl font-bold text-purple-600">4.8/5</p>
-              <p class="text-sm text-gray-600">Satisfacción</p>
+              <p class="text-2xl font-bold" [ngClass]="vencidos.length ? 'text-red-600' : 'text-purple-600'">{{ vencidos.length }}</p>
+              <p class="text-sm text-gray-600">Tickets fuera de SLA</p>
             </div>
           </div>
         </div>
@@ -513,7 +566,7 @@
               <h3 class="font-semibold text-blue-900">Resueltas</h3>
             </div>
             <p class="text-3xl font-bold text-blue-600">{{ escalacionesResueltas.length }}</p>
-            <p class="text-sm text-blue-600">Esta semana</p>
+            <p class="text-sm text-blue-600">Urgentes o altas ya atendidas</p>
           </div>
         </div>
         <!-- Escalaciones Críticas -->
@@ -553,20 +606,6 @@
               <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
               <div class="flex justify-between items-center">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Resuelto</span>
-                <span class="text-sm text-gray-500">{{ esc.time }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Escalaciones Escaladas (opcional, si quieres mostrar aparte) -->
-        <div class="p-6" *ngIf="escalacionesEscaladas.length">
-          <div class="space-y-4">
-            <div *ngFor="let esc of escalacionesEscaladas" class="p-4 border rounded-xl bg-purple-50 border-purple-200">
-              <div class="font-semibold text-gray-900 mb-1">{{ esc.title }}</div>
-              <div class="text-sm text-gray-600 mb-1">TK-{{ esc.id }} • Escalado a: {{ esc.escalatedTo }}</div>
-              <div class="text-xs text-gray-500 mb-1">Razón: {{ esc.reason }}</div>
-              <div class="flex justify-between items-center">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Escalado</span>
                 <span class="text-sm text-gray-500">{{ esc.time }}</span>
               </div>
             </div>

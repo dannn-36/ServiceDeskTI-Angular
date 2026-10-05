@@ -1,91 +1,98 @@
-﻿using Microsoft.AspNetCore.SignalR;
-using ServiceDeskNg.Server.Data;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
+using ServiceDeskNg.Server.Common;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using System;
-using System.Threading.Tasks;
 
 namespace ServiceDeskNg.Server.Hubs
 {
+    /// Chat en tiempo real de cada ticket.
+    /// Requiere sesión iniciada. El autor de cada mensaje sale de la cookie de sesión:
+    /// antes el cliente enviaba su propio userId y userName, y cualquiera podía
+    /// escribir haciéndose pasar por otra persona.
+    [Authorize]
     public class ChatHub : Hub
     {
-        private readonly TicketMensajeService _mensajeService;
-        private readonly ServiceDeskContext _context;
+        public const string EventoMensaje = "ReceiveMessage";
 
-        public ChatHub(TicketMensajeService mensajeService, ServiceDeskContext context)
+        private readonly TicketMensajeService _mensajes;
+        private readonly TicketService _tickets;
+        private readonly ILogger<ChatHub> _logger;
+
+        public ChatHub(TicketMensajeService mensajes, TicketService tickets, ILogger<ChatHub> logger)
         {
-            _mensajeService = mensajeService;
-            _context = context;
+            _mensajes = mensajes;
+            _tickets = tickets;
+            _logger = logger;
         }
 
-        // =====================================================
-        // 🔹 Un usuario se une al grupo del ticket
-        // =====================================================
+        public static string Grupo(int idTicket) => $"ticket-{idTicket}";
+
+        /// Payload que reciben los clientes conectados al ticket.
+        public static object Payload(TicketMensajeDto mensaje) => new
+        {
+            idMensaje = mensaje.IdMensaje,
+            idTicket = mensaje.IdTicket,
+            idUsuario = mensaje.IdUsuario,
+            usuario = mensaje.UsuarioNombre,
+            mensaje = mensaje.MensajeTicket,
+            fecha = mensaje.FechaHoraCreacionMensaje
+        };
+
         public async Task JoinTicket(string ticketId)
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, ticketId);
-            await Clients.Group(ticketId)
-                .SendAsync("UserJoined", $" Un nuevo usuario se unió al chat del ticket {ticketId}");
+            var idTicket = await AutorizarTicketAsync(ticketId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, Grupo(idTicket));
         }
 
-        // =====================================================
-        // 🔹 El usuario sale del grupo del ticket
-        // =====================================================
         public async Task LeaveTicket(string ticketId)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, ticketId);
-            await Clients.Group(ticketId)
-                .SendAsync("UserLeft", $" Un usuario abandonó el chat del ticket {ticketId}");
+            if (int.TryParse(ticketId, out var idTicket))
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, Grupo(idTicket));
         }
 
-        // =====================================================
-        // 🔹 Enviar mensaje (con persistencia en DB)
-        // =====================================================
-        public async Task SendMessage(string ticketId, string userName, string message, int userId)
+        public async Task SendMessage(string ticketId, string message)
         {
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
-            int ticketIdInt;
-            if (!int.TryParse(ticketId, out ticketIdInt))
-                throw new ArgumentException("El ticketId no es válido.");
+            if (message.Length > 2000)
+                throw new HubException("El mensaje no puede superar los 2000 caracteres.");
 
-            // Crear mensaje
-            var nuevoMensaje = new TicketMensaje
-            {
-                IdTicket = ticketIdInt,
-                IdUsuario = userId,
-                MensajeTicket = message,
-                FechaHoraCreacionMensaje = DateTime.UtcNow
-            };
+            var idTicket = await AutorizarTicketAsync(ticketId);
+            var usuario = Context.User!;
+
+            var guardado = await _mensajes.CrearAsync(idTicket, usuario.IdUsuario(), message);
+
+            await Clients.Group(Grupo(idTicket)).SendAsync(EventoMensaje, Payload(guardado));
+        }
+
+        private async Task<int> AutorizarTicketAsync(string ticketId)
+        {
+            if (!int.TryParse(ticketId, out var idTicket) || idTicket <= 0)
+                throw new HubException("El identificador del ticket no es válido.");
+
+            var usuario = Context.User!;
 
             try
             {
-                // Persistir en DB
-                _mensajeService.Create(nuevoMensaje);
-
-                // Emitir a todos los usuarios del ticket
-                await Clients.Group(ticketId)
-                    .SendAsync("ReceiveMessage", new
-                    {
-                        usuario = userName,
-                        mensaje = message,
-                        fecha = nuevoMensaje.FechaHoraCreacionMensaje
-                    });
+                await _tickets.AsegurarAccesoAsync(
+                    idTicket,
+                    usuario.TieneVisionGlobal(),
+                    usuario.IdCliente(),
+                    usuario.IdAgente());
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is AccesoDenegadoException or KeyNotFoundException)
             {
-                await Clients.Caller.SendAsync("Error", $"Error al enviar el mensaje: {ex.Message}");
+                _logger.LogWarning(
+                    "Usuario {IdUsuario} sin acceso al chat del ticket {IdTicket}",
+                    usuario.IdUsuario(),
+                    idTicket);
+                throw new HubException(ex.Message);
             }
-        }
 
-        // =====================================================
-        // 🔹 Al desconectarse
-        // =====================================================
-        public override async Task OnDisconnectedAsync(Exception? exception)
-        {
-            // Si quieres limpiar grupos, logs, etc. puedes hacerlo aquí
-            await base.OnDisconnectedAsync(exception);
+            return idTicket;
         }
     }
 }

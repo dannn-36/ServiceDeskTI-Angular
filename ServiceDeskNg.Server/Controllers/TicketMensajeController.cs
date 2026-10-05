@@ -1,151 +1,77 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using ServiceDeskNg.Server.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using ServiceDeskNg.Server.Hubs;
+using ServiceDeskNg.Server.Models.Dtos;
+using ServiceDeskNg.Server.Security;
 using ServiceDeskNg.Server.Services;
-using System.Linq;
 
 namespace ServiceDeskNg.Server.Controllers
 {
+    /// Historial del chat de cada ticket. Solo lo ve quien tiene acceso al ticket.
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TicketMensajeController : ControllerBase
     {
-        private readonly TicketMensajeService _ticketMensajeService;
-        private readonly ServiceDeskNg.Server.Data.ServiceDeskContext _context;
+        private readonly TicketMensajeService _mensajes;
+        private readonly TicketService _tickets;
+        private readonly IHubContext<ChatHub> _chat;
 
-        public TicketMensajeController(TicketMensajeService ticketMensajeService, ServiceDeskNg.Server.Data.ServiceDeskContext context)
+        public TicketMensajeController(
+            TicketMensajeService mensajes,
+            TicketService tickets,
+            IHubContext<ChatHub> chat)
         {
-            _ticketMensajeService = ticketMensajeService;
-            _context = context;
+            _mensajes = mensajes;
+            _tickets = tickets;
+            _chat = chat;
         }
 
-        // ===========================================================
-        // ✅ GET: api/TicketMensaje
-        // Obtiene todos los mensajes registrados
-        // ===========================================================
-        [HttpGet]
-        public IActionResult GetAll()
+        [HttpGet("ticket/{ticketId:int}")]
+        public async Task<ActionResult<List<TicketMensajeDto>>> GetByTicketId(int ticketId, CancellationToken ct)
         {
-            try
-            {
-                var mensajes = _ticketMensajeService.GetAll();
-                return Ok(mensajes);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los mensajes.", error = ex.Message });
-            }
+            await AsegurarAccesoAsync(ticketId, ct);
+            return Ok(await _mensajes.ListarPorTicketAsync(ticketId, ct));
         }
 
-        // ===========================================================
-        // ✅ GET: api/TicketMensaje/{id}
-        // Obtiene un mensaje específico por su ID
-        // ===========================================================
-        [HttpGet("{id}")]
-        public IActionResult GetById(int id)
-        {
-            try
-            {
-                var mensaje = _ticketMensajeService.GetById(id);
-                return Ok(mensaje);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener el mensaje.", error = ex.Message });
-            }
-        }
+        [HttpGet("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<ActionResult<TicketMensajeDto>> GetById(int id, CancellationToken ct) =>
+            Ok(await _mensajes.ObtenerAsync(id, ct));
 
-        // ===========================================================
-        // ✅ GET: api/TicketMensaje/ticket/{ticketId}
-        // Obtiene todos los mensajes asociados a un ticket específico
-        // ===========================================================
-        [HttpGet("ticket/{ticketId}")]
-        public IActionResult GetByTicketId(int ticketId, [FromQuery] bool includeRelations = false)
-        {
-            try
-            {
-                var mensajes = _ticketMensajeService.GetMensajesByTicketId(ticketId, true);
-                var mensajesDto = mensajes.Select(m => new TicketMensajeDto
-                {
-                    IdMensaje = m.IdMensaje,
-                    IdTicket = m.IdTicket,
-                    IdUsuario = m.IdUsuario,
-                    MensajeTicket = m.MensajeTicket,
-                    FechaHoraCreacionMensaje = m.FechaHoraCreacionMensaje,
-                    UsuarioNombre = m.IdUsuarioNavigation != null ? m.IdUsuarioNavigation.NombreUsuario : "Desconocido"
-                }).ToList();
-                return Ok(mensajesDto);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al obtener los mensajes del ticket.", error = ex.Message });
-            }
-        }
-
-        // ===========================================================
-        // ✅ POST: api/TicketMensaje
-        // Crea un nuevo mensaje
-        // ===========================================================
+        /// Alternativa REST al hub: el mensaje se guarda y se difunde igual
+        /// a quienes estén conectados al chat del ticket.
         [HttpPost]
-        public IActionResult Create([FromBody] TicketMensaje mensaje)
+        public async Task<ActionResult<TicketMensajeDto>> Create(
+            [FromBody] TicketMensajeCreateDto dto,
+            CancellationToken ct)
         {
-            try
-            {
-                if (mensaje == null)
-                    return BadRequest(new { message = "El cuerpo de la solicitud no puede estar vacío." });
+            await AsegurarAccesoAsync(dto.IdTicket, ct);
 
-                // Fecha de creación si no se envía
-                mensaje.FechaHoraCreacionMensaje ??= DateTime.Now;
+            var guardado = await _mensajes.CrearAsync(dto.IdTicket, User.IdUsuario(), dto.MensajeTicket, ct);
 
-                _ticketMensajeService.Create(mensaje);
+            await _chat.Clients
+                .Group(ChatHub.Grupo(dto.IdTicket))
+                .SendAsync(ChatHub.EventoMensaje, ChatHub.Payload(guardado), ct);
 
-                return CreatedAtAction(nameof(GetById), new { id = mensaje.IdMensaje }, mensaje);
-            }
-            catch (ArgumentNullException ex)
-            {
-                return BadRequest(new { message = "Datos inválidos: " + ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al crear el mensaje.", error = ex.Message });
-            }
+            return CreatedAtAction(nameof(GetById), new { id = guardado.IdMensaje }, guardado);
         }
 
-        // ===========================================================
-        // ✅ DELETE: api/TicketMensaje/{id}
-        // Elimina un mensaje por su ID
-        // ===========================================================
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [HttpDelete("{id:int}")]
+        [Authorize(Roles = RolesApp.Administrador)]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            try
-            {
-                _ticketMensajeService.Delete(id);
-                return Ok(new { message = $"Mensaje con ID {id} eliminado correctamente." });
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Error al eliminar el mensaje.", error = ex.Message });
-            }
+            await _mensajes.EliminarAsync(id, ct);
+            return NoContent();
         }
+
+        private Task AsegurarAccesoAsync(int idTicket, CancellationToken ct) =>
+            _tickets.AsegurarAccesoAsync(
+                idTicket,
+                User.TieneVisionGlobal(),
+                User.IdCliente(),
+                User.IdAgente(),
+                ct);
     }
 }

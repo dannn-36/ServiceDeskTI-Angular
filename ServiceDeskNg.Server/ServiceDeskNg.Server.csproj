@@ -7,6 +7,8 @@
     <SpaRoot>..\servicedeskng.client</SpaRoot>
     <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
     <SpaProxyServerUrl>https://localhost:59435</SpaProxyServerUrl>
+    <!-- La cadena de conexión de desarrollo vive en user-secrets, fuera del repositorio. -->
+    <UserSecretsId>servicedeskng-server-7c1f5e2a</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,11 +21,12 @@
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy">
       <Version>9.*-*</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+    <!-- Fija la versión que Pomelo trae en 9.0.0, para que todo el árbol use la misma. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -32,7 +35,6 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="QuestPDF" Version="2025.7.4" />
   </ItemGroup>

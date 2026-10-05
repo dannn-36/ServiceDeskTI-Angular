@@ -38,7 +38,14 @@
     singleRun: false,
     restartOnFileChange: true,
     listenAddress: 'localhost',
-    hostname: 'localhost'
+    hostname: 'localhost',
+    // Navegador sin interfaz para integración continua (los contenedores Linux no tienen sandbox).
+    customLaunchers: {
+      ChromeHeadlessCI: {
+        base: 'ChromeHeadless',
+        flags: ['--no-sandbox']
+      }
+    }
   });
 };
 
